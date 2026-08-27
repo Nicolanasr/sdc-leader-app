@@ -528,39 +528,62 @@ export default function EventWorkspace({
   const [docUrl, setDocUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploadingFile, setIsUploadingFile] = useState(false)
+  
+  const [editingDocId, setEditingDocId] = useState<string | null>(null)
+  const [editingDocTitle, setEditingDocTitle] = useState('')
+
+  const handleUpdateDocumentTitle = async (docId: string) => {
+    if (!editingDocTitle.trim()) return
+    const { error } = await supabase.from('event_documents').update({ title: editingDocTitle.trim() }).eq('id', docId)
+    if (!error) {
+      const newDocs = (eventItem.event_documents || []).map((x) =>
+        x.id === docId ? { ...x, title: editingDocTitle.trim() } : x
+      )
+      setEventItem((prev) => ({ ...prev, event_documents: newDocs }))
+      setEditingDocId(null)
+      showStatus('Document renamed.', 'success')
+    } else {
+      showStatus(error.message, 'error')
+    }
+  }
 
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!docTitle.trim()) return showStatus('Please enter a document title.', 'error')
+    if (!selectedFile) return showStatus('Please select a file from your device to upload.', 'error')
 
-    let finalFileUrl = docUrl.trim()
+    const titleToUse = docTitle.trim() || selectedFile.name.replace(/\.[^/.]+$/, '')
 
-    if (selectedFile) {
-      setIsUploadingFile(true)
-      const fileExt = selectedFile.name.split('.').pop()
-      const fileName = `${eventItem.id}/${Date.now()}_${selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    setIsUploadingFile(true)
+    const uploadFormData = new FormData()
+    uploadFormData.append('file', selectedFile)
 
-      const { data: uploadData, error: uploadErr } = await supabase.storage
-        .from('event-documents')
-        .upload(fileName, selectedFile, { upsert: true })
+    const eventYear = eventItem.start_time ? new Date(eventItem.start_time).getFullYear() : new Date().getFullYear()
+    const assignedTroopObj = troops.find((t) => t.id === eventItem.troop_id)
+    const assignedTroopName = assignedTroopObj?.name || (eventItem.troop_id ? 'Troop Event' : 'Group Wide Events')
 
-      if (uploadErr) {
-        setIsUploadingFile(false)
-        console.warn('Storage upload error fallback:', uploadErr)
-        if (!finalFileUrl) {
-          return showStatus(`Direct storage upload notice: ${uploadErr.message}. Please paste file URL or Google Drive link below.`, 'error')
-        }
+    uploadFormData.append('groupName', groupName || 'Scout Group')
+    uploadFormData.append('troopName', assignedTroopName)
+    uploadFormData.append('eventTitle', `${eventItem.title || 'Event'} (${eventYear})`)
+
+    let finalFileUrl = ''
+    try {
+      const res = await fetch('/api/documents/upload-gdrive', {
+        method: 'POST',
+        body: uploadFormData,
+      })
+      const gdriveRes = await res.json()
+
+      if (res.ok && gdriveRes.webViewLink) {
+        finalFileUrl = gdriveRes.webViewLink
       } else {
-        const { data: publicUrlData } = supabase.storage
-          .from('event-documents')
-          .getPublicUrl(fileName)
-
-        finalFileUrl = publicUrlData?.publicUrl || finalFileUrl
+        setIsUploadingFile(false)
+        return showStatus(`Google Drive Upload Error: ${gdriveRes.error || 'Failed to upload file'}`, 'error')
       }
+    } catch (err: any) {
       setIsUploadingFile(false)
+      return showStatus(`Upload connection failed: ${err.message}`, 'error')
     }
-
-    if (!finalFileUrl) return showStatus('Please select a file to upload or paste a valid link.', 'error')
+    setIsUploadingFile(false)
 
     const { data: docData, error } = await supabase
       .from('event_documents')
@@ -1218,26 +1241,26 @@ export default function EventWorkspace({
               <form onSubmit={handleAddDocument} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <UploadCloud className="h-4 w-4 text-teal-700" />
-                  Upload & Attach Document / Google Drive Link
+                  Direct Google Drive File Uploader
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Document Title</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Document Title (Optional)</label>
                     <input
                       type="text"
-                      placeholder="e.g. Camp Schedule PDF / Consent Forms"
+                      placeholder="e.g. Camp Schedule PDF / Permission Slip"
                       value={docTitle}
                       onChange={(e) => setDocTitle(e.target.value)}
-                      required
                       className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload File from Device</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Choose File from Device</label>
                     <input
                       type="file"
+                      required
                       onChange={(e) => {
                         const f = e.target.files?.[0]
                         if (f) {
@@ -1250,34 +1273,24 @@ export default function EventWorkspace({
                   </div>
                 </div>
 
-                <div className="space-y-1.5 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase">Or Paste Google Drive / External URL Link</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://drive.google.com/file/d/..."
-                      value={docUrl}
-                      onChange={(e) => setDocUrl(e.target.value)}
-                      className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isUploadingFile}
-                      className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 shadow disabled:bg-slate-300 transition-colors flex items-center gap-1.5"
-                    >
-                      {isUploadingFile ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          <span>Uploading…</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-3.5 w-3.5" />
-                          <span>Attach Document</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isUploadingFile || !selectedFile}
+                    className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-5 py-2.5 rounded-lg text-xs shadow disabled:bg-slate-300 transition-colors flex items-center gap-2"
+                  >
+                    {isUploadingFile ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Uploading to Google Drive…</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="h-4 w-4" />
+                        <span>Upload File to Google Drive</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </form>
 
@@ -1287,35 +1300,78 @@ export default function EventWorkspace({
                 ) : (
                   (eventItem.event_documents || []).map((doc) => (
                     <div key={doc.id} className="p-4 bg-white flex items-center justify-between gap-3 text-xs hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="p-2 rounded-lg bg-teal-50 text-teal-800 shrink-0">
                           <Paperclip className="h-4 w-4" />
                         </div>
-                        <div className="min-w-0">
-                          <span className="font-bold text-slate-900 text-sm truncate block">{doc.title}</span>
-                          <span className="text-[10px] text-slate-400 truncate block">{doc.file_url}</span>
-                        </div>
+                        {editingDocId === doc.id ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingDocTitle}
+                              onChange={(e) => setEditingDocTitle(e.target.value)}
+                              className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') doc.id && handleUpdateDocumentTitle(doc.id)
+                                if (e.key === 'Escape') setEditingDocId(null)
+                              }}
+                            />
+                            <button
+                              onClick={() => doc.id && handleUpdateDocumentTitle(doc.id)}
+                              className="p-1.5 text-teal-700 hover:bg-teal-50 rounded transition-colors"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingDocId(null)}
+                              className="p-1.5 text-slate-400 hover:bg-slate-100 rounded transition-colors"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 text-sm truncate block">{doc.title}</span>
+                            <span className="text-[10px] text-slate-400 truncate block">{doc.file_url}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <a
-                          href={doc.file_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
-                        >
-                          Open File <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-
-                        {isCampSecretary && doc.id && (
-                          <button
-                            type="button"
-                            onClick={() => doc.id && handleDeleteDocument(doc.id)}
-                            className="p-1.5 text-slate-300 hover:text-rose-600 transition-colors"
-                            title="Delete Document"
+                        {editingDocId !== doc.id && (
+                          <a
+                            href={doc.file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                            Open File <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+
+                        {isCampSecretary && doc.id && editingDocId !== doc.id && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingDocId(doc.id || null)
+                                setEditingDocTitle(doc.title)
+                              }}
+                              className="p-1.5 text-slate-300 hover:text-teal-600 transition-colors"
+                              title="Edit Document Name"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => doc.id && handleDeleteDocument(doc.id)}
+                              className="p-1.5 text-slate-300 hover:text-rose-600 transition-colors"
+                              title="Delete Document"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
