@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -72,14 +72,8 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
 
         {navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)}
         {navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)}
-        {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname === '/group/dashboard/events', onClose)}
-
-        <div className="pt-4 pb-2 px-4 text-xs font-semibold text-teal-400 uppercase tracking-wider">
-          Modules (Read-Only)
-        </div>
-        <div className="px-4 py-2 text-xs text-teal-300 italic">
-          Financials and inventory sub-pages will appear here in the next dev phase.
-        </div>
+        {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)}
+        {navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)}
       </nav>
 
       {/* Logout */}
