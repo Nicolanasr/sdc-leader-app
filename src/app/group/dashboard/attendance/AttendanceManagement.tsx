@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import {
     Menu, Plus, Calendar, ChevronLeft, AlertTriangle, ClipboardList, Users,
 } from 'lucide-react'
+import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -216,8 +217,64 @@ export default function AttendanceManagement({
         if (!activeSession) return
         setLoading(true)
 
-        const validMemberIds = new Set(members.map((m) => m.id))
+        const isLeadership = activeEvent?.event_type === 'leadership_meeting'
+        const validMemberIds = isLeadership
+            ? new Set(leaders.map((l) => l.id))
+            : new Set(members.map((m) => m.id))
+
         const ids = Object.keys(sheetData)
+
+        if (isLeadership && activeEvent) {
+            const newStaffRecords: AttRecord[] = []
+            for (const leaderId of ids) {
+                const st = sheetData[leaderId]
+                if (!st) continue
+
+                const { data: existing } = await supabase
+                    .from('event_staff')
+                    .select('id')
+                    .eq('event_id', activeEvent.id)
+                    .eq('profile_id', leaderId)
+                    .maybeSingle()
+
+                let staffId = existing?.id
+                if (existing) {
+                    await supabase
+                        .from('event_staff')
+                        .update({
+                            attendance_status: st.status,
+                        })
+                        .eq('id', existing.id)
+                } else {
+                    const { data: insertedStaff } = await supabase
+                        .from('event_staff')
+                        .insert({
+                            event_id: activeEvent.id,
+                            profile_id: leaderId,
+                            event_role: 'ka2ed_mouskech',
+                            attendance_status: st.status,
+                        })
+                        .select('id')
+                        .maybeSingle()
+                    if (insertedStaff) staffId = insertedStaff.id
+                }
+
+                newStaffRecords.push({
+                    id: `staff_${staffId || leaderId}`,
+                    attendance_id: activeSession.id,
+                    member_id: leaderId,
+                    status: st.status,
+                    excuse_reason: st.status !== 'present' ? (st.reason || null) : null,
+                })
+            }
+
+            setRecords((prev) => [...prev.filter((r) => r.attendance_id !== activeSession.id), ...newStaffRecords])
+            setLoading(false)
+            showStatus('Leadership meeting attendance saved successfully!', 'success')
+            router.refresh()
+            return
+        }
+
         const upserts = ids
             .filter((id) => validMemberIds.has(id))
             .map((id) => ({
@@ -347,40 +404,8 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
     // ─── RENDER ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
-            {/* Mobile overlay */}
-            {isMobileOpen && (
-                <div onClick={() => setIsMobileOpen(false)} className="fixed inset-0 z-30 bg-black/40 md:hidden" />
-            )}
-
-            {/* Sidebar */}
-            <aside
-                className={`fixed inset-y-0 left-0 z-40 w-64 bg-teal-900 text-white flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-                    }`}
-            >
-                <DashboardSidebar
-                    groupName={groupName}
-                    currentRole={currentRole}
-                    onClose={() => setIsMobileOpen(false)}
-                    onLogout={handleLogout}
-                />
-            </aside>
-
-            {/* Main */}
-            <main className="flex-1 overflow-y-auto flex flex-col">
-                {/* Mobile header */}
-                <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between md:justify-end">
-                    <button className="md:hidden text-teal-900 p-1" onClick={() => setIsMobileOpen(true)}>
-                        <Menu className="h-6 w-6" />
-                    </button>
-                    <div className="text-right">
-                        <span className="text-xs text-slate-400 font-semibold block uppercase">Logged in as</span>
-                        <span className="text-sm font-bold text-teal-700">{userName || currentRole.replace(/_/g, ' ')}</span>
-                    </div>
-                </header>
-
-                <div className="px-3 sm:px-6 py-4 flex-1 flex flex-col space-y-4">
-                    {/* Status banner */}
+        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+            {/* Status banner */}
                     {statusMsg && (
                         <div className={`mb-4 p-3 rounded-xl text-sm text-center border ${statusMsg.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-rose-50 border-rose-100 text-rose-800'
                             }`}>
@@ -394,7 +419,6 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                             <div className="flex justify-between items-center mb-6">
                                 <div>
                                     <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Attendance</h2>
-                                    <p className="text-sm text-slate-500 mt-1">Track weekly meeting and leadership attendance in {groupName}.</p>
                                 </div>
                                 <button
                                     onClick={() => setView('new')}
@@ -639,8 +663,6 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                             </div>
                         </div>
                     )}
-                </div>
-            </main>
-        </div>
+        </DashboardShell>
     )
 }

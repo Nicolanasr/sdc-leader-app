@@ -67,23 +67,7 @@ export default async function MembersPage() {
   const { data: membersData } = await supabase
     .from('members')
     .select(`
-      id,
-      first_name,
-      last_name,
-      birth_date,
-      blood_type,
-      medical_info,
-      emergency_contact_name,
-      emergency_contact_relation,
-      emergency_contact_phone,
-      photo_url,
-      promise_date,
-      current_rank,
-      patrol_role,
-      group_id,
-      troop_id,
-      patrol_id,
-      is_active,
+      *,
       troops:troop_id (id, name),
       patrols:patrol_id (id, name)
     `)
@@ -103,19 +87,36 @@ export default async function MembersPage() {
     historyData = history || []
   }
 
-  // Group history logs by member_id
+  // Group history logs by member_id and extract sibling_ids
   const historyMap: Record<string, any[]> = {}
+  const siblingMap: Record<string, string[]> = {}
+
   for (const log of historyData) {
     if (!historyMap[log.member_id]) {
       historyMap[log.member_id] = []
     }
     historyMap[log.member_id].push(log)
+
+    if (log.event_type === 'sibling_link' && log.new_value) {
+      if (!siblingMap[log.member_id]) siblingMap[log.member_id] = []
+      if (!siblingMap[log.member_id].includes(log.new_value)) {
+        siblingMap[log.member_id].push(log.new_value)
+      }
+    }
   }
 
+  // Enrich membersData with sibling_ids from siblingMap
+  const enrichedMembers = (membersData || []).map((m: any) => ({
+    ...m,
+    sibling_ids: m.sibling_ids && Array.isArray(m.sibling_ids) && m.sibling_ids.length > 0
+      ? m.sibling_ids
+      : (siblingMap[m.id] || []),
+  }))
+
   // 7. If user is a Troop Leader (ka2ed_fer2a / mouse3ed_ka2ed_fer2a), scope members strictly to their troop
-  let filteredMembers = membersData || []
+  let filteredMembers = enrichedMembers
   if (['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(userRole) && userTroopId) {
-    filteredMembers = (membersData || []).filter((m) => m.troop_id === userTroopId)
+    filteredMembers = enrichedMembers.filter((m: any) => m.troop_id === userTroopId)
   }
 
   // 8. Fetch user profile full name

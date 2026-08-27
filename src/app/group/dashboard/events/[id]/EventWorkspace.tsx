@@ -6,8 +6,9 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import {
   Menu, X, ArrowLeft, Calendar, MapPin, DollarSign, Users, FileText,
-  CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit
+  CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit, Loader2, UploadCloud, FileSpreadsheet, Paperclip
 } from 'lucide-react'
+import DashboardShell from '../../DashboardShell'
 import DashboardSidebar from '../../DashboardSidebar'
 
 interface Leader {
@@ -105,30 +106,23 @@ interface Props {
   userProfileId: string
   userName: string
 }
-
-const EVENT_STAFF_ROLES = [
-  { key: 'ka2ed_mouskhayyam', label: 'Camp Leader (قائد المخيِّم)' },
-  { key: 'mousa3ed_ka2ed_mouskhayyam', label: 'Assistant Camp Leader (مساعد قائد مخيِّم)' },
-  { key: 'amin_serr_mouskhayyam', label: 'Camp Secretary (امين سرّ المخيِّم)' },
-  { key: 'amin_sandou2_mouskhayyam', label: 'Camp Treasurer (امين صندوق)' },
-  { key: 'amin_tejhizet', label: 'Logistics & Equipment (امين تجهيزات)' },
-  { key: 'mas2oul_matbakh', label: 'Kitchen Responsible (مسؤول مطبخ)' },
-  { key: 'mas2oul_khedmet', label: 'Services Responsible (مسؤول خدمات)' },
-  { key: 'mas2oul_saharat', label: 'Campfire & Evenings (مسؤول سهرات)' },
-  { key: 'ka2ed_jaramiz', label: 'Cubs Unit Chief (قائد قطيع الجراميز)' },
-  { key: 'mas2oul_riyada_jaramiz', label: 'Cubs Morning Gym (مسؤول رياضه صباحية جراميز)' },
-  { key: 'ka2ed_zaharat', label: 'Brownies Unit Chief (قائدة دائرة الزهرات)' },
-  { key: 'mas2oul_riyada_zaharat', label: 'Brownies Morning Gym (مسؤول رياضه صباحية زهرات)' },
-  { key: 'ka2ed_kechefe', label: 'Scouts Troop Chief (قائد فرقة الكشافة)' },
-  { key: 'mas2oul_riyada_kechefe', label: 'Scouts Morning Gym (مسؤول رياضه صباحية كشافة)' },
-  { key: 'ka2ed_mourchidet', label: 'Guides Troop Chief (قائدة فرقة المرشدات)' },
-  { key: 'mas2oul_riyada_mourchidet', label: 'Guides Morning Gym (مسؤول رياضه صباحية المرشدات)' },
-  { key: 'ka2ed_mounjidet', label: 'Senior Guides Chief (قائدة فرقة المرشدة متقدمة)' },
-  { key: 'mas2oul_taw2it', label: 'Schedule / Timekeeper (مسؤول توقيت ثابت)' },
-  { key: 'mas2oul_is3afat', label: 'First Aid / Medical (مسؤول اسعافات أوّلية)' },
-  { key: 'mas2oul_al3ab_layliya', label: 'Night Games (مسؤول العاب ليليّة)' },
-  { key: 'ka2ed_haras', label: 'Guard / Security Chief (قائد حرس)' },
+const BASE_STAFF_ROLES = [
+  { key: 'ka2ed_mouskhayyam', campLabel: 'Camp Leader (قائد المخيِّم)', actLabel: 'Activity Leader (قائد النشاط)' },
+  { key: 'mousa3ed_ka2ed_mouskhayyam', campLabel: 'Assistant Leader (مساعد قائد المخيِّم)', actLabel: 'Assistant Leader (مساعد قائد النشاط)' },
+  { key: 'amin_serr_mouskhayyam', campLabel: 'Secretary (أمين سرّ المخيِّم)', actLabel: 'Secretary (أمين سرّ النشاط)' },
+  { key: 'amin_sandou2_mouskhayyam', campLabel: 'Treasurer (أمين صندوق المخيِّم)', actLabel: 'Treasurer (أمين صندوق النشاط)' },
+  { key: 'amin_tejhizet', campLabel: 'Logistics & Equipment (أمين تجهيزات)', actLabel: 'Logistics & Equipment (أمين تجهيزات)' },
+  { key: 'mas2oul_matbakh', campLabel: 'Kitchen & Supplies (مسؤول المؤونة والتموين)', actLabel: 'Kitchen & Supplies (مسؤول المؤونة والتموين)' },
+  { key: 'mas2oul_khedmet', campLabel: 'Services & First Aid (مسؤول الخدمات والخدمة)', actLabel: 'Services & First Aid (مسؤول الخدمات والخدمة)' },
+  { key: 'mas2oul_saharat', campLabel: 'Campfire & Evenings (مسؤول السهرات والأنشطة)', actLabel: 'Campfire & Evenings (مسؤول السهرات والأنشطة)' },
 ]
+
+function getRoleLabel(roleKey: string, eventType: string): string {
+  const isCamp = eventType === 'camp'
+  const found = BASE_STAFF_ROLES.find((r) => r.key === roleKey)
+  if (found) return isCamp ? found.campLabel : found.actLabel
+  return roleKey
+}
 
 const EXPENSE_CATEGORIES = [
   { key: 'food', label: 'Food & Kitchen (المطبخ والتغذية)' },
@@ -230,6 +224,53 @@ export default function EventWorkspace({
 
     return Object.values(map)
   }, [eventItem.event_participants, troops, sectionFilter])
+
+  // Treasury & Transaction states
+  const [isFeeCollectionsOpen, setIsFeeCollectionsOpen] = useState(false)
+  const [isLogTransactionModalOpen, setIsLogTransactionModalOpen] = useState(false)
+  const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense')
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash')
+
+  // Single Role Editing State
+  const [singleEditingRoleKey, setSingleEditingRoleKey] = useState<string | null>(null)
+  const [singleSelectedProfileId, setSingleSelectedProfileId] = useState<string>('')
+
+  const handleSaveSingleRole = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!singleEditingRoleKey) return
+    setLoading(true)
+
+    // Delete existing staff row for this single role
+    await supabase
+      .from('event_staff')
+      .delete()
+      .eq('event_id', eventItem.id)
+      .eq('event_role', singleEditingRoleKey)
+
+    // Insert new staff assignment if leader selected
+    if (singleSelectedProfileId) {
+      await supabase.from('event_staff').insert({
+        event_id: eventItem.id,
+        profile_id: singleSelectedProfileId,
+        event_role: singleEditingRoleKey,
+        attendance_status: 'present',
+      })
+    }
+
+    // Refresh staff
+    const { data: updatedStaff } = await supabase
+      .from('event_staff')
+      .select('*, profiles(full_name)')
+      .eq('event_id', eventItem.id)
+
+    if (updatedStaff) {
+      setEventItem((prev) => ({ ...prev, event_staff: updatedStaff }))
+    }
+
+    setLoading(false)
+    setSingleEditingRoleKey(null)
+    showStatus('Role updated successfully!', 'success')
+  }
 
   // ── Edit Event Details Controls ───────────────────────────────────────────
   const [isEditEventModalOpen, setIsEditEventModalOpen] = useState(false)
@@ -352,9 +393,6 @@ export default function EventWorkspace({
 
   const filteredGroupMembers = useMemo(() => {
     return allMembers.filter((m) => {
-      if (eventItem.scope === 'troop' && eventItem.troop_id && m.troop_id !== eventItem.troop_id) {
-        return false
-      }
       if (rosterTroopFilter !== 'all' && m.troop_id !== rosterTroopFilter) {
         return false
       }
@@ -364,7 +402,7 @@ export default function EventWorkspace({
       }
       return true
     })
-  }, [allMembers, eventItem, rosterTroopFilter, rosterSearch])
+  }, [allMembers, rosterTroopFilter, rosterSearch])
 
   const handleToggleMemberRoster = async (member: Member) => {
     const isEnrolled = currentParticipantMemberIds.has(member.id)
@@ -404,8 +442,20 @@ export default function EventWorkspace({
     showStatus('Scout removed from event roster.', 'success')
   }
 
-  // Participant updates (Attendance, Consent, Fee)
+  const [updatingParticipantIds, setUpdatingParticipantIds] = useState<Record<string, boolean>>({})
+
+  // Participant updates (Attendance, Consent, Fee) - Optimistic UI + Loading State
   const updateParticipant = async (participantId: string, updates: Partial<EventParticipant>) => {
+    // Optimistic UI state update immediately
+    setEventItem((prev) => ({
+      ...prev,
+      event_participants: (prev.event_participants || []).map((p) =>
+        p.id === participantId ? { ...p, ...updates } : p
+      ),
+    }))
+
+    setUpdatingParticipantIds((prev) => ({ ...prev, [participantId]: true }))
+
     const { data: updated, error } = await supabase
       .from('event_participants')
       .update(updates)
@@ -413,11 +463,19 @@ export default function EventWorkspace({
       .select('*, members(id, first_name, last_name, troop_id, current_rank)')
       .single()
 
+    setUpdatingParticipantIds((prev) => {
+      const next = { ...prev }
+      delete next[participantId]
+      return next
+    })
+
     if (!error && updated) {
-      const newParticipants = (eventItem.event_participants || []).map((p) =>
-        p.id === participantId ? updated : p
-      )
-      setEventItem((prev) => ({ ...prev, event_participants: newParticipants }))
+      setEventItem((prev) => ({
+        ...prev,
+        event_participants: (prev.event_participants || []).map((p) =>
+          p.id === participantId ? updated : p
+        ),
+      }))
     }
   }
 
@@ -431,14 +489,18 @@ export default function EventWorkspace({
     if (!expDesc || !expAmount) return
 
     const amt = parseFloat(expAmount)
-    if (isNaN(amt) || amt <= 0) return showStatus('Please enter a valid expense amount.', 'error')
+    if (isNaN(amt) || amt <= 0) return showStatus('Please enter a valid amount.', 'error')
+
+    const isIncome = transactionType === 'income'
+    const categoryToSave = isIncome ? `income_${paymentMethod}` : expCategory
+    const descriptionToSave = isIncome ? `[INCOME: ${paymentMethod.toUpperCase()}] ${expDesc}` : expDesc
 
     const { data: expData, error } = await supabase
       .from('event_expenses')
       .insert({
         event_id: eventItem.id,
-        category: expCategory,
-        description: expDesc,
+        category: categoryToSave,
+        description: descriptionToSave,
         amount: amt,
         logged_by: userProfileId,
       })
@@ -450,7 +512,8 @@ export default function EventWorkspace({
       setEventItem((prev) => ({ ...prev, event_expenses: newExpenses }))
       setExpDesc('')
       setExpAmount('')
-      showStatus('Expense logged successfully.', 'success')
+      setIsLogTransactionModalOpen(false)
+      showStatus(isIncome ? 'Income logged successfully!' : 'Expense logged successfully.', 'success')
     }
   }
 
@@ -460,20 +523,51 @@ export default function EventWorkspace({
     setEventItem((prev) => ({ ...prev, event_expenses: newExpenses }))
   }
 
-  // ── Documents ──────────────────────────────────────────────────────────────
+  // ── Documents & Direct Storage Upload ──────────────────────────────────────
   const [docTitle, setDocTitle] = useState('')
   const [docUrl, setDocUrl] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
 
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!docTitle || !docUrl) return
+    if (!docTitle.trim()) return showStatus('Please enter a document title.', 'error')
+
+    let finalFileUrl = docUrl.trim()
+
+    if (selectedFile) {
+      setIsUploadingFile(true)
+      const fileExt = selectedFile.name.split('.').pop()
+      const fileName = `${eventItem.id}/${Date.now()}_${selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from('event-documents')
+        .upload(fileName, selectedFile, { upsert: true })
+
+      if (uploadErr) {
+        setIsUploadingFile(false)
+        console.warn('Storage upload error fallback:', uploadErr)
+        if (!finalFileUrl) {
+          return showStatus(`Direct storage upload notice: ${uploadErr.message}. Please paste file URL or Google Drive link below.`, 'error')
+        }
+      } else {
+        const { data: publicUrlData } = supabase.storage
+          .from('event-documents')
+          .getPublicUrl(fileName)
+
+        finalFileUrl = publicUrlData?.publicUrl || finalFileUrl
+      }
+      setIsUploadingFile(false)
+    }
+
+    if (!finalFileUrl) return showStatus('Please select a file to upload or paste a valid link.', 'error')
 
     const { data: docData, error } = await supabase
       .from('event_documents')
       .insert({
         event_id: eventItem.id,
-        title: docTitle,
-        file_url: docUrl,
+        title: docTitle.trim(),
+        file_url: finalFileUrl,
         uploaded_by: userProfileId,
       })
       .select()
@@ -484,7 +578,19 @@ export default function EventWorkspace({
       setEventItem((prev) => ({ ...prev, event_documents: newDocs }))
       setDocTitle('')
       setDocUrl('')
-      showStatus('Document attached.', 'success')
+      setSelectedFile(null)
+      showStatus('Document uploaded and attached successfully!', 'success')
+    } else if (error) {
+      showStatus(error.message, 'error')
+    }
+  }
+
+  const handleDeleteDocument = async (docId: string) => {
+    const { error } = await supabase.from('event_documents').delete().eq('id', docId)
+    if (!error) {
+      const newDocs = (eventItem.event_documents || []).filter((x) => x.id !== docId)
+      setEventItem((prev) => ({ ...prev, event_documents: newDocs }))
+      showStatus('Document removed.', 'success')
     }
   }
 
@@ -502,41 +608,8 @@ export default function EventWorkspace({
   })
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
-      {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div onClick={() => setIsMobileOpen(false)} className="fixed inset-0 z-30 bg-black/40 md:hidden" />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-teal-900 text-white flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-      >
-        <DashboardSidebar
-          groupName={groupName}
-          currentRole={currentRole}
-          onClose={() => setIsMobileOpen(false)}
-          onLogout={handleLogout}
-        />
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto flex flex-col">
-        {/* Mobile Header */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between md:justify-end">
-          <button className="md:hidden text-teal-900 p-1" onClick={() => setIsMobileOpen(true)}>
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="text-right">
-            <span className="text-xs text-slate-400 font-semibold block uppercase">Logged in as</span>
-            <span className="text-sm font-bold text-teal-750">{userName}</span>
-          </div>
-        </header>
-
-        <div className="px-3 sm:px-6 py-4 flex-1 max-w-7xl w-full mx-auto space-y-4">
-          {statusMessage && (
+    <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+      {statusMessage && (
             <div
               className={`p-4 rounded-xl border text-sm text-center ${
                 statusMessage.type === 'success'
@@ -595,7 +668,7 @@ export default function EventWorkspace({
             <div className="bg-teal-50 border border-teal-200 text-teal-900 text-xs px-4 py-2.5 rounded-xl font-medium flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 shrink-0 text-teal-700" />
               <span>
-                Role Scoped Access Active: You are assigned as <strong>{userAssignedRoles.map((r) => EVENT_STAFF_ROLES.find((s) => s.key === r)?.label).join(', ')}</strong>. Tabs have been tailored for your responsibilities.
+                Role Scoped Access Active: You are assigned as <strong>{userAssignedRoles.map((r) => getRoleLabel(r, eventItem.event_type)).join(', ')}</strong>. Tabs have been tailored for your responsibilities.
               </span>
             </div>
           )}
@@ -623,7 +696,9 @@ export default function EventWorkspace({
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Event Staff Hierarchy & Leadership (هيكلية المخيِّم)</h3>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Event Staff Hierarchy ({eventItem.event_type === 'camp' ? 'هيكلية المخيّم' : 'هيكلية النشاط'})
+                  </h3>
                   <p className="text-xs text-slate-500">Official leaders assigned to perform camp/event management duties.</p>
                 </div>
                 {isCampLeader && (
@@ -632,17 +707,32 @@ export default function EventWorkspace({
                     className="inline-flex items-center gap-1.5 bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition-colors shrink-0"
                   >
                     <Edit className="h-4 w-4" />
-                    Edit Hierarchy (تعديل الهيكلية)
+                    Edit All Roles
                   </button>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {EVENT_STAFF_ROLES.map((r) => {
+                {BASE_STAFF_ROLES.map((r) => {
+                  const label = getRoleLabel(r.key, eventItem.event_type)
                   const assigned = (eventItem.event_staff || []).find((s) => s.event_role === r.key)
                   return (
                     <div key={r.key} className={`rounded-xl p-4 flex flex-col justify-between border ${assigned ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/50 border-slate-150 opacity-75'}`}>
-                      <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider">{r.label}</span>
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider">{label}</span>
+                        {isCampLeader && (
+                          <button
+                            onClick={() => {
+                              setSingleSelectedProfileId(assigned?.profile_id || '')
+                              setSingleEditingRoleKey(r.key)
+                            }}
+                            className="p-1 text-slate-400 hover:text-teal-700 rounded transition-colors"
+                            title="Edit this role"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-sm font-bold text-slate-900 mt-2">
                         {assigned?.profiles?.full_name || <span className="text-slate-400 italic text-xs font-normal">Unassigned</span>}
                       </p>
@@ -659,8 +749,10 @@ export default function EventWorkspace({
               <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Edit Event Hierarchy (تعديل هيكلية الفعالية)</h3>
-                    <p className="text-xs text-slate-500">Assign leaders to official camp/event staff roles.</p>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Edit Staff Roles ({eventItem.event_type === 'camp' ? 'هيكلية المخيّم' : 'هيكلية النشاط'})
+                    </h3>
+                    <p className="text-xs text-slate-500">Assign leaders to official staff roles 1-by-1 or for all roles.</p>
                   </div>
                   <button onClick={() => setIsEditHierarchyModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                     <X className="h-5 w-5" />
@@ -669,9 +761,9 @@ export default function EventWorkspace({
 
                 <form onSubmit={handleSaveHierarchy} className="space-y-4 flex-1 overflow-y-auto pr-1">
                   <div className="space-y-3">
-                    {EVENT_STAFF_ROLES.map((r) => (
-                      <div key={r.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
-                        <label className="text-xs font-bold text-teal-900 sm:w-1/2">{r.label}</label>
+                    {BASE_STAFF_ROLES.map((r) => (
+                      <div key={r.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label className="text-xs font-bold text-teal-900 sm:w-1/2">{getRoleLabel(r.key, eventItem.event_type)}</label>
                         <select
                           value={hierarchyAssignments[r.key] || ''}
                           onChange={(e) => setHierarchyAssignments((prev) => ({ ...prev, [r.key]: e.target.value }))}
@@ -707,6 +799,58 @@ export default function EventWorkspace({
             </div>
           )}
 
+          {/* ── EDIT 1 SINGLE ROLE MODAL ────────────────────────────────────── */}
+          {singleEditingRoleKey && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Assign {getRoleLabel(singleEditingRoleKey, eventItem.event_type)}
+                    </h3>
+                    <p className="text-xs text-slate-500">Select a leader specifically for this role.</p>
+                  </div>
+                  <button onClick={() => setSingleEditingRoleKey(null)} className="text-slate-400 hover:text-slate-600">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveSingleRole} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Leader Assignment</label>
+                    <select
+                      value={singleSelectedProfileId}
+                      onChange={(e) => setSingleSelectedProfileId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
+                    >
+                      <option value="">-- Unassigned --</option>
+                      {leaders.map((l) => (
+                        <option key={l.id} value={l.id}>{l.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSingleEditingRoleKey(null)}
+                      className="flex-1 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-2 bg-teal-800 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow transition-colors"
+                    >
+                      {loading ? 'Saving…' : 'Save Role'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* ── TAB 2: SCOUT ROSTER & CONSENT ───────────────────────────────────── */}
           {activeTab === 'roster' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
@@ -727,12 +871,7 @@ export default function EventWorkspace({
                     >
                       All Sections
                     </button>
-                    <button
-                      onClick={() => setSectionFilter('leadership')}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${sectionFilter === 'leadership' ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'}`}
-                    >
-                      👑 Leadership (القادة)
-                    </button>
+
                     {troops.map((t) => (
                       <button
                         key={t.id}
@@ -758,49 +897,7 @@ export default function EventWorkspace({
 
               {/* Roster Grouped by Troop / Section */}
               <div className="space-y-6">
-                {/* ── Leadership & Council Attendance Block ── */}
-                {(sectionFilter === 'all' || sectionFilter === 'leadership') && (eventItem.event_staff || []).length > 0 && (
-                  <div className="border border-amber-200 rounded-xl overflow-hidden shadow-sm">
-                    <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 flex justify-between items-center">
-                      <span className="font-extrabold text-xs text-amber-950 uppercase tracking-wider flex items-center gap-2">
-                        👑 Leadership & Council Section (القادة والقيادة) ({(eventItem.event_staff || []).length} Leaders)
-                      </span>
-                      <span className="text-xs text-amber-900 font-semibold">
-                        Present: {(eventItem.event_staff || []).filter((s) => s.attendance_status !== 'absent').length}
-                      </span>
-                    </div>
 
-                    <div className="divide-y divide-amber-100">
-                      {(eventItem.event_staff || []).map((s) => {
-                        const roleObj = EVENT_STAFF_ROLES.find((r) => r.key === s.event_role)
-                        const isPresent = s.attendance_status !== 'absent'
-
-                        return (
-                          <div key={s.id || s.event_role} className="p-3.5 bg-white flex items-center justify-between gap-3 text-xs">
-                            <div>
-                              <p className="font-bold text-slate-900 text-sm">
-                                {s.profiles?.full_name || 'Leader'}
-                              </p>
-                              <span className="inline-block mt-0.5 px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                                {roleObj?.label || s.event_role}
-                              </span>
-                            </div>
-
-                            <div>
-                              <button
-                                disabled={!isCampSecretary}
-                                onClick={() => updateStaffAttendance(s.id!, isPresent ? 'absent' : 'present')}
-                                className={`px-3 py-1 rounded-lg font-bold border text-xs transition-colors ${isPresent ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                              >
-                                {isPresent ? 'Attended' : 'Absent'}
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
                 {participantsGroupedByTroop.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 text-xs italic">
                     No scout participants found for the selected section filter.
@@ -835,11 +932,20 @@ export default function EventWorkspace({
                               {/* Attendance Toggle Only */}
                               <div>
                                 <button
-                                  disabled={!isCampSecretary}
+                                  disabled={!isCampSecretary || updatingParticipantIds[p.id!]}
                                   onClick={() => updateParticipant(p.id!, { attendance_status: p.attendance_status === 'present' ? 'absent' : 'present' })}
-                                  className={`px-4 py-1.5 rounded-lg font-bold border text-xs transition-colors ${p.attendance_status === 'present' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                  className={`px-4 py-1.5 rounded-lg font-bold border text-xs transition-colors inline-flex items-center gap-1.5 ${p.attendance_status === 'present' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
                                 >
-                                  {p.attendance_status === 'present' ? '✓ Attended' : '✗ Absent'}
+                                  {updatingParticipantIds[p.id!] ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      <span>Updating…</span>
+                                    </>
+                                  ) : p.attendance_status === 'present' ? (
+                                    '✓ Attended'
+                                  ) : (
+                                    '✗ Absent'
+                                  )}
                                 </button>
                               </div>
 
@@ -952,118 +1058,116 @@ export default function EventWorkspace({
                 <p className="text-xs text-slate-500">Managed by Camp Treasurer ({isCampTreasurer ? 'You have edit access' : 'Read-only'}).</p>
               </div>
 
-              {/* Financial Balance Summary */}
+              {/* Financial Balance Summary (Mobile Friendly) */}
               {(() => {
-                const totalCollected = (eventItem.event_participants || []).reduce((acc, p) => acc + (p.fee_paid || 0), 0)
-                const totalExpenses = (eventItem.event_expenses || []).reduce((acc, e) => acc + (e.amount || 0), 0)
-                const netBalance = totalCollected - totalExpenses
+                const scoutFees = (eventItem.event_participants || []).reduce((acc, p) => acc + (p.fee_paid || 0), 0)
+                const otherIncome = (eventItem.event_expenses || [])
+                  .filter((e) => (e.category && e.category.startsWith('income_')) || (e.description && e.description.startsWith('[INCOME')))
+                  .reduce((acc, e) => acc + (e.amount || 0), 0)
+                const totalIncome = scoutFees + otherIncome
+
+                const totalExpenses = (eventItem.event_expenses || [])
+                  .filter((e) => !(e.category && e.category.startsWith('income_')) && !(e.description && e.description.startsWith('[INCOME')))
+                  .reduce((acc, e) => acc + (e.amount || 0), 0)
+
+                const netBalance = totalIncome - totalExpenses
+
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
-                      <span className="block text-xs uppercase font-bold text-emerald-800">Fees Collected</span>
-                      <span className="text-2xl font-extrabold text-emerald-700">${totalCollected}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl shadow-2xs">
+                      <span className="block text-[11px] uppercase font-bold text-emerald-800 tracking-wider">Total Income (إيرادات)</span>
+                      <span className="text-xl sm:text-2xl font-extrabold text-emerald-700 mt-1 block">+${totalIncome}</span>
                     </div>
-                    <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl">
-                      <span className="block text-xs uppercase font-bold text-rose-800">Total Expenses</span>
-                      <span className="text-2xl font-extrabold text-rose-700">${totalExpenses}</span>
+                    <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-2xl shadow-2xs">
+                      <span className="block text-[11px] uppercase font-bold text-rose-800 tracking-wider">Total Expenses (مصروفات)</span>
+                      <span className="text-xl sm:text-2xl font-extrabold text-rose-700 mt-1 block">-${totalExpenses}</span>
                     </div>
-                    <div className={`p-4 border rounded-2xl ${netBalance >= 0 ? 'bg-teal-50 border-teal-100 text-teal-900' : 'bg-amber-50 border-amber-100 text-amber-900'}`}>
-                      <span className="block text-xs uppercase font-bold">Net Camp Balance</span>
-                      <span className="text-2xl font-extrabold">${netBalance}</span>
+                    <div className={`p-3.5 border rounded-2xl shadow-2xs ${netBalance >= 0 ? 'bg-teal-50 border-teal-100 text-teal-900' : 'bg-amber-50 border-amber-100 text-amber-900'}`}>
+                      <span className="block text-[11px] uppercase font-bold tracking-wider">Net Camp Balance (صافي الصندوق)</span>
+                      <span className="text-xl sm:text-2xl font-extrabold mt-1 block">
+                        {netBalance >= 0 ? `+$${netBalance}` : `-$${Math.abs(netBalance)}`}
+                      </span>
                     </div>
                   </div>
                 )
               })()}
 
-              {/* Participant Fee Collections & Scout Payments */}
+              {/* Participant Fee Collections & Scout Payments (Collapsible) */}
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => setIsFeeCollectionsOpen(!isFeeCollectionsOpen)}
+                  className="w-full bg-slate-100 px-4 py-3 border-b border-slate-200 flex justify-between items-center text-left hover:bg-slate-150 transition-colors"
+                >
                   <span className="font-extrabold text-xs text-teal-900 uppercase tracking-wider flex items-center gap-2">
-                    💵 Scout Fee Collections (Fee per scout: ${eventItem.participant_fee})
+                    <span>💵 Scout Fee Collections (${eventItem.participant_fee} / scout)</span>
+                    <span className="text-[11px] font-normal text-slate-500">
+                      ({(eventItem.event_participants || []).filter((p) => p.fee_paid >= eventItem.participant_fee && eventItem.participant_fee > 0).length}/{(eventItem.event_participants || []).length} Paid)
+                    </span>
                   </span>
-                  <span className="text-xs text-slate-500 font-semibold">
-                    {(eventItem.event_participants || []).filter((p) => p.fee_paid >= eventItem.participant_fee && eventItem.participant_fee > 0).length} Paid / {(eventItem.event_participants || []).length} Total Enrolled
+                  <span className="text-xs font-bold text-teal-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    {isFeeCollectionsOpen ? '▲ Hide List' : '▼ Expand Collections'}
                   </span>
-                </div>
+                </button>
 
-                <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                  {(eventItem.event_participants || []).length === 0 ? (
-                    <div className="p-4 text-center text-xs text-slate-400">No scouts enrolled in this event roster.</div>
-                  ) : (
-                    (eventItem.event_participants || []).map((p) => {
-                      const isFullyPaid = p.fee_paid >= eventItem.participant_fee && eventItem.participant_fee > 0
-                      const isPartial = p.fee_paid > 0 && !isFullyPaid
+                {isFeeCollectionsOpen && (
+                  <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {(eventItem.event_participants || []).length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400">No scouts enrolled in this event roster.</div>
+                    ) : (
+                      (eventItem.event_participants || []).map((p) => {
+                        const isFullyPaid = p.fee_paid >= eventItem.participant_fee && eventItem.participant_fee > 0
+                        const isPartial = p.fee_paid > 0 && !isFullyPaid
 
-                      return (
-                        <div key={p.id} className="p-3 bg-white flex items-center justify-between gap-3 text-xs">
-                          <div>
-                            <p className="font-bold text-slate-900 text-sm">
-                              {p.members?.first_name} {p.members?.last_name}
-                            </p>
-                            {p.members?.current_rank && (
-                              <p className="text-[10px] text-slate-400 font-semibold">{p.members.current_rank}</p>
-                            )}
-                          </div>
+                        return (
+                          <div key={p.id} className="p-3 bg-white flex items-center justify-between gap-3 text-xs">
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">
+                                {p.members?.first_name} {p.members?.last_name}
+                              </p>
+                              {p.members?.current_rank && (
+                                <p className="text-[10px] text-slate-400 font-semibold">{p.members.current_rank}</p>
+                              )}
+                            </div>
 
-                          <div className="flex items-center gap-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${isFullyPaid ? 'bg-emerald-100 text-emerald-800' : isPartial ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}`}>
-                              {isFullyPaid ? 'Paid' : isPartial ? 'Partial' : 'Unpaid'}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-slate-400 font-bold">$</span>
-                              <input
-                                disabled={!isCampTreasurer}
-                                type="number"
-                                value={p.fee_paid}
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0
-                                  const status = val >= eventItem.participant_fee ? 'paid' : (val > 0 ? 'partial' : 'unpaid')
-                                  updateParticipant(p.id!, { fee_paid: val, payment_status: status })
-                                }}
-                                className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none"
-                              />
+                            <div className="flex items-center gap-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${isFullyPaid ? 'bg-emerald-100 text-emerald-800' : isPartial ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}`}>
+                                {isFullyPaid ? 'Paid' : isPartial ? 'Partial' : 'Unpaid'}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400 font-bold">$</span>
+                                <input
+                                  disabled={!isCampTreasurer}
+                                  type="number"
+                                  value={p.fee_paid}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0
+                                    const status = val >= eventItem.participant_fee ? 'paid' : (val > 0 ? 'partial' : 'unpaid')
+                                    updateParticipant(p.id!, { fee_paid: val, payment_status: status })
+                                  }}
+                                  className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none"
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Log Expense Form */}
+              {/* Log Income / Expense Button */}
               {isCampTreasurer && (
-                <form onSubmit={handleAddExpense} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Log New Expense Item</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <select
-                      value={expCategory}
-                      onChange={(e) => setExpCategory(e.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
-                    >
-                      {EXPENSE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Expense Description (e.g. Bus rental)"
-                      value={expDesc}
-                      onChange={(e) => setExpDesc(e.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none"
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        placeholder="Amount ($)"
-                        value={expAmount}
-                        onChange={(e) => setExpAmount(e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none"
-                      />
-                      <button type="submit" className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 shadow">
-                        Log Expense
-                      </button>
-                    </div>
-                  </div>
-                </form>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsLogTransactionModalOpen(true)}
+                    className="inline-flex items-center gap-2 bg-teal-800 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition-all"
+                  >
+                    <Plus className="h-4 w-4" /> Log Income / Expense (إضافة إيراد أو مصروف)
+                  </button>
+                </div>
               )}
 
               {/* Expenses Table */}
@@ -1073,26 +1177,31 @@ export default function EventWorkspace({
                   <span>Amount ($)</span>
                 </div>
                 {(eventItem.event_expenses || []).length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400">No expenses logged yet for this camp.</div>
+                  <div className="p-6 text-center text-xs text-slate-400">No financial transactions logged yet.</div>
                 ) : (
-                  (eventItem.event_expenses || []).map((exp) => (
-                    <div key={exp.id} className="p-3.5 bg-white flex items-center justify-between text-xs">
-                      <div>
-                        <span className="px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold uppercase mr-2.5">
-                          {exp.category}
-                        </span>
-                        <span className="font-semibold text-slate-900">{exp.description}</span>
+                  (eventItem.event_expenses || []).map((exp) => {
+                    const isIncome = (exp.category && exp.category.startsWith('income_')) || (exp.description && exp.description.startsWith('[INCOME'))
+                    return (
+                      <div key={exp.id} className="p-3.5 bg-white flex items-center justify-between text-xs gap-3">
+                        <div className="min-w-0">
+                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase mr-2.5 ${isIncome ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                            {isIncome ? '🟢 Income' : exp.category}
+                          </span>
+                          <span className="font-semibold text-slate-900 truncate">{exp.description}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`font-extrabold text-sm ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {isIncome ? `+$${exp.amount}` : `-$${exp.amount}`}
+                          </span>
+                          {isCampTreasurer && (
+                            <button onClick={() => handleDeleteExpense(exp.id!)} className="text-slate-400 hover:text-rose-600">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-extrabold text-rose-600 text-sm">${exp.amount}</span>
-                        {isCampTreasurer && (
-                          <button onClick={() => handleDeleteExpense(exp.id!)} className="text-slate-400 hover:text-rose-600">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -1106,46 +1215,109 @@ export default function EventWorkspace({
                 <p className="text-xs text-slate-500">Store and access location maps, permission slips, program schedules, and official files.</p>
               </div>
 
-              <form onSubmit={handleAddDocument} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Attach Document / Link</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Document Title (e.g. Camp Schedule PDF)"
-                    value={docTitle}
-                    onChange={(e) => setDocTitle(e.target.value)}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none"
-                  />
+              <form onSubmit={handleAddDocument} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <UploadCloud className="h-4 w-4 text-teal-700" />
+                  Upload & Attach Document / Google Drive Link
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Document Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Camp Schedule PDF / Consent Forms"
+                      value={docTitle}
+                      onChange={(e) => setDocTitle(e.target.value)}
+                      required
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload File from Device</label>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) {
+                          setSelectedFile(f)
+                          if (!docTitle) setDocTitle(f.name.replace(/\.[^/.]+$/, ''))
+                        }
+                      }}
+                      className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">Or Paste Google Drive / External URL Link</label>
                   <div className="flex gap-2">
                     <input
                       type="url"
-                      placeholder="Document URL / Link (e.g. https://...)"
+                      placeholder="https://drive.google.com/file/d/..."
                       value={docUrl}
                       onChange={(e) => setDocUrl(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none"
+                      className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
                     />
-                    <button type="submit" className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 shadow">
-                      Attach
+                    <button
+                      type="submit"
+                      disabled={isUploadingFile}
+                      className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-lg text-xs shrink-0 shadow disabled:bg-slate-300 transition-colors flex items-center gap-1.5"
+                    >
+                      {isUploadingFile ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Uploading…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Attach Document</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
               </form>
 
-              <div className="border border-slate-200 rounded-xl divide-y divide-slate-100">
+              <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
                 {(eventItem.event_documents || []).length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400">No documents attached yet.</div>
+                  <div className="p-8 text-center text-xs text-slate-400">No documents attached to this event yet.</div>
                 ) : (
                   (eventItem.event_documents || []).map((doc) => (
-                    <div key={doc.id} className="p-4 bg-white flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-900 text-sm">{doc.title}</span>
-                      <a
-                        href={doc.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg hover:underline"
-                      >
-                        View / Open File <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
+                    <div key={doc.id} className="p-4 bg-white flex items-center justify-between gap-3 text-xs hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 rounded-lg bg-teal-50 text-teal-800 shrink-0">
+                          <Paperclip className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-bold text-slate-900 text-sm truncate block">{doc.title}</span>
+                          <span className="text-[10px] text-slate-400 truncate block">{doc.file_url}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <a
+                          href={doc.file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
+                        >
+                          Open File <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+
+                        {isCampSecretary && doc.id && (
+                          <button
+                            type="button"
+                            onClick={() => doc.id && handleDeleteDocument(doc.id)}
+                            className="p-1.5 text-slate-300 hover:text-rose-600 transition-colors"
+                            title="Delete Document"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
@@ -1297,8 +1469,119 @@ export default function EventWorkspace({
               </div>
             </div>
           )}
-        </div>
-      </main>
-    </div>
+
+          {/* ── LOG TRANSACTION MODAL (Income vs Expense) ────────────────────── */}
+          {isLogTransactionModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Log Financial Transaction</h3>
+                    <p className="text-xs text-slate-500">Log incoming money or outgoing expenses for this event.</p>
+                  </div>
+                  <button onClick={() => setIsLogTransactionModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    handleAddExpense(e)
+                    setIsLogTransactionModalOpen(false)
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setTransactionType('expense')}
+                      className={`py-2 rounded-lg transition-colors ${transactionType === 'expense' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600'}`}
+                    >
+                      🔻 Expense (مصروفات)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTransactionType('income')}
+                      className={`py-2 rounded-lg transition-colors ${transactionType === 'income' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600'}`}
+                    >
+                      🟢 Income (إيرادات / دخل)
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Method / Source</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
+                    >
+                      <option value="cash">💵 Cash (نقداً)</option>
+                      <option value="wish">📱 Wish Money (Wish)</option>
+                      <option value="omt">🏦 OMT</option>
+                      <option value="bank">🏛️ Bank Transfer (تحويل بنكي)</option>
+                      <option value="donation">🎁 External Donation (تبرع غريب)</option>
+                      <option value="fees">🎟️ Scout Roster Fees (اشتراكات الأفراد)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
+                    <select
+                      value={expCategory}
+                      onChange={(e) => setExpCategory(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
+                    >
+                      {EXPENSE_CATEGORIES.map((c) => (
+                        <option key={c.key} value={c.key}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Bus transportation, Food purchase, Wish transfer"
+                      value={expDesc}
+                      onChange={(e) => setExpDesc(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Amount ($ USD)</label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      step="any"
+                      placeholder="0.00"
+                      value={expAmount}
+                      onChange={(e) => setExpAmount(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsLogTransactionModalOpen(false)}
+                      className="flex-1 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 bg-teal-800 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow transition-colors"
+                    >
+                      Log Transaction
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+    </DashboardShell>
   )
 }

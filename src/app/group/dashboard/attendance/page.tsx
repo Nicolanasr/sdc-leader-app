@@ -97,6 +97,29 @@ export default async function AttendancePage() {
     recordsData = records || []
   }
 
+  // Also fetch leadership event staff attendance records
+  if (eventIdsList.length > 0) {
+    const { data: staffData } = await supabase
+      .from('event_staff')
+      .select('id, event_id, profile_id, attendance_status, excuse_reason')
+      .in('event_id', eventIdsList)
+
+    if (staffData && staffData.length > 0) {
+      for (const st of staffData) {
+        const matchingSession = sessionsData.find((s) => s.event_id === st.event_id)
+        if (matchingSession) {
+          recordsData.push({
+            id: `staff_${st.id}`,
+            attendance_id: matchingSession.id,
+            member_id: st.profile_id,
+            status: st.attendance_status || 'present',
+            excuse_reason: st.excuse_reason || null,
+          })
+        }
+      }
+    }
+  }
+
   // Fetch logged in user full name
   const { data: userProfile } = await supabase
     .from('profiles')

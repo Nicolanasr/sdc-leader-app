@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import DashboardShell from '../DashboardShell'
 import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2 } from 'lucide-react'
 
 interface LeaderRole {
@@ -77,6 +78,7 @@ export default function LeadersManagement({
   const canManage = currentRole === 'chef_groupe' || currentRole === 'amin_serr_group'
 
   // Onboarding states
+  const [showOnboardModal, setShowOnboardModal] = useState(false)
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
   const [rank, setRank] = useState(ranks[0]?.name || '')
@@ -85,6 +87,7 @@ export default function LeadersManagement({
   const [selectedResps, setSelectedResps] = useState<string[]>([])
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [troopId, setTroopId] = useState('')
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; pass: string } | null>(null)
 
   const [loading, setLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
@@ -321,93 +324,8 @@ export default function LeadersManagement({
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
-      {/* Mobile Menu Backdrop */}
-      {isMobileOpen && (
-        <div
-          onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 md:hidden transition-opacity"
-        />
-      )}
-
-      {/* Sidebar navigation */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-teal-900 text-white flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-      >
-        <div>
-          <div className="p-6 border-b border-teal-800 flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">{groupName}</h1>
-              <p className="text-xs text-teal-300 mt-1">Group Dashboard</p>
-            </div>
-            <button className="md:hidden text-teal-200" onClick={() => setIsMobileOpen(false)}>
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-          <nav className="p-4 space-y-1">
-            <Link
-              href="/group/dashboard"
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-teal-100 hover:bg-teal-800 hover:text-white transition-colors"
-            >
-              <Landmark className="h-4 w-4" />
-              Dashboard Overview
-            </Link>
-            <Link
-              href="/group/dashboard/leaders"
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold bg-teal-700 text-white"
-            >
-              <Users className="h-4 w-4" />
-              Leaders & Council
-            </Link>
-            <Link
-              href="/group/dashboard/troops"
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-teal-100 hover:bg-teal-800 hover:text-white transition-colors"
-            >
-              <Layers className="h-4 w-4" />
-              Units / Troops
-            </Link>
-            <Link
-              href="/group/dashboard/members"
-              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-teal-100 hover:bg-teal-800 hover:text-white transition-colors"
-            >
-              <Users className="h-4 w-4" />
-              Youth Roster
-            </Link>
-            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-teal-400 uppercase tracking-wider">
-              Modules (Read-Only)
-            </div>
-            <div className="px-4 py-2 text-xs text-teal-300 italic">
-              Financials and inventory sub-pages will appear here in the next dev phase.
-            </div>
-          </nav>
-        </div>
-        <div className="p-4 border-t border-teal-800">
-          <button
-            onClick={handleLogout}
-            className="w-full text-center px-4 py-2 rounded-lg text-sm font-semibold text-teal-200 hover:bg-teal-800 hover:text-white transition-colors"
-          >
-            Log Out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main dashboard content */}
-      <main className="flex-1 overflow-y-auto flex flex-col">
-        {/* Header toolbar for Mobile */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between md:justify-end">
-          <button className="md:hidden text-teal-900 p-1 focus:outline-none" onClick={() => setIsMobileOpen(true)}>
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="text-right">
-            <span className="text-xs text-slate-400 font-semibold block uppercase">Logged in as</span>
-            <span className="text-sm font-bold text-teal-750">{userName || currentRole.replace(/_/g, ' ')}</span>
-          </div>
-        </header>
-
-        <div className="px-3 sm:px-6 py-4 flex-1 space-y-4">
-          {statusMessage && (
+    <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        {statusMessage && (
             <div
               className={`mb-6 p-4 rounded-xl border text-sm text-center ${
                 statusMessage.type === 'success'
@@ -419,16 +337,30 @@ export default function LeadersManagement({
             </div>
           )}
 
-          <header className="mb-8">
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Leaders & Council</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Manage the adult leaders, secretary, treasurer, and troop chiefs in {groupName}.
-            </p>
+          <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Leaders & Council</h2>
+            {canManage && (
+              <button
+                onClick={() => {
+                  setEmail('')
+                  setFullName('')
+                  setSelectedResps([])
+                  setSelectedRoles([])
+                  setTroopId('')
+                  setCreatedCredentials(null)
+                  setShowOnboardModal(true)
+                }}
+                className="inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-600 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors text-xs"
+              >
+                <Plus className="h-4 w-4" />
+                Invite / Onboard Leader
+              </button>
+            )}
           </header>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="space-y-6">
             {/* Leaders Directory List */}
-            <div className="xl:col-span-2 space-y-6">
+            <div className="w-full space-y-6">
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                   <h3 className="font-bold text-slate-800">Registered Council & Leaders</h3>
@@ -598,122 +530,132 @@ export default function LeadersManagement({
               </div>
             )}
 
-            {/* Invitation Panel */}
-            {canManage && (
-              <div className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm self-start">
-                <h3 className="text-lg font-semibold text-teal-800 mb-4">Invite New Leader</h3>
-                <p className="text-xs text-slate-500 mb-6">
-                  Onboard a new leader mapping multiple roles and responsibilities. System generates their temporary password instantly.
-                </p>
-                <form onSubmit={handleOnboardLeader} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Full Name</label>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      placeholder="e.g. Nicolas Nasr"
-                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
-                    />
-                  </div>
+      {/* Onboard Leader Modal */}
+      {showOnboardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white w-full max-w-xl p-4 sm:p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4 max-h-[88vh] overflow-y-auto my-auto relative">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">Onboard & Invite New Leader</h3>
+              <button onClick={() => setShowOnboardModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Email Address</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder="e.g. leader@example.com"
-                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Leader Rank</label>
-                    <select
-                      value={rank}
-                      onChange={(e) => setRank(e.target.value)}
-                      required
-                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
-                    >
-                      {ranks.map((r) => (
-                        <option key={r.id} value={r.name}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Multi-select Responsibilities Checkboxes */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Select Responsibilities (Choose many)</label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50/50">
-                      {responsibilities.map((r) => (
-                        <label key={r.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:text-teal-800">
-                          <input
-                            type="checkbox"
-                            checked={selectedResps.includes(r.id)}
-                            onChange={() => toggleResp(r.id)}
-                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-                          />
-                          <span>{r.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Multi-select System Roles Checkboxes */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Select System Permission Roles (Choose many)</label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50/50">
-                      {roles.map((r) => (
-                        <label key={r.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:text-teal-800">
-                          <input
-                            type="checkbox"
-                            checked={selectedRoles.includes(r.name)}
-                            onChange={() => toggleRole(r.name)}
-                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-                          />
-                          <span>{formatRole(r.name)}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {isTroopScoped && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700">Select Target Troop</label>
-                      <select
-                        value={troopId}
-                        onChange={(e) => setTroopId(e.target.value)}
-                        required
-                        className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
-                      >
-                        <option value="">-- Choose Unit/Troop --</option>
-                        {troops.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-teal-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    Onboard Leader & Generate Credentials
-                  </button>
-                </form>
+            <form onSubmit={handleOnboardLeader} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Full Name</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  placeholder="e.g. Nicolas Nasr"
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none sm:text-sm"
+                />
               </div>
-            )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="e.g. leader@example.com"
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Leader Rank</label>
+                <select
+                  value={rank}
+                  onChange={(e) => setRank(e.target.value)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none sm:text-sm"
+                >
+                  {ranks.map((r) => (
+                    <option key={r.id} value={r.name}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Responsibilities</label>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+                  {responsibilities.map((r) => (
+                    <label key={r.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedResps.includes(r.id)}
+                        onChange={() => toggleResp(r.id)}
+                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      />
+                      <span>{r.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">System Permission Roles</label>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+                  {roles.map((r) => (
+                    <label key={r.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedRoles.includes(r.name)}
+                        onChange={() => toggleRole(r.name)}
+                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      />
+                      <span>{formatRole(r.name)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {isTroopScoped && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700">Target Troop Unit</label>
+                  <select
+                    value={troopId}
+                    onChange={(e) => setTroopId(e.target.value)}
+                    required
+                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none sm:text-sm"
+                  >
+                    <option value="">-- Choose Unit/Troop --</option>
+                    {troops.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-100 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOnboardModal(false)}
+                  className="w-1/2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300"
+                >
+                  {loading ? 'Onboarding…' : 'Onboard Leader'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </main>
-    </div>
+      )}
+          </div>
+    </DashboardShell>
   )
 }

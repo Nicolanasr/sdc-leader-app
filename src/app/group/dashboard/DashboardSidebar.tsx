@@ -23,13 +23,15 @@ const GROUP_ADMIN_ROLES = [
   'configurator',
 ]
 
-const navLink = (href: string, label: string, icon: React.ReactNode, active: boolean) => (
+const navLink = (href: string, label: string, icon: React.ReactNode, active: boolean, onClick?: () => void) => (
   <Link
     key={href}
     href={href}
-    className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+    prefetch={true}
+    onClick={onClick}
+    className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] ${
       active
-        ? 'bg-teal-700 text-white'
+        ? 'bg-teal-700 text-white shadow-xs'
         : 'text-teal-100 hover:bg-teal-800 hover:text-white'
     }`}
   >
@@ -59,18 +61,18 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
 
       {/* Nav links */}
       <nav className="p-4 space-y-1 flex-1">
-        {navLink('/group/dashboard', 'Dashboard Overview', <Landmark className="h-4 w-4" />, pathname === '/group/dashboard')}
+        {navLink('/group/dashboard', 'Dashboard Overview', <Landmark className="h-4 w-4" />, pathname === '/group/dashboard', onClose)}
 
         {isGroupAdmin && (
           <>
-            {navLink('/group/dashboard/leaders', 'Leaders & Council', <Users className="h-4 w-4" />, pathname === '/group/dashboard/leaders')}
-            {navLink('/group/dashboard/troops', 'Units / Troops', <Layers className="h-4 w-4" />, pathname === '/group/dashboard/troops')}
+            {navLink('/group/dashboard/leaders', 'Leaders & Council', <Users className="h-4 w-4" />, pathname === '/group/dashboard/leaders', onClose)}
+            {navLink('/group/dashboard/troops', 'Units / Troops', <Layers className="h-4 w-4" />, pathname === '/group/dashboard/troops', onClose)}
           </>
         )}
 
-        {navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members')}
-        {navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance')}
-        {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname === '/group/dashboard/events')}
+        {navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)}
+        {navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)}
+        {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname === '/group/dashboard/events', onClose)}
 
         <div className="pt-4 pb-2 px-4 text-xs font-semibold text-teal-400 uppercase tracking-wider">
           Modules (Read-Only)

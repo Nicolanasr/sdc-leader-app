@@ -21,6 +21,7 @@ interface EventCalendarProps {
 
 export default function EventCalendar({ events, onEventClick }: EventCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(new Date().toISOString().slice(0, 10))
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -28,7 +29,11 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
   // Month navigation handlers
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
-  const goToday = () => setCurrentDate(new Date())
+  const goToday = () => {
+    const today = new Date()
+    setCurrentDate(today)
+    setSelectedDateStr(today.toISOString().slice(0, 10))
+  }
 
   const monthLabel = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -109,16 +114,33 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
     }
   }
 
+  const getDotColor = (type: string) => {
+    switch (type) {
+      case 'camp':
+        return 'bg-teal-600'
+      case 'hike':
+        return 'bg-amber-600'
+      case 'activity':
+        return 'bg-sky-600'
+      case 'training':
+        return 'bg-purple-600'
+      default:
+        return 'bg-slate-600'
+    }
+  }
+
+  const selectedDayEvents = eventsByDay[selectedDateStr] || []
+
   return (
     <div className="space-y-4">
       {/* Calendar Header Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-100 p-4 rounded-xl border border-slate-200">
+      <div className="flex items-center justify-between gap-3 bg-slate-100 p-3 sm:p-4 rounded-xl border border-slate-200">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5 text-teal-800" />
           <h3 className="text-base font-extrabold text-slate-900">{monthLabel}</h3>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2">
           <button
             onClick={goToday}
             className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 shadow-sm transition-colors"
@@ -144,61 +166,10 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
         </div>
       </div>
 
-      {/* ── MOBILE VIEW: Touch-Friendly Mobile Agenda List ── */}
-      <div className="md:hidden space-y-3">
-        {events.length === 0 ? (
-          <div className="p-8 text-center bg-white border border-slate-200 rounded-xl text-slate-400 text-xs italic">
-            No events scheduled for this month.
-          </div>
-        ) : (
-          events.map((ev) => {
-            const dateStr = new Date(ev.start_time).toLocaleDateString('en-GB', {
-              weekday: 'short',
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })
-            const timeStr = new Date(ev.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
-            return (
-              <div
-                key={ev.id}
-                onClick={() => onEventClick(ev.id)}
-                className="bg-white border border-slate-200 active:border-teal-600 rounded-xl p-4 shadow-sm flex flex-col gap-2 cursor-pointer transition-all"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${getEventTypeBadge(ev.event_type)}`}>
-                    {ev.event_type}
-                  </span>
-                  <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md">
-                    {ev.scope === 'group' ? 'Group Event' : 'Troop Event'}
-                  </span>
-                </div>
-
-                <h4 className="font-extrabold text-slate-900 text-base">{ev.title}</h4>
-
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-teal-700" />
-                    <span>{dateStr} at {timeStr}</span>
-                  </div>
-                  {ev.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5 text-teal-700" />
-                      <span>{ev.location}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
-
-      {/* ── DESKTOP VIEW: Full 7-Column Grid ── */}
-      <div className="hidden md:block space-y-2">
+      {/* ── UNIFIED APPLE-STYLE CALENDAR GRID (Mobile & Desktop) ── */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 shadow-xs space-y-2">
         {/* Days of Week Header */}
-        <div className="grid grid-cols-7 gap-1 text-center font-extrabold text-xs text-slate-500 uppercase tracking-wider py-1">
+        <div className="grid grid-cols-7 gap-1 text-center font-extrabold text-xs text-slate-400 uppercase tracking-wider py-1">
           <div>Sun</div>
           <div>Mon</div>
           <div>Tue</div>
@@ -209,52 +180,129 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
         </div>
 
         {/* Calendar Days Grid */}
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
           {calendarDays.map(({ date, isCurrentMonth, isToday }, idx) => {
             const dayKey = date.toISOString().slice(0, 10)
             const dayEvents = eventsByDay[dayKey] || []
+            const isSelected = selectedDateStr === dayKey
 
             return (
               <div
                 key={idx}
-                className={`min-h-24 p-1.5 rounded-xl border flex flex-col justify-between transition-colors ${
-                  isCurrentMonth ? 'bg-white border-slate-200' : 'bg-slate-50/60 border-slate-150 text-slate-400'
-                } ${isToday ? 'ring-2 ring-teal-600 font-bold bg-teal-50/30' : ''}`}
+                onClick={() => setSelectedDateStr(dayKey)}
+                className={`min-h-12 sm:min-h-24 p-1 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                  isSelected
+                    ? 'bg-teal-50 border-teal-600 ring-2 ring-teal-600/30'
+                    : isCurrentMonth
+                    ? 'bg-white border-slate-200 hover:border-teal-300'
+                    : 'bg-slate-50/50 border-slate-100 text-slate-300'
+                }`}
               >
-                <div className="flex justify-between items-center text-xs mb-1">
+                <div className="flex justify-between items-center text-xs">
                   <span
-                    className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-extrabold ${
-                      isToday ? 'bg-teal-700 text-white' : isCurrentMonth ? 'text-slate-800' : 'text-slate-400'
+                    className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-extrabold ${
+                      isToday
+                        ? 'bg-teal-800 text-white'
+                        : isSelected
+                        ? 'bg-teal-200 text-teal-900'
+                        : isCurrentMonth
+                        ? 'text-slate-800'
+                        : 'text-slate-300'
                     }`}
                   >
                     {date.getDate()}
                   </span>
+
                   {dayEvents.length > 0 && (
-                    <span className="text-[10px] text-teal-800 font-bold bg-teal-100 px-1.5 py-0.2 rounded-full">
-                      {dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}
+                    <span className="hidden sm:inline-flex text-[10px] text-teal-800 font-bold bg-teal-100 px-1.5 py-0.2 rounded-full">
+                      {dayEvents.length}
                     </span>
                   )}
                 </div>
 
-                {/* Event Pills */}
-                <div className="space-y-1 overflow-y-auto max-h-16 flex-1">
-                  {dayEvents.map((ev) => (
-                    <button
-                      key={ev.id}
-                      onClick={() => onEventClick(ev.id)}
-                      className={`w-full text-left px-2 py-1 rounded-md text-[11px] font-bold shadow-xs truncate transition-transform hover:scale-[1.02] ${getEventTypeBadge(
-                        ev.event_type
-                      )}`}
-                      title={`${ev.title} — ${ev.event_type.toUpperCase()}`}
-                    >
-                      {ev.title}
-                    </button>
-                  ))}
+                {/* Event Dot Indicators for Mobile & Pills for Desktop */}
+                <div className="flex flex-wrap justify-center sm:justify-start gap-1 mt-1">
+                  {/* Mobile Dots */}
+                  <div className="flex sm:hidden justify-center gap-0.5 pt-0.5">
+                    {dayEvents.slice(0, 3).map((ev) => (
+                      <span key={ev.id} className={`h-1.5 w-1.5 rounded-full ${getDotColor(ev.event_type)}`} />
+                    ))}
+                  </div>
+
+                  {/* Desktop Pills */}
+                  <div className="hidden sm:block space-y-1 w-full overflow-y-auto max-h-16">
+                    {dayEvents.map((ev) => (
+                      <button
+                        key={ev.id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEventClick(ev.id)
+                        }}
+                        className={`w-full text-left px-2 py-0.5 rounded-md text-[11px] font-bold truncate transition-transform hover:scale-[1.02] ${getEventTypeBadge(
+                          ev.event_type
+                        )}`}
+                        title={`${ev.title} — ${ev.event_type.toUpperCase()}`}
+                      >
+                        {ev.title}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )
           })}
         </div>
+      </div>
+
+      {/* ── EXPANDABLE DAY AGENDA PANEL (Selected Date Events) ── */}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+        <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+          <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4 text-teal-700" />
+            Events for {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+          </h4>
+          <span className="text-xs font-bold text-teal-800 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+            {selectedDayEvents.length} {selectedDayEvents.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {selectedDayEvents.length === 0 ? (
+          <p className="text-xs text-slate-400 italic text-center py-4">No events scheduled on this date.</p>
+        ) : (
+          <div className="space-y-2">
+            {selectedDayEvents.map((ev) => {
+              const timeStr = new Date(ev.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              return (
+                <div
+                  key={ev.id}
+                  onClick={() => onEventClick(ev.id)}
+                  className="bg-white border border-slate-200 hover:border-teal-400 rounded-xl p-3.5 shadow-2xs flex justify-between items-center gap-3 cursor-pointer transition-all group"
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${getEventTypeBadge(ev.event_type)}`}>
+                        {ev.event_type}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                        {ev.scope === 'group' ? 'Group' : 'Troop'}
+                      </span>
+                    </div>
+                    <h5 className="font-extrabold text-slate-900 text-sm group-hover:text-teal-700 transition-colors truncate">
+                      {ev.title}
+                    </h5>
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-teal-600" /> {timeStr}</span>
+                      {ev.location && <span className="flex items-center gap-1 truncate"><MapPin className="h-3 w-3 text-teal-600" /> {ev.location}</span>}
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-teal-700 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100 shrink-0">
+                    Open →
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
