@@ -94,7 +94,7 @@ export default async function FinancesPage() {
     })
   }
 
-  // 7. Fetch Membership Fees & Payments for Group
+  // 7. Fetch Annual Membership Fees & Payments for Group
   const { data: feesData } = await supabase
     .from('membership_fees')
     .select(`
@@ -105,18 +105,66 @@ export default async function FinancesPage() {
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
 
-  // 8. Fetch Treasury Transactions (Sandou2 El Majlis)
+  // 8. Fetch Troop Fee Settings
+  const { data: troopFeeSettings } = await supabase
+    .from('troop_fee_settings')
+    .select('*')
+    .eq('group_id', groupId)
+
+  // 9. Fetch Troop Monthly Dues & Payments
+  const { data: troopMonthlyDues } = await supabase
+    .from('troop_monthly_dues')
+    .select(`
+      *,
+      members (id, first_name, last_name, troop_id),
+      troop_dues_payments (*, profiles(full_name))
+    `)
+    .eq('group_id', groupId)
+
+  // 10. Fetch Troop Handovers
+  const { data: troopHandovers } = await supabase
+    .from('troop_handovers')
+    .select(`
+      *,
+      troops (id, name),
+      handed_over:profiles!troop_handovers_handed_over_by_fkey (id, full_name),
+      confirmed_by_leader:profiles!troop_handovers_confirmed_by_fkey (id, full_name)
+    `)
+    .eq('group_id', groupId)
+    .order('handover_date', { ascending: false })
+
+  // 11. Fetch Troop Disbursements
+  const { data: troopDisbursements } = await supabase
+    .from('troop_disbursements')
+    .select(`
+      *,
+      troops (id, name),
+      requested_by_leader:profiles!troop_disbursements_requested_by_fkey (id, full_name),
+      approved_by_leader:profiles!troop_disbursements_approved_by_fkey (id, full_name)
+    `)
+    .eq('group_id', groupId)
+    .order('request_date', { ascending: false })
+
+  // 12. Fetch Treasury Transactions (Sandou2 El Majlis)
   const { data: transactionsData } = await supabase
     .from('treasury_transactions')
     .select(`
       *,
-      troops (id, name),
-      profiles (id, full_name)
+      troops (id, name)
     `)
     .eq('group_id', groupId)
-    .order('transaction_date', { ascending: false })
 
-  // 9. Fetch Logged-in Leader Details
+  // 13. Fetch Monthly Financial Statements (Kashf Hisab)
+  const { data: statementsData } = await supabase
+    .from('monthly_financial_statements')
+    .select(`
+      *,
+      submitted_by_profile:profiles!monthly_financial_statements_submitted_by_fkey (id, full_name),
+      approved_by_profile:profiles!monthly_financial_statements_approved_by_fkey (id, full_name)
+    `)
+    .eq('group_id', groupId)
+
+  // 14. Fetch Logged-in Leader Details
   const { data: userProfile } = await supabase
     .from('profiles')
     .select('full_name')
@@ -128,7 +176,12 @@ export default async function FinancesPage() {
   return (
     <FinancesManagement
       initialFees={feesData || []}
+      initialTroopSettings={troopFeeSettings || []}
+      initialTroopDues={troopMonthlyDues || []}
+      initialHandovers={troopHandovers || []}
+      initialDisbursements={troopDisbursements || []}
       initialTransactions={transactionsData || []}
+      initialStatements={statementsData || []}
       members={membersData || []}
       siblingMap={siblingMap}
       troops={troopsData || []}
