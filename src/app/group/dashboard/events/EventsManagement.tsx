@@ -1,3 +1,8 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
 import EventCalendar from './EventCalendar'
 import {
   Menu, X, Plus, Calendar, MapPin, DollarSign, Users, FileText,
@@ -222,6 +227,13 @@ export default function EventsManagement({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
 
+  // Expense & Document Form States (Declared at top level)
+  const [expCategory, setExpCategory] = useState('food')
+  const [expDesc, setExpDesc] = useState('')
+  const [expAmount, setExpAmount] = useState('')
+  const [docTitle, setDocTitle] = useState('')
+  const [docUrl, setDocUrl] = useState('')
+
   const openEditModal = (ev: EventItem) => {
     setEditingEventId(ev.id)
     setTitle(ev.title)
@@ -269,7 +281,7 @@ export default function EventsManagement({
 
       if (uErr || !updatedRow) throw uErr || new Error('Failed to update event.')
 
-      setEvents((prev) => prev.map((ev) => (ev.id === editingEventId ? updatedRow : ev)))
+      setEvents((prev: EventItem[]) => prev.map((ev: EventItem) => (ev.id === editingEventId ? updatedRow : ev)))
       setIsEditModalOpen(false)
       showStatus('Event updated successfully!', 'success')
     } catch (err: any) {
@@ -362,7 +374,7 @@ export default function EventsManagement({
         event_documents: [],
       }
 
-      setEvents((prev) => [fullEvent, ...prev])
+      setEvents((prev: EventItem[]) => [fullEvent, ...prev])
       setIsCreateModalOpen(false)
       resetForm()
       showStatus('Event created successfully with full participant roster!', 'success')
@@ -384,20 +396,16 @@ export default function EventsManagement({
       .single()
 
     if (!error && updated) {
-      const newParticipants = (activeEvent.event_participants || []).map((p) =>
+      const newParticipants = (activeEvent.event_participants || []).map((p: EventParticipant) =>
         p.id === participantId ? updated : p
       )
       const updatedEvent = { ...activeEvent, event_participants: newParticipants }
       setActiveEvent(updatedEvent)
-      setEvents((prev) => prev.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+      setEvents((prev: EventItem[]) => prev.map((e: EventItem) => (e.id === activeEvent.id ? updatedEvent : e)))
     }
   }
 
   // ── Expense Controls ───────────────────────────────────────────────────────
-  const [expCategory, setExpCategory] = useState('food')
-  const [expDesc, setExpDesc] = useState('')
-  const [expAmount, setExpAmount] = useState('')
-
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeEvent || !expDesc || !expAmount) return
@@ -421,7 +429,7 @@ export default function EventsManagement({
       const newExpenses = [expData, ...(activeEvent.event_expenses || [])]
       const updatedEvent = { ...activeEvent, event_expenses: newExpenses }
       setActiveEvent(updatedEvent)
-      setEvents((prev) => prev.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+      setEvents((prev: EventItem[]) => prev.map((e: EventItem) => (e.id === activeEvent.id ? updatedEvent : e)))
       setExpDesc('')
       setExpAmount('')
       showStatus('Expense logged.', 'success')
@@ -431,16 +439,13 @@ export default function EventsManagement({
   const handleDeleteExpense = async (expId: string) => {
     if (!activeEvent) return
     await supabase.from('event_expenses').delete().eq('id', expId)
-    const newExpenses = (activeEvent.event_expenses || []).filter((x) => x.id !== expId)
+    const newExpenses = (activeEvent.event_expenses || []).filter((x: EventExpense) => x.id !== expId)
     const updatedEvent = { ...activeEvent, event_expenses: newExpenses }
     setActiveEvent(updatedEvent)
-    setEvents((prev) => prev.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+    setEvents((prev: EventItem[]) => prev.map((e: EventItem) => (e.id === activeEvent.id ? updatedEvent : e)))
   }
 
   // ── Document Controls ──────────────────────────────────────────────────────
-  const [docTitle, setDocTitle] = useState('')
-  const [docUrl, setDocUrl] = useState('')
-
   const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeEvent || !docTitle || !docUrl) return
@@ -460,7 +465,7 @@ export default function EventsManagement({
       const newDocs = [docData, ...(activeEvent.event_documents || [])]
       const updatedEvent = { ...activeEvent, event_documents: newDocs }
       setActiveEvent(updatedEvent)
-      setEvents((prev) => prev.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+      setEvents((prev: EventItem[]) => prev.map((e: EventItem) => (e.id === activeEvent.id ? updatedEvent : e)))
       setDocTitle('')
       setDocUrl('')
       showStatus('Document added.', 'success')
@@ -572,7 +577,7 @@ export default function EventsManagement({
               </div>
               <div className="fc-theme-scout">
                 <EventCalendar
-                  events={calendarEvents}
+                  events={events}
                   onEventClick={(id) => router.push(`/group/dashboard/events/${id}`)}
                 />
               </div>
@@ -587,12 +592,12 @@ export default function EventsManagement({
                 No events or camps logged yet. Click <strong>Create Event / Camp</strong> above to start!
               </div>
             ) : (
-              events.map((ev) => {
-                const troopName = troops.find((t) => t.id === ev.troop_id)?.name
-                const leaderStaff = (ev.event_staff || []).find((s) => s.event_role === 'ka2ed_mouskhayyam')?.profiles?.full_name
+              events.map((ev: EventItem) => {
+                const troopName = troops.find((t: Troop) => t.id === ev.troop_id)?.name
+                const leaderStaff = (ev.event_staff || []).find((s: EventStaff) => s.event_role === 'ka2ed_mouskhayyam')?.profiles?.full_name
                 const startDateStr = new Date(ev.start_time).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
                 const totalParticipants = (ev.event_participants || []).length
-                const presentCount = (ev.event_participants || []).filter((p) => p.attendance_status === 'present').length
+                const presentCount = (ev.event_participants || []).filter((p: EventParticipant) => p.attendance_status === 'present').length
 
                 return (
                   <div
@@ -774,12 +779,12 @@ export default function EventsManagement({
               <div className="pt-2 border-t border-slate-200">
                 <h4 className="text-xs font-bold text-teal-800 uppercase tracking-wider mb-2">Assign Event Hierarchy & Staff</h4>
                 <div className="space-y-2">
-                  {EVENT_STAFF_ROLES.map((r) => (
+                  {EVENT_STAFF_ROLES.map((r: { key: string; label: string }) => (
                     <div key={r.key} className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-slate-700 min-w-44">{r.label}</span>
                       <select
                         value={staffAssignments[r.key] || ''}
-                        onChange={(e) => setStaffAssignments((prev) => ({ ...prev, [r.key]: e.target.value }))}
+                        onChange={(e) => setStaffAssignments((prev: Record<string, string>) => ({ ...prev, [r.key]: e.target.value }))}
                         className="flex-1 rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-800 focus:border-teal-500 focus:outline-none"
                       >
                         <option value="">-- Assign Leader --</option>

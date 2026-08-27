@@ -118,7 +118,7 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
           <h3 className="text-base font-extrabold text-slate-900">{monthLabel}</h3>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           <button
             onClick={goToday}
             className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 shadow-sm transition-colors"
@@ -144,63 +144,117 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
         </div>
       </div>
 
-      {/* Days of Week Header */}
-      <div className="grid grid-cols-7 gap-1 text-center font-extrabold text-xs text-slate-500 uppercase tracking-wider py-1">
-        <div>Sun</div>
-        <div>Mon</div>
-        <div>Tue</div>
-        <div>Wed</div>
-        <div>Thu</div>
-        <div>Fri</div>
-        <div>Sat</div>
+      {/* ── MOBILE VIEW: Touch-Friendly Mobile Agenda List ── */}
+      <div className="md:hidden space-y-3">
+        {events.length === 0 ? (
+          <div className="p-8 text-center bg-white border border-slate-200 rounded-xl text-slate-400 text-xs italic">
+            No events scheduled for this month.
+          </div>
+        ) : (
+          events.map((ev) => {
+            const dateStr = new Date(ev.start_time).toLocaleDateString('en-GB', {
+              weekday: 'short',
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+            const timeStr = new Date(ev.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+            return (
+              <div
+                key={ev.id}
+                onClick={() => onEventClick(ev.id)}
+                className="bg-white border border-slate-200 active:border-teal-600 rounded-xl p-4 shadow-sm flex flex-col gap-2 cursor-pointer transition-all"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${getEventTypeBadge(ev.event_type)}`}>
+                    {ev.event_type}
+                  </span>
+                  <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md">
+                    {ev.scope === 'group' ? 'Group Event' : 'Troop Event'}
+                  </span>
+                </div>
+
+                <h4 className="font-extrabold text-slate-900 text-base">{ev.title}</h4>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-teal-700" />
+                    <span>{dateStr} at {timeStr}</span>
+                  </div>
+                  {ev.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-teal-700" />
+                      <span>{ev.location}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
 
-      {/* Calendar Days Grid */}
-      <div className="grid grid-cols-7 gap-1.5">
-        {calendarDays.map(({ date, isCurrentMonth, isToday }, idx) => {
-          const dayKey = date.toISOString().slice(0, 10)
-          const dayEvents = eventsByDay[dayKey] || []
+      {/* ── DESKTOP VIEW: Full 7-Column Grid ── */}
+      <div className="hidden md:block space-y-2">
+        {/* Days of Week Header */}
+        <div className="grid grid-cols-7 gap-1 text-center font-extrabold text-xs text-slate-500 uppercase tracking-wider py-1">
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+        </div>
 
-          return (
-            <div
-              key={idx}
-              className={`min-h-24 p-1.5 rounded-xl border flex flex-col justify-between transition-colors ${
-                isCurrentMonth ? 'bg-white border-slate-200' : 'bg-slate-50/60 border-slate-150 text-slate-400'
-              } ${isToday ? 'ring-2 ring-teal-600 font-bold bg-teal-50/30' : ''}`}
-            >
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span
-                  className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-extrabold ${
-                    isToday ? 'bg-teal-700 text-white' : isCurrentMonth ? 'text-slate-800' : 'text-slate-400'
-                  }`}
-                >
-                  {date.getDate()}
-                </span>
-                {dayEvents.length > 0 && (
-                  <span className="text-[10px] text-teal-800 font-bold bg-teal-100 px-1.5 py-0.2 rounded-full">
-                    {dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
+        {/* Calendar Days Grid */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {calendarDays.map(({ date, isCurrentMonth, isToday }, idx) => {
+            const dayKey = date.toISOString().slice(0, 10)
+            const dayEvents = eventsByDay[dayKey] || []
 
-              {/* Event Pills */}
-              <div className="space-y-1 overflow-y-auto max-h-16 flex-1">
-                {dayEvents.map((ev) => (
-                  <button
-                    key={ev.id}
-                    onClick={() => onEventClick(ev.id)}
-                    className={`w-full text-left px-2 py-1 rounded-md text-[11px] font-bold shadow-xs truncate transition-transform hover:scale-[1.02] ${getEventTypeBadge(
-                      ev.event_type
-                    )}`}
-                    title={`${ev.title} — ${ev.event_type.toUpperCase()}`}
+            return (
+              <div
+                key={idx}
+                className={`min-h-24 p-1.5 rounded-xl border flex flex-col justify-between transition-colors ${
+                  isCurrentMonth ? 'bg-white border-slate-200' : 'bg-slate-50/60 border-slate-150 text-slate-400'
+                } ${isToday ? 'ring-2 ring-teal-600 font-bold bg-teal-50/30' : ''}`}
+              >
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span
+                    className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-extrabold ${
+                      isToday ? 'bg-teal-700 text-white' : isCurrentMonth ? 'text-slate-800' : 'text-slate-400'
+                    }`}
                   >
-                    {ev.title}
-                  </button>
-                ))}
+                    {date.getDate()}
+                  </span>
+                  {dayEvents.length > 0 && (
+                    <span className="text-[10px] text-teal-800 font-bold bg-teal-100 px-1.5 py-0.2 rounded-full">
+                      {dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {/* Event Pills */}
+                <div className="space-y-1 overflow-y-auto max-h-16 flex-1">
+                  {dayEvents.map((ev) => (
+                    <button
+                      key={ev.id}
+                      onClick={() => onEventClick(ev.id)}
+                      className={`w-full text-left px-2 py-1 rounded-md text-[11px] font-bold shadow-xs truncate transition-transform hover:scale-[1.02] ${getEventTypeBadge(
+                        ev.event_type
+                      )}`}
+                      title={`${ev.title} — ${ev.event_type.toUpperCase()}`}
+                    >
+                      {ev.title}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     </div>
   )

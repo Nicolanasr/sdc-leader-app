@@ -582,7 +582,7 @@ export default function EventWorkspace({
               {eventItem.description && <p className="text-xs text-slate-500 mt-1">{eventItem.description}</p>}
             </div>
 
-            <div className="bg-slate-50 border border-slate-150 p-4 rounded-xl text-xs space-y-1.5 shrink-0 min-w-64">
+            <div className="bg-slate-50 border border-slate-150 p-4 rounded-xl text-xs space-y-1.5 w-full md:w-auto md:shrink-0 md:min-w-64">
               <div className="flex justify-between"><span className="text-slate-400 font-semibold">Start:</span><span className="font-bold text-slate-800">{startDateStr}</span></div>
               <div className="flex justify-between"><span className="text-slate-400 font-semibold">End:</span><span className="font-bold text-slate-800">{endDateStr}</span></div>
               {eventItem.location && <div className="flex justify-between"><span className="text-slate-400 font-semibold">Location:</span><span className="font-bold text-teal-800">{eventItem.location}</span></div>}
@@ -600,16 +600,16 @@ export default function EventWorkspace({
             </div>
           )}
 
-          {/* Workspace Pill Navigation Tabs */}
-          <div className="flex border-b border-slate-200 gap-2 overflow-x-auto pb-1">
+          {/* Workspace Pill Navigation Tabs (Mobile Scrollable Pill Bar) */}
+          <div className="bg-slate-200/70 p-1.5 rounded-2xl flex overflow-x-auto gap-1.5 shrink-0 scrollbar-none">
             {availableTabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap flex items-center gap-2 ${
                   activeTab === t.key
-                    ? 'bg-teal-700 text-white shadow'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    ? 'bg-teal-800 text-white shadow-md'
+                    : 'bg-white text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 <span>{t.icon}</span>
