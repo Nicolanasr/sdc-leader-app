@@ -1,0 +1,719 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/utils/supabase/client'
+import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2 } from 'lucide-react'
+
+interface LeaderRole {
+  roleId?: string
+  roleName: string
+  troopId?: string | null
+  troopName: string | null
+  permissionScope: string
+}
+
+interface Leader {
+  id: string
+  profileId: string
+  fullName: string
+  email: string
+  rank: string
+  responsibilityIds?: string[]
+  responsibilities: string[]
+  roles: LeaderRole[]
+}
+
+interface Troop {
+  id: string
+  name: string
+}
+
+interface Rank {
+  id: string
+  name: string
+}
+
+interface Responsibility {
+  id: string
+  name: string
+}
+
+interface Role {
+  id: string
+  name: string
+  permission_scope: string
+}
+
+interface Props {
+  initialLeaders: Leader[]
+  troops: Troop[]
+  currentRole: string
+  groupId: string
+  groupName: string
+  ranks: Rank[]
+  responsibilities: Responsibility[]
+  roles: Role[]
+  userName?: string
+}
+
+export default function LeadersManagement({
+  initialLeaders,
+  troops,
+  currentRole,
+  groupId,
+  groupName,
+  ranks,
+  responsibilities,
+  roles,
+  userName,
+}: Props) {
+  const router = useRouter()
+  const supabase = createClient()
+
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [leaders, setLeaders] = useState<Leader[]>(initialLeaders)
+  const canManage = currentRole === 'chef_groupe' || currentRole === 'amin_serr_group'
+
+  // Onboarding states
+  const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [rank, setRank] = useState(ranks[0]?.name || '')
+  
+  // Multi-select state arrays
+  const [selectedResps, setSelectedResps] = useState<string[]>([])
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [troopId, setTroopId] = useState('')
+
+  const [loading, setLoading] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+
+  const showStatus = (text: string, type: 'success' | 'error') => {
+    setStatusMessage({ text, type })
+    setTimeout(() => setStatusMessage(null), 7000)
+  }
+
+  // Toggle checks helpers
+  const toggleResp = (id: string) => {
+    if (selectedResps.includes(id)) {
+      setSelectedResps(selectedResps.filter((x) => x !== id))
+    } else {
+      setSelectedResps([...selectedResps, id])
+    }
+  }
+
+  const toggleRole = (name: string) => {
+    if (selectedRoles.includes(name)) {
+      setSelectedRoles(selectedRoles.filter((x) => x !== name))
+    } else {
+      setSelectedRoles([...selectedRoles, name])
+    }
+  }
+
+  // Edit & Delete states
+  const [editingLeader, setEditingLeader] = useState<Leader | null>(null)
+  const [editFullName, setEditFullName] = useState('')
+  const [editRank, setEditRank] = useState('')
+  const [editSelectedResps, setEditSelectedResps] = useState<string[]>([])
+  const [editSelectedRoles, setEditSelectedRoles] = useState<string[]>([])
+  const [editTroopId, setEditTroopId] = useState('')
+
+  // Open Edit Modal
+  const openEditModal = (leader: Leader) => {
+    setEditingLeader(leader)
+    setEditFullName(leader.fullName)
+    setEditRank(leader.rank)
+    setEditSelectedResps(leader.responsibilityIds || [])
+    setEditSelectedRoles(leader.roles.map((r) => r.roleName))
+    setEditTroopId(leader.roles.find((r) => r.troopId)?.troopId || '')
+  }
+
+  const toggleEditResp = (id: string) => {
+    setEditSelectedResps((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleEditRole = (name: string) => {
+    setEditSelectedRoles((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]
+    )
+  }
+
+  // Delete Leader
+  const handleDeleteLeader = async (leader: Leader) => {
+    if (!confirm(`Are you sure you want to remove ${leader.fullName} from the leader council?`)) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      await supabase.from('user_roles').delete().eq('profile_id', leader.id).eq('group_id', groupId)
+      await supabase.from('profile_responsibilities').delete().eq('profile_id', leader.id)
+
+      setLeaders((prev) => prev.filter((l) => l.id !== leader.id))
+      showStatus(`${leader.fullName} removed from council.`, 'success')
+    } catch (err: any) {
+      showStatus(err.message || 'Failed to remove leader.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Save Leader Edit
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingLeader) return
+
+    if (!editFullName || editSelectedRoles.length === 0) {
+      return showStatus('Please enter full name and select at least one role.', 'error')
+    }
+
+    const editActiveRolesObj = roles.filter((r) => editSelectedRoles.includes(r.name))
+    const editIsTroopScoped = editActiveRolesObj.some((r) =>
+      ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(r.permission_scope)
+    )
+
+    if (editIsTroopScoped && !editTroopId) {
+      return showStatus('Please select a troop unit for troop-scoped roles.', 'error')
+    }
+
+    setLoading(true)
+    try {
+      // 1. Update Profile
+      const { error: profErr } = await supabase
+        .from('profiles')
+        .update({ full_name: editFullName, rank: editRank })
+        .eq('id', editingLeader.id)
+
+      if (profErr) throw profErr
+
+      // 2. Sync Responsibilities
+      await supabase.from('profile_responsibilities').delete().eq('profile_id', editingLeader.id)
+      if (editSelectedResps.length > 0) {
+        const respInserts = editSelectedResps.map((rId) => ({
+          profile_id: editingLeader.id,
+          responsibility_id: rId,
+        }))
+        await supabase.from('profile_responsibilities').insert(respInserts)
+      }
+
+      // 3. Sync User Roles
+      await supabase.from('user_roles').delete().eq('profile_id', editingLeader.id).eq('group_id', groupId)
+      const roleInserts = editActiveRolesObj.map((r) => ({
+        profile_id: editingLeader.id,
+        group_id: groupId,
+        role_id: r.id,
+        troop_id: ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(r.permission_scope) ? editTroopId : null,
+      }))
+      await supabase.from('user_roles').insert(roleInserts)
+
+      // Update local state
+      const updatedRespsNames = responsibilities.filter((r) => editSelectedResps.includes(r.id)).map((r) => r.name)
+      const updatedRoles = editActiveRolesObj.map((r) => ({
+        roleId: r.id,
+        roleName: r.name,
+        troopId: ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(r.permission_scope) ? editTroopId : null,
+        troopName: troops.find((t) => t.id === editTroopId)?.name || null,
+        permissionScope: r.permission_scope,
+      }))
+
+      setLeaders((prev) =>
+        prev.map((l) =>
+          l.id === editingLeader.id
+            ? {
+                ...l,
+                fullName: editFullName,
+                rank: editRank,
+                responsibilityIds: editSelectedResps,
+                responsibilities: updatedRespsNames,
+                roles: updatedRoles,
+              }
+            : l
+        )
+      )
+
+      showStatus(`${editFullName} updated successfully!`, 'success')
+      setEditingLeader(null)
+    } catch (err: any) {
+      showStatus(err.message || 'Failed to update leader.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  // Dynamic scope inspection across selected roles
+  const activeRolesObj = roles.filter((r) => selectedRoles.includes(r.name))
+  const isTroopScoped = activeRolesObj.some((r) =>
+    ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(r.permission_scope)
+  )
+
+  // Submit invitation
+  const handleOnboardLeader = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !fullName || selectedRoles.length === 0 || selectedResps.length === 0) {
+      return showStatus('Please fill in name, email, at least one role, and one responsibility.', 'error')
+    }
+
+    if (isTroopScoped && !troopId) {
+      return showStatus('Please select a target troop unit for your troop-level roles.', 'error')
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/group/onboard-leader', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          fullName,
+          rank,
+          responsibilityIds: selectedResps,
+          roleNames: selectedRoles,
+          troopId: isTroopScoped ? troopId : null,
+        }),
+      })
+
+      const result = await res.json()
+      setLoading(false)
+
+      if (!res.ok) {
+        showStatus(result.error || 'Failed to onboard leader', 'error')
+      } else {
+        setEmail('')
+        setFullName('')
+        setSelectedResps([])
+        setSelectedRoles([])
+        setTroopId('')
+        showStatus(`Leader onboarded successfully! Temporary Password: ${result.tempPassword}`, 'success')
+        
+        // Refresh server component data
+        router.refresh()
+      }
+    } catch (err: any) {
+      setLoading(false)
+      showStatus(err.message || 'Network error occurred', 'error')
+    }
+  }
+
+  // Map system role string to friendly label
+  const formatRole = (role: string) => {
+    const rolesMap: Record<string, string> = {
+      chef_groupe: 'Chef de Groupe',
+      assistant_chef_groupe: 'Assistant Chef',
+      amin_serr_group: 'Amin Serr (Secretary)',
+      amin_sandou2_group: 'Amin Sandou2 (Treasurer)',
+      amin_tejhizet_group: 'Amin Tejhizet (Quartermaster)',
+      mas2oul_toswir: 'Mas2oul Toswir (Media)',
+      mas2oul_mounet: 'Mas2oul Mounet (Supplies)',
+      ka2ed_idare: 'Ka2ed Idare (Council)',
+      ka2ed_fer2a: 'Ka2ed Fer2a (Troop Leader)',
+      mouse3ed_ka2ed_fer2a: 'Mouse3ed Fer2a (Assistant)',
+    }
+    return rolesMap[role] || role
+  }
+
+  return (
+    <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden relative">
+      {/* Mobile Menu Backdrop */}
+      {isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/40 md:hidden transition-opacity"
+        />
+      )}
+
+      {/* Sidebar navigation */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-teal-900 text-white flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div>
+          <div className="p-6 border-b border-teal-800 flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">{groupName}</h1>
+              <p className="text-xs text-teal-300 mt-1">Group Dashboard</p>
+            </div>
+            <button className="md:hidden text-teal-200" onClick={() => setIsMobileOpen(false)}>
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          <nav className="p-4 space-y-1">
+            <Link
+              href="/group/dashboard"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-teal-100 hover:bg-teal-800 hover:text-white transition-colors"
+            >
+              <Landmark className="h-4 w-4" />
+              Dashboard Overview
+            </Link>
+            <Link
+              href="/group/dashboard/leaders"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold bg-teal-700 text-white"
+            >
+              <Users className="h-4 w-4" />
+              Leaders & Council
+            </Link>
+            <Link
+              href="/group/dashboard/troops"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-teal-100 hover:bg-teal-800 hover:text-white transition-colors"
+            >
+              <Layers className="h-4 w-4" />
+              Units / Troops
+            </Link>
+            <Link
+              href="/group/dashboard/members"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-teal-100 hover:bg-teal-800 hover:text-white transition-colors"
+            >
+              <Users className="h-4 w-4" />
+              Youth Roster
+            </Link>
+            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-teal-400 uppercase tracking-wider">
+              Modules (Read-Only)
+            </div>
+            <div className="px-4 py-2 text-xs text-teal-300 italic">
+              Financials and inventory sub-pages will appear here in the next dev phase.
+            </div>
+          </nav>
+        </div>
+        <div className="p-4 border-t border-teal-800">
+          <button
+            onClick={handleLogout}
+            className="w-full text-center px-4 py-2 rounded-lg text-sm font-semibold text-teal-200 hover:bg-teal-800 hover:text-white transition-colors"
+          >
+            Log Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main dashboard content */}
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        {/* Header toolbar for Mobile */}
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between md:justify-end">
+          <button className="md:hidden text-teal-900 p-1 focus:outline-none" onClick={() => setIsMobileOpen(true)}>
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="text-right">
+            <span className="text-xs text-slate-400 font-semibold block uppercase">Logged in as</span>
+            <span className="text-sm font-bold text-teal-750">{userName || currentRole.replace(/_/g, ' ')}</span>
+          </div>
+        </header>
+
+        <div className="p-6 md:p-8 flex-1">
+          {statusMessage && (
+            <div
+              className={`mb-6 p-4 rounded-xl border text-sm text-center ${
+                statusMessage.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                  : 'bg-rose-50 border-rose-100 text-rose-800'
+              }`}
+            >
+              {statusMessage.text}
+            </div>
+          )}
+
+          <header className="mb-8">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Leaders & Council</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Manage the adult leaders, secretary, treasurer, and troop chiefs in {groupName}.
+            </p>
+          </header>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {/* Leaders Directory List */}
+            <div className="xl:col-span-2 space-y-6">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                  <h3 className="font-bold text-slate-800">Registered Council & Leaders</h3>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {leaders.length === 0 ? (
+                    <div className="p-6 text-slate-400 text-sm text-center">No leaders registered under this group.</div>
+                  ) : (
+                    leaders.map((leader) => (
+                      <div key={leader.id} className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-slate-900">{leader.fullName}</h4>
+                          <p className="text-xs text-slate-500">{leader.email}</p>
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                              Rank: {leader.rank}
+                            </span>
+                            {leader.responsibilities.map((resp, idx) => (
+                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-100">
+                                {resp}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-start md:items-end gap-1.5">
+                          {leader.roles.map((roleObj, idx) => (
+                            <div key={idx} className="flex flex-col items-start md:items-end">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-900 text-white">
+                                {formatRole(roleObj.roleName)}
+                              </span>
+                              {roleObj.troopName && (
+                                <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                  Unit: <span className="text-teal-700 font-bold">{roleObj.troopName}</span>
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                          {canManage && (
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                onClick={() => openEditModal(leader)}
+                                className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                                title="Edit Leader"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLeader(leader)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Delete Leader"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Edit Leader Modal */}
+            {editingLeader && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 className="text-lg font-bold text-slate-900">Edit Leader — {editingLeader.fullName}</h3>
+                    <button onClick={() => setEditingLeader(null)} className="text-slate-400 hover:text-slate-600">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <form onSubmit={handleSaveEdit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700">Full Name</label>
+                      <input
+                        type="text"
+                        value={editFullName}
+                        onChange={(e) => setEditFullName(e.target.value)}
+                        required
+                        className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700">Rank</label>
+                      <select
+                        value={editRank}
+                        onChange={(e) => setEditRank(e.target.value)}
+                        className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none"
+                      >
+                        {ranks.map((r) => (
+                          <option key={r.id} value={r.name}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Responsibilities</label>
+                      <div className="space-y-1.5 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+                        {responsibilities.map((r) => (
+                          <label key={r.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editSelectedResps.includes(r.id)}
+                              onChange={() => toggleEditResp(r.id)}
+                              className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span>{r.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">System Permission Roles</label>
+                      <div className="space-y-1.5 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+                        {roles.map((r) => (
+                          <label key={r.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editSelectedRoles.includes(r.name)}
+                              onChange={() => toggleEditRole(r.name)}
+                              className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span>{formatRole(r.name)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {roles.filter((r) => editSelectedRoles.includes(r.name)).some((r) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(r.permission_scope)) && (
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700">Target Troop Unit</label>
+                        <select
+                          value={editTroopId}
+                          onChange={(e) => setEditTroopId(e.target.value)}
+                          required
+                          className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none"
+                        >
+                          <option value="">-- Select Troop --</option>
+                          {troops.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingLeader(null)}
+                        className="flex-1 py-2 border border-slate-300 rounded-lg text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-xs font-bold shadow disabled:bg-slate-300 transition-colors"
+                      >
+                        {loading ? 'Saving…' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Invitation Panel */}
+            {canManage && (
+              <div className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm self-start">
+                <h3 className="text-lg font-semibold text-teal-800 mb-4">Invite New Leader</h3>
+                <p className="text-xs text-slate-500 mb-6">
+                  Onboard a new leader mapping multiple roles and responsibilities. System generates their temporary password instantly.
+                </p>
+                <form onSubmit={handleOnboardLeader} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Full Name</label>
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      placeholder="e.g. Nicolas Nasr"
+                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email Address</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="e.g. leader@example.com"
+                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Leader Rank</label>
+                    <select
+                      value={rank}
+                      onChange={(e) => setRank(e.target.value)}
+                      required
+                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
+                    >
+                      {ranks.map((r) => (
+                        <option key={r.id} value={r.name}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Multi-select Responsibilities Checkboxes */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Select Responsibilities (Choose many)</label>
+                    <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                      {responsibilities.map((r) => (
+                        <label key={r.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:text-teal-800">
+                          <input
+                            type="checkbox"
+                            checked={selectedResps.includes(r.id)}
+                            onChange={() => toggleResp(r.id)}
+                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span>{r.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Multi-select System Roles Checkboxes */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Select System Permission Roles (Choose many)</label>
+                    <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                      {roles.map((r) => (
+                        <label key={r.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:text-teal-800">
+                          <input
+                            type="checkbox"
+                            checked={selectedRoles.includes(r.name)}
+                            onChange={() => toggleRole(r.name)}
+                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span>{formatRole(r.name)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {isTroopScoped && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Select Target Troop</label>
+                      <select
+                        value={troopId}
+                        onChange={(e) => setTroopId(e.target.value)}
+                        required
+                        className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
+                      >
+                        <option value="">-- Choose Unit/Troop --</option>
+                        {troops.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-teal-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors text-sm"
+                  >
+                    Onboard Leader & Generate Credentials
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}

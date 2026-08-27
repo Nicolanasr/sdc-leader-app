@@ -1,0 +1,19 @@
+-- Migration to add comprehensive member & family attributes
+ALTER TABLE public.members
+ADD COLUMN IF NOT EXISTS member_phone TEXT,
+ADD COLUMN IF NOT EXISTS school TEXT,
+ADD COLUMN IF NOT EXISTS hobbies TEXT,
+ADD COLUMN IF NOT EXISTS father_name TEXT,
+ADD COLUMN IF NOT EXISTS father_blood_type TEXT,
+ADD COLUMN IF NOT EXISTS father_birth_date DATE,
+ADD COLUMN IF NOT EXISTS father_phone TEXT,
+ADD COLUMN IF NOT EXISTS father_job TEXT,
+ADD COLUMN IF NOT EXISTS mother_name TEXT,
+ADD COLUMN IF NOT EXISTS mother_blood_type TEXT,
+ADD COLUMN IF NOT EXISTS mother_birth_date DATE,
+ADD COLUMN IF NOT EXISTS mother_phone TEXT,
+ADD COLUMN IF NOT EXISTS mother_job TEXT,
+ADD COLUMN IF NOT EXISTS address TEXT,
+ADD COLUMN IF NOT EXISTS registry_place TEXT,
+ADD COLUMN IF NOT EXISTS registry_number TEXT,
+ADD COLUMN IF NOT EXISTS join_date DATE;
