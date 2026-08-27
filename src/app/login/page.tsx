@@ -8,6 +8,18 @@ export default async function LoginPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const message = (await searchParams).message
+  const supabase = await createClient()
+
+  // Auto-redirect if already logged in
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const role = user.app_metadata?.role
+    if (role === 'configurator') {
+      redirect('/configurator')
+    } else {
+      redirect('/group/dashboard')
+    }
+  }
 
   async function signIn(formData: FormData) {
     'use server'

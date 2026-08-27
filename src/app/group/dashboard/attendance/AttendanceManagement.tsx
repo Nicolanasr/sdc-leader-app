@@ -216,33 +216,42 @@ export default function AttendanceManagement({
         if (!activeSession) return
         setLoading(true)
 
+        const validMemberIds = new Set(members.map((m) => m.id))
         const ids = Object.keys(sheetData)
-        const upserts = ids.map((id) => ({
-            attendance_id: activeSession.id,
-            member_id: id,
-            status: sheetData[id].status,
-            excuse_reason: sheetData[id].status !== 'present' ? (sheetData[id].reason || null) : null,
-        }))
+        const upserts = ids
+            .filter((id) => validMemberIds.has(id))
+            .map((id) => ({
+                attendance_id: activeSession.id,
+                member_id: id,
+                status: sheetData[id].status,
+                excuse_reason: sheetData[id].status !== 'present' ? (sheetData[id].reason || null) : null,
+            }))
 
         // Delete old records for this session, then insert fresh batch
         await supabase.from('attendance_records').delete().eq('attendance_id', activeSession.id)
-        const { data: newRecs, error } = await supabase
-            .from('attendance_records')
-            .insert(upserts)
-            .select()
+
+        let newRecs: any[] = []
+        if (upserts.length > 0) {
+            const { data, error } = await supabase
+                .from('attendance_records')
+                .insert(upserts)
+                .select()
+
+            if (error) {
+                setLoading(false)
+                return showStatus(error.message, 'error')
+            }
+            newRecs = data || []
+        }
 
         setLoading(false)
-
-        if (error) {
-            return showStatus(error.message, 'error')
-        }
 
         // Update local records
         setRecords((prev) => [
             ...prev.filter((r) => r.attendance_id !== activeSession.id),
-            ...(newRecs || []),
+            ...newRecs,
         ])
-        showStatus('Attendance saved!', 'success')
+        showStatus('Attendance saved successfully!', 'success')
     }
 
     // ── Sheet helpers ──
@@ -370,7 +379,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                     </div>
                 </header>
 
-                <div className="p-6 md:p-8 flex-1 flex flex-col">
+                <div className="px-3 sm:px-6 py-4 flex-1 flex flex-col space-y-4">
                     {/* Status banner */}
                     {statusMsg && (
                         <div className={`mb-4 p-3 rounded-xl text-sm text-center border ${statusMsg.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-rose-50 border-rose-100 text-rose-800'

@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       summary: ev.title,
       description: ev.description ? `${ev.description}\n\nType: ${ev.event_type.toUpperCase()} | Scope: ${ev.scope}` : `Scope: ${ev.scope} | Type: ${ev.event_type}`,
       location: ev.location || '',
-      url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://scoutsdescedres.app'}/group/dashboard/events/${ev.id}`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://portal.sdcsaintjeanmarc.org'}/group/dashboard/events/${ev.id}`,
     })
   }
 

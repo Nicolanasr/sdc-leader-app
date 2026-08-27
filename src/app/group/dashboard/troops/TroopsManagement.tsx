@@ -181,7 +181,7 @@ export default function TroopsManagement({
           </div>
         </header>
 
-        <div className="p-6 md:p-8 flex-1">
+        <div className="px-3 sm:px-6 py-4 flex-1 space-y-4">
           {statusMessage && (
             <div
               className={`mb-6 p-4 rounded-xl border text-sm text-center ${
