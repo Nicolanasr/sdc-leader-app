@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -19,6 +19,7 @@ const GROUP_ADMIN_ROLES = [
   'amin_tejhizet_group',
   'mas2oul_toswir',
   'mas2oul_mounet',
+  'amin_mounet_group',
   'ka2ed_idare',
   'configurator',
 ]
@@ -74,6 +75,8 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
         {navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)}
         {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)}
         {navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)}
+        {navLink('/group/dashboard/inventory', 'Equipment & Gear', <Package className="h-4 w-4" />, pathname.startsWith('/group/dashboard/inventory'), onClose)}
+        {navLink('/group/dashboard/pantry', 'Provisions & Pantry', <UtensilsCrossed className="h-4 w-4" />, pathname.startsWith('/group/dashboard/pantry'), onClose)}
       </nav>
 
       {/* Logout */}

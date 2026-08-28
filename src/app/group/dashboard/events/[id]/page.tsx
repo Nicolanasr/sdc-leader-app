@@ -100,7 +100,91 @@ export default async function EventDetailsPage({ params }: PageProps) {
     .eq('is_deleted', false)
     .order('first_name', { ascending: true })
 
-  // 7. Fetch current logged in user profile full name
+  // 7. Fetch Equipment Checkouts for this Event
+  const { data: eventCheckouts } = await supabase
+    .from('inventory_checkouts')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false })
+
+  // 8. Fetch Group Inventory (for requesting equipment for this event)
+  const { data: groupInventory } = await supabase
+    .from('quartermaster_inventory')
+    .select('*')
+    .eq('group_id', groupId)
+    .eq('is_deleted', false)
+    .order('category', { ascending: true })
+
+  // 9. Fetch Camp Meal Plans for this Event
+  let initialMealPlans: any[] = []
+  try {
+    const { data: mealPlansData } = await supabase
+      .from('event_meal_plans')
+      .select('*, event_meal_ingredients(*)')
+      .eq('event_id', eventId)
+      .eq('is_deleted', false)
+      .order('day_number', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (mealPlansData) {
+      initialMealPlans = mealPlansData
+    }
+  } catch (err) {
+    initialMealPlans = []
+  }
+
+  // 10. Fetch Central Group Pantry Items (for ingredient matching)
+  let initialGroupPantry: any[] = []
+  try {
+    const { data: pantryData } = await supabase
+      .from('group_pantry_items')
+      .select('*')
+      .eq('group_id', groupId)
+      .eq('is_deleted', false)
+      .order('name', { ascending: true })
+
+    if (pantryData) {
+      initialGroupPantry = pantryData
+    }
+  } catch (err) {
+    initialGroupPantry = []
+  }
+
+  // 11. Fetch Event Shopping List Items
+  let initialShoppingList: any[] = []
+  try {
+    const { data: shoppingData } = await supabase
+      .from('event_shopping_list_items')
+      .select('*')
+      .eq('event_id', eventId)
+      .order('is_purchased', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (shoppingData) {
+      initialShoppingList = shoppingData
+    }
+  } catch (err) {
+    initialShoppingList = []
+  }
+
+  // 12. Fetch Event Pantry Requests
+  let initialPantryRequests: any[] = []
+  try {
+    const { data: pantryReqData } = await supabase
+      .from('event_pantry_requests')
+      .select('*, group_pantry_items(name, unit)')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false })
+
+    if (pantryReqData) {
+      initialPantryRequests = pantryReqData
+    }
+  } catch (err) {
+    initialPantryRequests = []
+  }
+
+  // 13. Fetch current logged in user profile full name
   const { data: userProfile } = await supabase
     .from('profiles')
     .select('full_name')
@@ -115,6 +199,12 @@ export default async function EventDetailsPage({ params }: PageProps) {
       troops={troopsData || []}
       leaders={leaders || []}
       allMembers={membersData || []}
+      initialCheckouts={eventCheckouts || []}
+      groupInventory={groupInventory || []}
+      initialMealPlans={initialMealPlans}
+      initialGroupPantry={initialGroupPantry}
+      initialShoppingList={initialShoppingList}
+      initialPantryRequests={initialPantryRequests}
       currentRole={role}
       groupId={groupId}
       groupName={groupName}

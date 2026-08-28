@@ -6,10 +6,12 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import {
   Menu, X, ArrowLeft, Calendar, MapPin, DollarSign, Users, FileText,
-  CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit, Loader2, UploadCloud, FileSpreadsheet, Paperclip
+  CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit, Loader2, UploadCloud, FileSpreadsheet, Paperclip,
+  Package, ShoppingCart, Send, Minus, RefreshCw, Search, UtensilsCrossed, Apple, ShoppingBag, Check, CheckSquare, Square, ChefHat, Sparkles
 } from 'lucide-react'
 import DashboardShell from '../../DashboardShell'
 import DashboardSidebar from '../../DashboardSidebar'
+import { SCOUT_RECIPES_LIBRARY, MealRecipeTemplate, RecipeIngredientTemplate } from '@/utils/scoutMealRecipes'
 
 interface Leader {
   id: string
@@ -76,6 +78,55 @@ interface EventDocument {
   created_at?: string
 }
 
+export interface EventMealIngredient {
+  id?: string
+  meal_plan_id?: string
+  event_id?: string
+  name: string
+  portion_per_person: number
+  unit: 'g' | 'kg' | 'pieces' | 'cans' | 'loaves' | 'packs' | 'ml' | 'liters'
+  category: 'bakery' | 'butchery' | 'produce' | 'supermarket' | 'pantry' | 'supplies'
+}
+
+export interface EventMealPlan {
+  id: string
+  event_id: string
+  day_number: number
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'custom'
+  meal_title: string
+  recipe_name?: string | null
+  headcount_override?: number | null
+  notes?: string | null
+  event_meal_ingredients?: EventMealIngredient[]
+}
+
+export interface EventShoppingListItem {
+  id: string
+  event_id: string
+  name: string
+  category: 'bakery' | 'butchery' | 'produce' | 'supermarket' | 'supplies'
+  quantity_needed: number
+  unit: string
+  is_purchased: boolean
+  purchased_by?: string | null
+  estimated_cost?: number | null
+  notes?: string | null
+}
+
+export interface EventPantryRequest {
+  id: string
+  event_id: string
+  group_id: string
+  pantry_item_id: string
+  quantity: number
+  unit: string
+  status: 'requested' | 'approved' | 'received'
+  requested_by: string
+  group_pantry_items?: { name: string; unit: string }
+  notes?: string | null
+  created_at?: string
+}
+
 interface EventItem {
   id: string
   title: string
@@ -100,6 +151,12 @@ interface Props {
   troops: Troop[]
   leaders: Leader[]
   allMembers: Member[]
+  initialCheckouts?: any[]
+  groupInventory?: any[]
+  initialMealPlans?: EventMealPlan[]
+  initialGroupPantry?: any[]
+  initialShoppingList?: EventShoppingListItem[]
+  initialPantryRequests?: EventPantryRequest[]
   currentRole: string
   groupId: string
   groupName: string
@@ -138,6 +195,12 @@ export default function EventWorkspace({
   troops,
   leaders,
   allMembers,
+  initialCheckouts = [],
+  groupInventory = [],
+  initialMealPlans = [],
+  initialGroupPantry = [],
+  initialShoppingList = [],
+  initialPantryRequests = [],
   currentRole,
   groupId,
   groupName,
@@ -150,6 +213,55 @@ export default function EventWorkspace({
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [eventItem, setEventItem] = useState<EventItem>(initialEvent)
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+
+  // Equipment Checkouts state for this Event
+  const [eventCheckouts, setEventCheckouts] = useState<any[]>(initialCheckouts)
+  const [inventoryList, setInventoryList] = useState<any[]>(groupInventory)
+  const [isEventCheckoutModalOpen, setIsEventCheckoutModalOpen] = useState(false)
+  const [eventCartItems, setEventCartItems] = useState<Array<{ item: any; quantity: number }>>([])
+  const [eventCheckoutSearch, setEventCheckoutSearch] = useState('')
+  const [eventCheckoutDate, setEventCheckoutDate] = useState(
+    initialEvent.start_time ? initialEvent.start_time.split('T')[0] : new Date().toISOString().split('T')[0]
+  )
+  const [eventReturnDate, setEventReturnDate] = useState(
+    initialEvent.end_time ? initialEvent.end_time.split('T')[0] : new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+  )
+  const [eventCheckoutNotes, setEventCheckoutNotes] = useState('')
+
+  // ── Camp Provisions & Meals (Mas2oul Mounet) State ───────────────────────────
+  const [mealPlans, setMealPlans] = useState<EventMealPlan[]>(initialMealPlans)
+  const [groupPantryList, setGroupPantryList] = useState<any[]>(initialGroupPantry)
+  const [shoppingList, setShoppingList] = useState<EventShoppingListItem[]>(initialShoppingList)
+  const [pantryRequests, setPantryRequests] = useState<EventPantryRequest[]>(initialPantryRequests)
+  const [provisionsSubTab, setProvisionsSubTab] = useState<'menu' | 'sourcing' | 'shopping'>('menu')
+  const [selectedCampDay, setSelectedCampDay] = useState<number>(1)
+  const [shoppingFilter, setShoppingFilter] = useState<'all' | 'pending' | 'purchased'>('all')
+  const [extraCampDays, setExtraCampDays] = useState<number>(0)
+
+  // Modals for Provisions
+  const [isRecipePickerOpen, setIsRecipePickerOpen] = useState(false)
+  const [activeSlotForRecipe, setActiveSlotForRecipe] = useState<{
+    dayNumber: number
+    mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'custom'
+    mealTitle: string
+    existingPlanId?: string
+  } | null>(null)
+
+  const [isCustomMealModalOpen, setIsCustomMealModalOpen] = useState(false)
+  const [customMealDay, setCustomMealDay] = useState<number>(1)
+  const [customMealTitle, setCustomMealTitle] = useState('')
+  const [customMealType, setCustomMealType] = useState<any>('custom')
+  const [customMealHeadcountOverride, setCustomMealHeadcountOverride] = useState('')
+  const [customMealIngredients, setCustomMealIngredients] = useState<EventMealIngredient[]>([])
+  
+  const [isShoppingItemModalOpen, setIsShoppingItemModalOpen] = useState(false)
+  const [shoppingItemName, setShoppingItemName] = useState('')
+  const [shoppingItemCategory, setShoppingItemCategory] = useState<any>('supermarket')
+  const [shoppingItemQty, setShoppingItemQty] = useState('1')
+  const [shoppingItemUnit, setShoppingItemUnit] = useState('kg')
+  const [shoppingItemEstCost, setShoppingItemEstCost] = useState('0')
+  const [shoppingItemNotes, setShoppingItemNotes] = useState('')
+  const [isSubmittingProvisions, setIsSubmittingProvisions] = useState(false)
 
   const showStatus = (text: string, type: 'success' | 'error') => {
     setStatusMessage({ text, type })
@@ -175,6 +287,7 @@ export default function EventWorkspace({
 
   // ── Role & Permission Scoping ────────────────────────────────────────────────
   const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+  const isQuartermaster = currentRole === 'amin_tejhizet_group' || isGroupAdmin
   const userAssignedRoles = (eventItem.event_staff || [])
     .filter((s) => s.profile_id === userProfileId)
     .map((s) => s.event_role)
@@ -182,10 +295,12 @@ export default function EventWorkspace({
   const isCampLeader = userAssignedRoles.includes('ka2ed_mouskhayyam') || isGroupAdmin
   const isCampSecretary = userAssignedRoles.includes('amin_serr_mouskhayyam') || isCampLeader
   const isCampTreasurer = userAssignedRoles.includes('amin_sandou2_mouskhayyam') || isCampLeader
+  const isProvisionsLeader = currentRole === 'amin_mounet_group' || userAssignedRoles.includes('mas2oul_matbakh') || userAssignedRoles.includes('mas2oul_mounet') || userAssignedRoles.includes('amin_mounet') || isCampLeader
+  const canManageProvisions = isProvisionsLeader || isCampLeader
 
   // Determine allowed tabs for current user
   const availableTabs = useMemo(() => {
-    const tabs: Array<{ key: 'hierarchy' | 'roster' | 'treasury' | 'documents'; label: string; icon: string }> = [
+    const tabs: Array<{ key: 'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'; label: string; icon: string }> = [
       { key: 'hierarchy', label: 'Staff Hierarchy', icon: '📋' },
     ]
 
@@ -197,11 +312,31 @@ export default function EventWorkspace({
       tabs.push({ key: 'treasury', label: 'Camp Treasury & Expenses', icon: '💰' })
     }
 
+    tabs.push({ key: 'equipment', label: 'Equipment & Logistics', icon: '⛺' })
+    tabs.push({ key: 'provisions', label: 'Provisions & Meals', icon: '🍞' })
     tabs.push({ key: 'documents', label: 'Documents Repository', icon: '📁' })
     return tabs
   }, [isCampLeader, isCampSecretary, isCampTreasurer])
 
-  const [activeTab, setActiveTab] = useState<'hierarchy' | 'roster' | 'treasury' | 'documents'>(availableTabs[0]?.key || 'hierarchy')
+  const [activeTab, setActiveTab] = useState<'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'>(availableTabs[0]?.key || 'hierarchy')
+
+  // ── Calculated Camp Days & Headcount ─────────────────────────────────────────
+  const totalCampDays = useMemo(() => {
+    if (!eventItem.start_time) return 1 + extraCampDays
+    if (!eventItem.end_time) return 1 + extraCampDays
+    const start = new Date(eventItem.start_time)
+    const end = new Date(eventItem.end_time)
+    const diffMs = end.getTime() - start.getTime()
+    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) + 1
+    return Math.max(1, Math.min(30, days)) + extraCampDays
+  }, [eventItem.start_time, eventItem.end_time, extraCampDays])
+
+  const defaultCampHeadcount = useMemo(() => {
+    const participantsCount = (eventItem.event_participants || []).length
+    const staffCount = (eventItem.event_staff || []).length
+    const total = participantsCount + staffCount
+    return total > 0 ? total : 30 // fallback sensible default if roster not yet filled
+  }, [eventItem.event_participants, eventItem.event_staff])
 
   // ── Roster Section Filtering & Splitting ────────────────────────────────────
   const [sectionFilter, setSectionFilter] = useState<string>('all')
@@ -479,6 +614,114 @@ export default function EventWorkspace({
     }
   }
 
+  // ── Equipment Cart & Checkouts Handlers for Event ─────────────────────────
+  const handleEventAddToCart = (item: any) => {
+    const existing = eventCartItems.find((ci) => ci.item.id === item.id)
+    if (existing) {
+      if (existing.quantity < item.quantity_available) {
+        setEventCartItems(
+          eventCartItems.map((ci) => (ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci))
+        )
+      }
+    } else {
+      setEventCartItems([...eventCartItems, { item, quantity: 1 }])
+    }
+  }
+
+  const handleEventUpdateCartQty = (itemId: string, newQty: number) => {
+    const item = inventoryList.find((i) => i.id === itemId)
+    if (!item) return
+    if (newQty <= 0) {
+      setEventCartItems(eventCartItems.filter((ci) => ci.item.id !== itemId))
+    } else {
+      const validQty = Math.min(newQty, item.quantity_available)
+      setEventCartItems(
+        eventCartItems.map((ci) => (ci.item.id === itemId ? { ...ci, quantity: validQty } : ci))
+      )
+    }
+  }
+
+  const handleEventRemoveFromCart = (itemId: string) => {
+    setEventCartItems(eventCartItems.filter((ci) => ci.item.id !== itemId))
+  }
+
+  const handleEventBatchCheckout = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (eventCartItems.length === 0) return showStatus('Please add at least one item.', 'error')
+
+    setLoading(true)
+    const isDirectHandout = isQuartermaster
+    const newCheckouts: any[] = []
+
+    try {
+      for (const cartItem of eventCartItems) {
+        const { data, error } = await supabase
+          .from('inventory_checkouts')
+          .insert({
+            item_id: cartItem.item.id,
+            group_id: groupId,
+            checked_out_to: userProfileId,
+            event_id: eventItem.id,
+            quantity: cartItem.quantity,
+            checkout_date: eventCheckoutDate,
+            return_date: eventReturnDate || null,
+            notes: eventCheckoutNotes.trim() || null,
+            status: isDirectHandout ? 'handed_out' : 'requested',
+            handed_out_by: isDirectHandout ? userProfileId : null,
+          })
+          .select('*')
+          .single()
+
+        if (error) throw error
+        newCheckouts.push(data)
+
+        if (isDirectHandout) {
+          const newAvail = Math.max(0, cartItem.item.quantity_available - cartItem.quantity)
+          await supabase
+            .from('quartermaster_inventory')
+            .update({ quantity_available: newAvail })
+            .eq('id', cartItem.item.id)
+
+          setInventoryList((prev) =>
+            prev.map((it) => (it.id === cartItem.item.id ? { ...it, quantity_available: newAvail } : it))
+          )
+        }
+      }
+
+      setLoading(false)
+      setEventCheckouts((prev) => [...newCheckouts, ...prev])
+      showStatus(
+        isDirectHandout
+          ? `${eventCartItems.length} gear item(s) handed out to this event!`
+          : `Lending request for ${eventCartItems.length} item(s) submitted to the Quartermaster!`,
+        'success'
+      )
+      setEventCartItems([])
+      setIsEventCheckoutModalOpen(false)
+    } catch (err: any) {
+      setLoading(false)
+      showStatus(err?.message || 'Error submitting loan request.', 'error')
+    }
+  }
+
+  const handleEventMarkReturnPending = async (checkoutId: string) => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('inventory_checkouts')
+      .update({ status: 'return_pending' })
+      .eq('id', checkoutId)
+      .select('*')
+      .single()
+
+    setLoading(false)
+    if (error) {
+      showStatus(error.message, 'error')
+    } else {
+      setEventCheckouts((prev) => prev.map((c) => (c.id === data.id ? data : c)))
+      showStatus('Gear marked as returned to depot! Awaiting Quartermaster check-in.', 'success')
+    }
+  }
+
   // ── Treasury Expense Logging ────────────────────────────────────────────────
   const [expCategory, setExpCategory] = useState('food')
   const [expDesc, setExpDesc] = useState('')
@@ -521,6 +764,357 @@ export default function EventWorkspace({
     await supabase.from('event_expenses').delete().eq('id', expId)
     const newExpenses = (eventItem.event_expenses || []).filter((x) => x.id !== expId)
     setEventItem((prev) => ({ ...prev, event_expenses: newExpenses }))
+  }
+
+  // ── Provisions & Meals (Mas2oul Mounet) Calculated Memos ──────────────────
+  const aggregatedIngredients = useMemo(() => {
+    const map: Record<
+      string,
+      {
+        name: string
+        category: 'bakery' | 'butchery' | 'produce' | 'supermarket' | 'pantry' | 'supplies'
+        unit: string
+        totalAmount: number
+        mealsCount: number
+        matchedPantryItem?: any
+        requestedFromPantryQty?: number
+      }
+    > = {}
+
+    mealPlans.forEach((plan) => {
+      const headcount = plan.headcount_override || defaultCampHeadcount
+      const ings = plan.event_meal_ingredients || []
+
+      ings.forEach((ing) => {
+        const rawAmt = Number(ing.portion_per_person) * headcount
+        let finalAmt = rawAmt
+        let finalUnit = ing.unit
+
+        if (finalUnit === 'g' && finalAmt >= 1000) {
+          finalAmt = finalAmt / 1000
+          finalUnit = 'kg'
+        } else if (finalUnit === 'ml' && finalAmt >= 1000) {
+          finalAmt = finalAmt / 1000
+          finalUnit = 'liters'
+        }
+
+        const key = `${ing.name.toLowerCase().trim()}_${finalUnit}`
+        if (!map[key]) {
+          const matchedPantry = groupPantryList.find(
+            (p) =>
+              p.name.toLowerCase().trim().includes(ing.name.toLowerCase().trim()) ||
+              ing.name.toLowerCase().trim().includes(p.name.toLowerCase().trim())
+          )
+
+          const req = pantryRequests.find(
+            (pr) => pr.pantry_item_id === matchedPantry?.id
+          )
+
+          map[key] = {
+            name: ing.name,
+            category: ing.category,
+            unit: finalUnit,
+            totalAmount: 0,
+            mealsCount: 0,
+            matchedPantryItem: matchedPantry,
+            requestedFromPantryQty: req?.quantity || 0,
+          }
+        }
+
+        map[key].totalAmount += finalAmt
+        map[key].mealsCount += 1
+      })
+    })
+
+    return Object.values(map)
+  }, [mealPlans, defaultCampHeadcount, groupPantryList, pantryRequests])
+
+  // ── Provisions & Meals Action Handlers ─────────────────────────────────────
+  const handleApplyRecipeTemplate = async (recipe: MealRecipeTemplate) => {
+    if (!activeSlotForRecipe) return
+    setIsSubmittingProvisions(true)
+
+    try {
+      let planId = activeSlotForRecipe.existingPlanId
+      let savedPlan: EventMealPlan
+
+      if (planId) {
+        const { data, error } = await supabase
+          .from('event_meal_plans')
+          .update({
+            recipe_name: recipe.name,
+            notes: recipe.description,
+          })
+          .eq('id', planId)
+          .select('*')
+          .single()
+        if (error) throw error
+        savedPlan = data
+      } else {
+        const { data, error } = await supabase
+          .from('event_meal_plans')
+          .insert({
+            event_id: eventItem.id,
+            day_number: activeSlotForRecipe.dayNumber,
+            meal_type: activeSlotForRecipe.mealType,
+            meal_title: activeSlotForRecipe.mealTitle,
+            recipe_name: recipe.name,
+            notes: recipe.description,
+          })
+          .select('*')
+          .single()
+        if (error) throw error
+        savedPlan = data
+        planId = data.id
+      }
+
+      await supabase.from('event_meal_ingredients').delete().eq('meal_plan_id', planId)
+
+      const ingsToInsert = recipe.ingredients.map((ing) => ({
+        meal_plan_id: planId,
+        event_id: eventItem.id,
+        name: ing.name,
+        portion_per_person: ing.portion_per_person,
+        unit: ing.unit,
+        category: ing.category,
+      }))
+
+      const { data: insertedIngs, error: ingsErr } = await supabase
+        .from('event_meal_ingredients')
+        .insert(ingsToInsert)
+        .select('*')
+
+      if (ingsErr) throw ingsErr
+
+      const completePlan: EventMealPlan = {
+        ...savedPlan,
+        event_meal_ingredients: insertedIngs || [],
+      }
+
+      setMealPlans((prev) => {
+        const exists = prev.some((p) => p.id === completePlan.id)
+        if (exists) {
+          return prev.map((p) => (p.id === completePlan.id ? completePlan : p))
+        }
+        return [...prev, completePlan]
+      })
+
+      setIsRecipePickerOpen(false)
+      setActiveSlotForRecipe(null)
+      showStatus(`Applied "${recipe.name}" to ${activeSlotForRecipe.mealTitle}!`, 'success')
+    } catch (err: any) {
+      showStatus(err?.message || 'Failed to apply recipe template.', 'error')
+    } finally {
+      setIsSubmittingProvisions(false)
+    }
+  }
+
+  const handleDeleteMealPlan = async (planId: string) => {
+    if (!confirm('Are you sure you want to remove this planned meal and its ingredients?')) return
+    setIsSubmittingProvisions(true)
+
+    try {
+      await supabase.from('event_meal_plans').update({ is_deleted: true }).eq('id', planId)
+      setMealPlans((prev) => prev.filter((p) => p.id !== planId))
+      showStatus('Meal removed from camp schedule.', 'success')
+    } catch (err: any) {
+      showStatus(err?.message || 'Error deleting meal.', 'error')
+    } finally {
+      setIsSubmittingProvisions(false)
+    }
+  }
+
+  const handleSaveCustomMeal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!customMealTitle.trim()) {
+      showStatus('Please enter a meal title.', 'error')
+      return
+    }
+
+    setIsSubmittingProvisions(true)
+    try {
+      const hcOverride = customMealHeadcountOverride ? parseInt(customMealHeadcountOverride) : null
+
+      const { data: planData, error: planErr } = await supabase
+        .from('event_meal_plans')
+        .insert({
+          event_id: eventItem.id,
+          day_number: customMealDay,
+          meal_type: customMealType,
+          meal_title: customMealTitle.trim(),
+          recipe_name: customMealTitle.trim(),
+          headcount_override: hcOverride,
+        })
+        .select('*')
+        .single()
+
+      if (planErr) throw planErr
+
+      let savedIngs: any[] = []
+      if (customMealIngredients.length > 0) {
+        const ingsToInsert = customMealIngredients.map((ing) => ({
+          meal_plan_id: planData.id,
+          event_id: eventItem.id,
+          name: ing.name.trim(),
+          portion_per_person: Number(ing.portion_per_person) || 1,
+          unit: ing.unit,
+          category: ing.category,
+        }))
+
+        const { data: insData, error: insErr } = await supabase
+          .from('event_meal_ingredients')
+          .insert(ingsToInsert)
+          .select('*')
+
+        if (!insErr && insData) savedIngs = insData
+      }
+
+      const completePlan: EventMealPlan = {
+        ...planData,
+        event_meal_ingredients: savedIngs,
+      }
+
+      setMealPlans((prev) => [...prev, completePlan])
+      setIsCustomMealModalOpen(false)
+      setCustomMealTitle('')
+      setCustomMealIngredients([])
+      setCustomMealHeadcountOverride('')
+      showStatus(`Created custom meal "${completePlan.meal_title}"!`, 'success')
+    } catch (err: any) {
+      showStatus(err?.message || 'Failed to save custom meal.', 'error')
+    } finally {
+      setIsSubmittingProvisions(false)
+    }
+  }
+
+  const handleToggleShoppingItem = async (itemId: string, currentPurchased: boolean) => {
+    const nextPurchased = !currentPurchased
+    setShoppingList((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              is_purchased: nextPurchased,
+              purchased_by: nextPurchased ? userProfileId : null,
+            }
+          : item
+      )
+    )
+
+    await supabase
+      .from('event_shopping_list_items')
+      .update({
+        is_purchased: nextPurchased,
+        purchased_by: nextPurchased ? userProfileId : null,
+      })
+      .eq('id', itemId)
+  }
+
+  const handleAddShoppingItem = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!shoppingItemName.trim()) return
+
+    const qty = parseFloat(shoppingItemQty) || 1
+    const cost = parseFloat(shoppingItemEstCost) || 0
+
+    const { data, error } = await supabase
+      .from('event_shopping_list_items')
+      .insert({
+        event_id: eventItem.id,
+        name: shoppingItemName.trim(),
+        category: shoppingItemCategory,
+        quantity_needed: qty,
+        unit: shoppingItemUnit,
+        estimated_cost: cost,
+        notes: shoppingItemNotes.trim() || null,
+        is_purchased: false,
+      })
+      .select('*')
+      .single()
+
+    if (error) {
+      showStatus(error.message, 'error')
+    } else {
+      setShoppingList((prev) => [data, ...prev])
+      setShoppingItemName('')
+      setShoppingItemQty('1')
+      setShoppingItemEstCost('0')
+      setShoppingItemNotes('')
+      setIsShoppingItemModalOpen(false)
+      showStatus(`Added "${data.name}" to grocery shopping list!`, 'success')
+    }
+  }
+
+  const handleDeleteShoppingItem = async (itemId: string) => {
+    const { error } = await supabase.from('event_shopping_list_items').delete().eq('id', itemId)
+    if (!error) {
+      setShoppingList((prev) => prev.filter((i) => i.id !== itemId))
+      showStatus('Item removed from shopping list.', 'success')
+    }
+  }
+
+  const handleGenerateShoppingListFromMeals = async () => {
+    if (aggregatedIngredients.length === 0) {
+      showStatus('No ingredients found in your camp meal plans yet.', 'error')
+      return
+    }
+
+    setIsSubmittingProvisions(true)
+    try {
+      const inserts = aggregatedIngredients.map((agg) => ({
+        event_id: eventItem.id,
+        name: agg.name,
+        category: agg.category === 'pantry' ? 'supermarket' : agg.category,
+        quantity_needed: Math.round(agg.totalAmount * 100) / 100,
+        unit: agg.unit,
+        is_purchased: false,
+      }))
+
+      const { data, error } = await supabase
+        .from('event_shopping_list_items')
+        .insert(inserts)
+        .select('*')
+
+      if (error) throw error
+
+      setShoppingList((prev) => [...(data || []), ...prev])
+      setProvisionsSubTab('shopping')
+      showStatus(`Generated ${data?.length || 0} grocery items from camp meal plan!`, 'success')
+    } catch (err: any) {
+      showStatus(err?.message || 'Error generating shopping list.', 'error')
+    } finally {
+      setIsSubmittingProvisions(false)
+    }
+  }
+
+  const handleRequestPantryItem = async (pantryItem: any, requestedQuantity: number, unit: string) => {
+    if (!pantryItem || requestedQuantity <= 0) return
+    setIsSubmittingProvisions(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('event_pantry_requests')
+        .insert({
+          event_id: eventItem.id,
+          group_id: groupId,
+          pantry_item_id: pantryItem.id,
+          quantity: requestedQuantity,
+          unit: unit,
+          status: 'requested',
+          requested_by: userProfileId,
+        })
+        .select('*, group_pantry_items(name, unit)')
+        .single()
+
+      if (error) throw error
+
+      setPantryRequests((prev) => [data, ...prev])
+      showStatus(`Submitted request for ${requestedQuantity} ${unit} of "${pantryItem.name}" from Group Pantry!`, 'success')
+    } catch (err: any) {
+      showStatus(err?.message || 'Error requesting from pantry.', 'error')
+    } finally {
+      setIsSubmittingProvisions(false)
+    }
   }
 
   // ── Documents & Direct Storage Upload ──────────────────────────────────────
@@ -1381,6 +1975,792 @@ export default function EventWorkspace({
             </div>
           )}
 
+          {/* ── TAB 5: EQUIPMENT & LOGISTICS WORKSPACE ───────────────────────── */}
+          {activeTab === 'equipment' && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-5">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-teal-700" />
+                    <span>Event Equipment & Logistics (*Tejhizet El Mouskhayyam*)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Manage equipment assigned to this event, submit new gear requests to the Quartermaster, and track returns.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEventCartItems([])
+                    setIsEventCheckoutModalOpen(true)
+                  }}
+                  className="bg-teal-700 hover:bg-teal-600 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1.5 shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                  <span>Request Gear for this Event</span>
+                </button>
+              </div>
+
+              {/* Status Counters */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Requested</span>
+                  <span className="text-lg font-black text-amber-900">
+                    {eventCheckouts.filter((c) => c.status === 'requested').length}
+                  </span>
+                </div>
+                <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">In Use at Camp</span>
+                  <span className="text-lg font-black text-teal-900">
+                    {eventCheckouts.filter((c) => c.status === 'handed_out' || c.status === 'return_pending').length}
+                  </span>
+                </div>
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Returned</span>
+                  <span className="text-lg font-black text-emerald-900">
+                    {eventCheckouts.filter((c) => c.status === 'returned').length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Event Checkouts Table */}
+              <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+                {eventCheckouts.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 space-y-2">
+                    <Package className="h-8 w-8 mx-auto opacity-30" />
+                    <p className="text-xs font-bold text-slate-600">No equipment requested for this event yet.</p>
+                    <p className="text-[11px] text-slate-400">Click &quot;Request Gear for this Event&quot; to borrow gear from the Quartermaster.</p>
+                  </div>
+                ) : (
+                  eventCheckouts.map((c) => {
+                    const item = inventoryList.find((i) => i.id === c.item_id)
+                    const itemName = item ? item.name : 'Equipment Item'
+                    const requesterLeader = leaders.find((l) => l.id === c.checked_out_to)
+
+                    return (
+                      <div key={c.id} className="p-3.5 sm:p-4 hover:bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-900 text-sm">{itemName}</span>
+                            <span className="bg-teal-100 text-teal-900 px-2 py-0.5 rounded-md font-black">
+                              Qty: {c.quantity}
+                            </span>
+                            {c.status === 'requested' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                ⏳ Pending Approval
+                              </span>
+                            )}
+                            {c.status === 'handed_out' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                                📦 In Use
+                              </span>
+                            )}
+                            {c.status === 'return_pending' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                                🔄 Returned • Awaiting Inspection
+                              </span>
+                            )}
+                            {c.status === 'returned' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                ✓ Returned ({c.returned_condition || 'Good'})
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+                            <span>Requested by: <strong>{requesterLeader?.fullName || 'Leader'}</strong></span>
+                            <span>•</span>
+                            <span>Needed: {c.checkout_date} → {c.return_date || 'End of camp'}</span>
+                          </div>
+
+                          {c.notes && <p className="text-[11px] text-slate-400 italic">Note: {c.notes}</p>}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {c.status === 'handed_out' && (
+                            <button
+                              type="button"
+                              onClick={() => handleEventMarkReturnPending(c.id)}
+                              className="bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-3 py-1.5 rounded-xl text-xs border border-purple-200 transition-colors flex items-center gap-1"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              <span>Mark for Return</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════
+              TAB 5: CAMP PROVISIONS & MEALS (MAS2OUL MOUNET)
+          ═══════════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'provisions' && (
+            <div className="space-y-4">
+              {/* Provisions Header Banner */}
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800 shrink-0 shadow-2xs">
+                      <UtensilsCrossed className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                        Camp Provisions & Meals (*Al Mounet*)
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Plan daily menus with scout recipes, auto-scale ingredients for {defaultCampHeadcount} attendees, and manage grocery shopping.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Quick Action Buttons */}
+                  {canManageProvisions && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setCustomMealDay(selectedCampDay)
+                          setCustomMealTitle('')
+                          setCustomMealType('custom')
+                          setCustomMealHeadcountOverride('')
+                          setCustomMealIngredients([])
+                          setIsCustomMealModalOpen(true)
+                        }}
+                        className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1.5"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Custom Meal</span>
+                      </button>
+                      <button
+                        onClick={handleGenerateShoppingListFromMeals}
+                        disabled={isSubmittingProvisions || aggregatedIngredients.length === 0}
+                        className="bg-teal-700 hover:bg-teal-600 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1.5"
+                        title="Generate shopping list from all planned meals"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        <span>Auto-Generate Shopping List</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-Tabs: Menu Planner / Sourcing / Grocery Checklist */}
+                <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
+                  <button
+                    onClick={() => setProvisionsSubTab('menu')}
+                    className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      provisionsSubTab === 'menu'
+                        ? 'bg-teal-800 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Daily Menu Planner</span>
+                    <span className="opacity-70 font-normal">({mealPlans.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setProvisionsSubTab('sourcing')}
+                    className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      provisionsSubTab === 'sourcing'
+                        ? 'bg-teal-800 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Package className="h-3.5 w-3.5" />
+                    <span>Ingredients & Pantry</span>
+                    <span className="opacity-70 font-normal">({aggregatedIngredients.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setProvisionsSubTab('shopping')}
+                    className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      provisionsSubTab === 'shopping'
+                        ? 'bg-teal-800 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5" />
+                    <span>Grocery Checklist</span>
+                    <span className="opacity-70 font-normal">({shoppingList.length})</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ── SUB-TAB 1: DAILY MENU PLANNER ── */}
+              {provisionsSubTab === 'menu' && (
+                <div className="space-y-4">
+                  {/* Day Selector Pill Bar */}
+                  <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: totalCampDays }).map((_, idx) => {
+                        const dayNum = idx + 1
+                        const isSelected = selectedCampDay === dayNum
+                        const dayMeals = mealPlans.filter((m) => m.day_number === dayNum)
+
+                        return (
+                          <button
+                            key={dayNum}
+                            onClick={() => setSelectedCampDay(dayNum)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                              isSelected
+                                ? 'bg-slate-900 text-white shadow-xs'
+                                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span>Day {dayNum}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                              isSelected ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {dayMeals.length} meals
+                            </span>
+                          </button>
+                        )
+                      })}
+
+                      {canManageProvisions && (
+                        <button
+                          onClick={() => setExtraCampDays((prev) => prev + 1)}
+                          className="px-2.5 py-2 rounded-xl text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 hover:bg-teal-100 flex items-center gap-1 shrink-0"
+                          title="Add extra camp day"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Add Day</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-900 shrink-0">
+                      <Users className="h-3.5 w-3.5 text-amber-700" />
+                      <span>{defaultCampHeadcount} Confirmed Camp Attendees</span>
+                    </div>
+                  </div>
+
+                  {/* 4 Default Meal Slots + Custom Meals for Selected Day */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {(() => {
+                      const dayMeals = mealPlans.filter((m) => m.day_number === selectedCampDay)
+
+                      const standardSlots: Array<{
+                        mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+                        title: string
+                        icon: string
+                        color: string
+                      }> = [
+                        { mealType: 'breakfast', title: 'Breakfast (الترويقة)', icon: '☀️', color: 'border-amber-200 bg-amber-50/40' },
+                        { mealType: 'lunch', title: 'Lunch (الغداء)', icon: '🍲', color: 'border-teal-200 bg-teal-50/40' },
+                        { mealType: 'dinner', title: 'Dinner (العشاء)', icon: '🌙', color: 'border-indigo-200 bg-indigo-50/40' },
+                        { mealType: 'snack', title: 'Campfire Sahra & Snacks (سهرة النار)', icon: '🔥', color: 'border-orange-200 bg-orange-50/40' },
+                      ]
+
+                      const renderedSlotTypes = new Set<string>()
+
+                      return (
+                        <>
+                          {standardSlots.map((slot) => {
+                            renderedSlotTypes.add(slot.mealType)
+                            const existingMeal = dayMeals.find((m) => m.meal_type === slot.mealType)
+                            const headcount = existingMeal?.headcount_override || defaultCampHeadcount
+
+                            return (
+                              <div
+                                key={slot.mealType}
+                                className="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm transition-all p-4 flex flex-col justify-between gap-3 min-h-[170px]"
+                              >
+                                <div className="space-y-2">
+                                  {/* Slot Title Row */}
+                                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="text-base">{slot.icon}</span>
+                                      <span className="font-black text-slate-900 text-xs truncate">
+                                        {slot.title}
+                                      </span>
+                                    </div>
+
+                                    {existingMeal && (
+                                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                        👥 {headcount} portions
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Meal Body */}
+                                  {existingMeal ? (
+                                    <div className="space-y-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                          <h4 className="font-black text-teal-900 text-sm">
+                                            {existingMeal.recipe_name || existingMeal.meal_title}
+                                          </h4>
+                                          {existingMeal.notes && (
+                                            <p className="text-[11px] text-slate-500 line-clamp-1">
+                                              {existingMeal.notes}
+                                            </p>
+                                          )}
+                                        </div>
+
+                                        {canManageProvisions && (
+                                          <button
+                                            onClick={() => handleDeleteMealPlan(existingMeal.id)}
+                                            className="text-slate-400 hover:text-rose-600 p-1 shrink-0"
+                                            title="Remove meal"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Scaled Ingredients Pills */}
+                                      <div className="space-y-1 pt-1">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                          Ingredients ({existingMeal.event_meal_ingredients?.length || 0})
+                                        </span>
+                                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto no-scrollbar">
+                                          {(existingMeal.event_meal_ingredients || []).map((ing, idx) => {
+                                            const rawTotal = Number(ing.portion_per_person) * headcount
+                                            let displayAmount = rawTotal
+                                            let displayUnit = ing.unit
+                                            if (displayUnit === 'g' && displayAmount >= 1000) {
+                                              displayAmount = Math.round((displayAmount / 1000) * 10) / 10
+                                              displayUnit = 'kg'
+                                            } else if (displayUnit === 'ml' && displayAmount >= 1000) {
+                                              displayAmount = Math.round((displayAmount / 1000) * 10) / 10
+                                              displayUnit = 'liters'
+                                            } else {
+                                              displayAmount = Math.round(displayAmount * 10) / 10
+                                            }
+
+                                            return (
+                                              <span
+                                                key={idx}
+                                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200 shrink-0"
+                                              >
+                                                {ing.name}: <strong>{displayAmount} {displayUnit}</strong>
+                                              </span>
+                                            )
+                                          })}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="py-4 text-center space-y-1">
+                                      <p className="text-xs text-slate-400 font-medium">No meal configured for this slot yet.</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Footer Actions */}
+                                {canManageProvisions && (
+                                  <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveSlotForRecipe({
+                                          dayNumber: selectedCampDay,
+                                          mealType: slot.mealType,
+                                          mealTitle: slot.title,
+                                          existingPlanId: existingMeal?.id,
+                                        })
+                                        setIsRecipePickerOpen(true)
+                                      }}
+                                      className="flex-1 py-1.5 px-3 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs border border-teal-200 transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-2xs"
+                                    >
+                                      <ChefHat className="h-3.5 w-3.5 text-teal-700" />
+                                      <span>{existingMeal ? 'Change Recipe' : 'Choose Scout Recipe'}</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+
+                          {/* Any Custom / Additional Planned Meals for this Day */}
+                          {dayMeals
+                            .filter((m) => !renderedSlotTypes.has(m.meal_type) || m.meal_type === 'custom')
+                            .map((customMeal) => {
+                              const headcount = customMeal.headcount_override || defaultCampHeadcount
+                              return (
+                                <div
+                                  key={customMeal.id}
+                                  className="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm transition-all p-4 flex flex-col justify-between gap-3 min-h-[170px]"
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-base">⭐</span>
+                                        <span className="font-black text-slate-900 text-xs truncate">
+                                          {customMeal.meal_title}
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                        👥 {headcount} portions
+                                      </span>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <h4 className="font-black text-teal-900 text-sm">
+                                          {customMeal.recipe_name || customMeal.meal_title}
+                                        </h4>
+                                        {canManageProvisions && (
+                                          <button
+                                            onClick={() => handleDeleteMealPlan(customMeal.id)}
+                                            className="text-slate-400 hover:text-rose-600 p-1 shrink-0"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Scaled Ingredients Pills */}
+                                      <div className="space-y-1 pt-1">
+                                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto no-scrollbar">
+                                          {(customMeal.event_meal_ingredients || []).map((ing, idx) => {
+                                            const rawTotal = Number(ing.portion_per_person) * headcount
+                                            let displayAmount = rawTotal
+                                            let displayUnit = ing.unit
+                                            if (displayUnit === 'g' && displayAmount >= 1000) {
+                                              displayAmount = Math.round((displayAmount / 1000) * 10) / 10
+                                              displayUnit = 'kg'
+                                            } else if (displayUnit === 'ml' && displayAmount >= 1000) {
+                                              displayAmount = Math.round((displayAmount / 1000) * 10) / 10
+                                              displayUnit = 'liters'
+                                            }
+
+                                            return (
+                                              <span
+                                                key={idx}
+                                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200 shrink-0"
+                                              >
+                                                {ing.name}: <strong>{displayAmount} {displayUnit}</strong>
+                                              </span>
+                                            )
+                                          })}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* ── SUB-TAB 2: INGREDIENTS SOURCING & CENTRAL PANTRY ── */}
+              {provisionsSubTab === 'sourcing' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="font-black text-slate-900 text-sm">
+                        Master Ingredient Aggregator ({aggregatedIngredients.length} unique ingredients)
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Total quantities scaled across all camp days and compared against Group Central Pantry stock.
+                      </p>
+                    </div>
+
+                    {canManageProvisions && (
+                      <button
+                        onClick={handleGenerateShoppingListFromMeals}
+                        className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+                      >
+                        <ShoppingCart className="h-3.5 w-3.5" />
+                        <span>Add All to Shopping List</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {aggregatedIngredients.length === 0 ? (
+                    <div className="bg-white p-12 text-center text-slate-400 space-y-2 rounded-2xl border border-slate-200">
+                      <Package className="h-8 w-8 mx-auto opacity-30" />
+                      <p className="font-bold text-slate-600 text-xs">No ingredients planned yet.</p>
+                      <p className="text-xs text-slate-400">Configure meals in the Daily Menu Planner to auto-calculate required ingredients.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {aggregatedIngredients.map((item, idx) => {
+                        const hasPantryMatch = Boolean(item.matchedPantryItem)
+                        const pantryStock = item.matchedPantryItem?.quantity_available || 0
+
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between gap-2.5"
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-black text-slate-900 text-sm leading-snug break-words">
+                                  {item.name}
+                                </span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 capitalize shrink-0">
+                                  {item.category}
+                                </span>
+                              </div>
+
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-xs text-slate-400">Total Required:</span>
+                                <span className="text-base font-black text-teal-900">
+                                  {Math.round(item.totalAmount * 10) / 10} {item.unit}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  ({item.mealsCount} {item.mealsCount === 1 ? 'meal' : 'meals'})
+                                </span>
+                              </div>
+
+                              {/* Sourcing Status */}
+                              {hasPantryMatch ? (
+                                <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                                  <div className="flex items-center justify-between text-[11px] font-bold text-emerald-900">
+                                    <span>In Central Pantry:</span>
+                                    <span>{pantryStock} {item.matchedPantryItem?.unit || item.unit}</span>
+                                  </div>
+                                  {item.requestedFromPantryQty ? (
+                                    <span className="text-[10px] text-emerald-700 font-bold block">
+                                      ✓ Requested {item.requestedFromPantryQty} {item.unit} from pantry
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 font-medium">
+                                  🛒 Local purchase needed for camp
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            {canManageProvisions && (
+                              <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5">
+                                {hasPantryMatch && (
+                                  <button
+                                    onClick={() => handleRequestPantryItem(item.matchedPantryItem, Math.min(pantryStock, item.totalAmount), item.unit)}
+                                    className="flex-1 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-[11px] border border-teal-200 flex items-center justify-center gap-1"
+                                  >
+                                    <Package className="h-3 w-3" />
+                                    <span>Request from Pantry</span>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── SUB-TAB 3: INTERACTIVE MOBILE GROCERY SHOPPING CHECKLIST ── */}
+              {provisionsSubTab === 'shopping' && (
+                <div className="space-y-4">
+                  {/* Shopping Controls & Progress */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-black text-slate-900 text-sm">
+                          Camp Grocery Shopping Checklist
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          Touch item to mark as purchased. Organised by grocery sections.
+                        </p>
+                      </div>
+
+                      {canManageProvisions && (
+                        <button
+                          onClick={() => {
+                            setShoppingItemName('')
+                            setShoppingItemCategory('supermarket')
+                            setShoppingItemQty('1')
+                            setShoppingItemUnit('kg')
+                            setShoppingItemEstCost('0')
+                            setShoppingItemNotes('')
+                            setIsShoppingItemModalOpen(true)
+                          }}
+                          className="bg-teal-700 hover:bg-teal-600 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Add Grocery Item</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Progress Bar */}
+                    {shoppingList.length > 0 && (() => {
+                      const purchasedCount = shoppingList.filter((s) => s.is_purchased).length
+                      const pct = Math.round((purchasedCount / shoppingList.length) * 100)
+
+                      return (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="text-slate-700">
+                              Purchased: <strong>{purchasedCount} of {shoppingList.length} items</strong>
+                            </span>
+                            <span className="text-teal-700">{pct}% Complete</span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-teal-600 transition-all duration-300 rounded-full"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Filter Chips */}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        onClick={() => setShoppingFilter('all')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          shoppingFilter === 'all'
+                            ? 'bg-slate-900 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        All ({shoppingList.length})
+                      </button>
+                      <button
+                        onClick={() => setShoppingFilter('pending')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          shoppingFilter === 'pending'
+                            ? 'bg-amber-800 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Pending ({shoppingList.filter((s) => !s.is_purchased).length})
+                      </button>
+                      <button
+                        onClick={() => setShoppingFilter('purchased')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          shoppingFilter === 'purchased'
+                            ? 'bg-emerald-800 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Purchased ({shoppingList.filter((s) => s.is_purchased).length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grocery List by Category */}
+                  {shoppingList.length === 0 ? (
+                    <div className="bg-white p-12 text-center text-slate-400 space-y-2 rounded-2xl border border-slate-200">
+                      <ShoppingCart className="h-8 w-8 mx-auto opacity-30" />
+                      <p className="font-bold text-slate-600 text-xs">Your grocery checklist is empty.</p>
+                      <p className="text-xs text-slate-400">Click &quot;Auto-Generate Shopping List&quot; or manually add items.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {['bakery', 'butchery', 'produce', 'supermarket', 'supplies'].map((catKey) => {
+                        const catItems = shoppingList
+                          .filter((i) => (i.category || 'supermarket') === catKey)
+                          .filter((i) => {
+                            if (shoppingFilter === 'pending') return !i.is_purchased
+                            if (shoppingFilter === 'purchased') return i.is_purchased
+                            return true
+                          })
+
+                        if (catItems.length === 0) return null
+
+                        const catLabels: Record<string, string> = {
+                          bakery: '🍞 Bakery & Bread (الفرن والخبز)',
+                          butchery: '🥩 Butchery & Meat (الملحمة واللحوم)',
+                          produce: '🥦 Produce & Vegetables (الخضار والفواكه)',
+                          supermarket: '🛒 Supermarket & Dairy (السوبرماركت والألبان)',
+                          supplies: '🧼 Kitchen Supplies & Foil (مستلزمات المطبخ)',
+                        }
+
+                        return (
+                          <div
+                            key={catKey}
+                            className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs"
+                          >
+                            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200/80 font-black text-xs text-slate-800">
+                              {catLabels[catKey] || catKey} ({catItems.length})
+                            </div>
+
+                            <div className="divide-y divide-slate-100">
+                              {catItems.map((item) => (
+                                <div
+                                  key={item.id}
+                                  onClick={() => canManageProvisions && handleToggleShoppingItem(item.id, item.is_purchased)}
+                                  className={`p-3.5 sm:p-4 flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                                    item.is_purchased
+                                      ? 'bg-slate-50/60 opacity-60'
+                                      : 'hover:bg-slate-50/80'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div
+                                      className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                                        item.is_purchased
+                                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                                          : 'bg-white border-slate-300 text-transparent'
+                                      }`}
+                                    >
+                                      <Check className="h-4 w-4 stroke-[3]" />
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <span
+                                        className={`font-black text-sm block truncate ${
+                                          item.is_purchased
+                                            ? 'line-through text-slate-500'
+                                            : 'text-slate-900'
+                                        }`}
+                                      >
+                                        {item.name}
+                                      </span>
+                                      {item.notes && (
+                                        <span className="text-[10px] text-slate-400 block truncate">
+                                          {item.notes}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2.5 shrink-0">
+                                    <span className="text-xs font-black text-teal-900 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                                      {item.quantity_needed} {item.unit}
+                                    </span>
+
+                                    {canManageProvisions && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleDeleteShoppingItem(item.id)
+                                        }}
+                                        className="p-1 text-slate-300 hover:text-rose-600 transition-colors"
+                                        title="Delete item"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── EDIT EVENT DETAILS MODAL ──────────────────────────────────── */}
           {isEditEventModalOpen && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
@@ -1632,6 +3012,645 @@ export default function EventWorkspace({
                       className="flex-1 py-2 bg-teal-800 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow transition-colors"
                     >
                       Log Transaction
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ── EVENT GEAR LENDING REQUEST MODAL ───────────────────────── */}
+          {isEventCheckoutModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
+                <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5 text-teal-700" />
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {isQuartermaster ? 'Hand Out Gear to this Event' : 'Request Event Equipment Lending'}
+                      </h3>
+                      <p className="text-xs text-slate-500">{eventItem.title}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsEventCheckoutModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Selected Items */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900">Selected Items ({eventCartItems.length})</span>
+                    {eventCartItems.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setEventCartItems([])}
+                        className="text-[10px] font-bold text-rose-600 hover:underline"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  {eventCartItems.length === 0 ? (
+                    <div className="p-3.5 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500">
+                      No items selected yet. Choose gear from the list below.
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+                      {eventCartItems.map((ci) => (
+                        <div
+                          key={ci.item.id}
+                          className="bg-white p-2 rounded-lg border border-slate-200 flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold text-slate-900 block truncate">{ci.item.name}</span>
+                            <span className="text-[10px] text-slate-400">Available in stock: {ci.item.quantity_available}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleEventUpdateCartQty(ci.item.id, ci.quantity - 1)}
+                              className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-700"
+                            >
+                              -
+                            </button>
+                            <span className="w-6 text-center font-bold text-teal-800">{ci.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleEventUpdateCartQty(ci.item.id, ci.quantity + 1)}
+                              disabled={ci.quantity >= ci.item.quantity_available}
+                              className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center font-bold text-slate-700"
+                            >
+                              +
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleEventRemoveFromCart(ci.item.id)}
+                              className="p-1 text-slate-400 hover:text-rose-600 ml-1"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Available Gear Search */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <span className="text-xs font-bold text-slate-800 block">Available Group Inventory</span>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2 h-3 w-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search available tents, kitchen, lighting…"
+                      value={eventCheckoutSearch}
+                      onChange={(e) => setEventCheckoutSearch(e.target.value)}
+                      className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                    {inventoryList
+                      .filter((i) => i.quantity_available > 0)
+                      .filter((i) =>
+                        eventCheckoutSearch
+                          ? i.name.toLowerCase().includes(eventCheckoutSearch.toLowerCase()) ||
+                            i.category.toLowerCase().includes(eventCheckoutSearch.toLowerCase())
+                          : true
+                      ).map((item) => {
+                        const inCart = eventCartItems.find((ci) => ci.item.id === item.id)
+                        return (
+                          <div
+                            key={item.id}
+                            className="p-1.5 px-2 bg-slate-50 hover:bg-slate-100 rounded-lg flex items-center justify-between gap-2 text-xs"
+                          >
+                            <div className="min-w-0 flex-1 truncate">
+                              <span className="font-bold text-slate-900">{item.name}</span>
+                              <span className="text-[10px] text-teal-700 ml-1.5 font-semibold">
+                                ({item.quantity_available} avail)
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleEventAddToCart(item)}
+                              className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all ${
+                                inCart
+                                  ? 'bg-teal-100 text-teal-900 border border-teal-300'
+                                  : 'bg-teal-700 text-white hover:bg-teal-600 shadow-2xs'
+                              }`}
+                            >
+                              {inCart ? `Added (${inCart.quantity})` : '+ Add'}
+                            </button>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </div>
+
+                {/* Form Dates & Notes */}
+                <form onSubmit={handleEventBatchCheckout} className="space-y-3 pt-2 border-t border-slate-100">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Needed From</label>
+                      <input
+                        type="date"
+                        required
+                        value={eventCheckoutDate}
+                        onChange={(e) => setEventCheckoutDate(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Return Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={eventReturnDate}
+                        onChange={(e) => setEventReturnDate(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Special Notes / Camp Purpose</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Needed for sub-camp pioneering competition"
+                      value={eventCheckoutNotes}
+                      onChange={(e) => setEventCheckoutNotes(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={eventCartItems.length === 0}
+                    className="w-full py-2.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>
+                      {isQuartermaster
+                        ? `Hand Out Gear (${eventCartItems.length} items)`
+                        : `Submit Loan Request (${eventCartItems.length} items)`}
+                    </span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+          {/* ═══════════════════════════════════════════════════════════════════════
+              MODAL 1: SCOUT RECIPES LIBRARY PICKER
+          ═══════════════════════════════════════════════════════════════════════ */}
+          {isRecipePickerOpen && activeSlotForRecipe && (
+            <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
+                <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <ChefHat className="h-5 w-5 text-teal-700" />
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">
+                        Choose Scout Camp Recipe ({activeSlotForRecipe.mealTitle})
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Portions auto-scale for {defaultCampHeadcount} attendees
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsRecipePickerOpen(false)
+                      setActiveSlotForRecipe(null)
+                    }}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Recipe Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+                  {SCOUT_RECIPES_LIBRARY
+                    .filter((r) => {
+                      if (activeSlotForRecipe.mealType === 'breakfast') return r.meal_type === 'breakfast'
+                      if (activeSlotForRecipe.mealType === 'lunch') return r.meal_type === 'lunch'
+                      if (activeSlotForRecipe.mealType === 'dinner') return r.meal_type === 'dinner'
+                      if (activeSlotForRecipe.mealType === 'snack') return r.meal_type === 'snack'
+                      return true
+                    })
+                    .map((recipe) => (
+                      <div
+                        key={recipe.id}
+                        className="bg-slate-50 hover:bg-teal-50/40 p-3.5 rounded-2xl border border-slate-200 hover:border-teal-300 transition-all flex flex-col justify-between gap-3 group"
+                      >
+                        <div className="space-y-1.5">
+                          <h4 className="font-black text-slate-900 text-sm group-hover:text-teal-900 transition-colors">
+                            {recipe.name}
+                          </h4>
+                          <p className="text-[11px] font-medium text-slate-500">
+                            {recipe.nameAr}
+                          </p>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {recipe.description}
+                          </p>
+
+                          <div className="pt-1.5 border-t border-slate-200/60">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                              Portions Breakdown ({defaultCampHeadcount} people):
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {recipe.ingredients.map((ing, idx) => {
+                                const totalAmt = Math.round(ing.portion_per_person * defaultCampHeadcount * 10) / 10
+                                let displayAmt = totalAmt
+                                let displayUnit = ing.unit
+                                if (displayUnit === 'g' && displayAmt >= 1000) {
+                                  displayAmt = Math.round((displayAmt / 1000) * 10) / 10
+                                  displayUnit = 'kg'
+                                } else if (displayUnit === 'ml' && displayAmt >= 1000) {
+                                  displayAmt = Math.round((displayAmt / 1000) * 10) / 10
+                                  displayUnit = 'liters'
+                                }
+
+                                return (
+                                  <span
+                                    key={idx}
+                                    className="px-1.5 py-0.2 rounded text-[10px] bg-white border border-slate-200 font-semibold text-slate-700"
+                                  >
+                                    {ing.name}: <strong>{displayAmt} {displayUnit}</strong>
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isSubmittingProvisions}
+                          onClick={() => handleApplyRecipeTemplate(recipe)}
+                          className="w-full py-2 bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1"
+                        >
+                          {isSubmittingProvisions ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                          <span>Select This Recipe</span>
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════
+              MODAL 2: CUSTOM MEAL CREATOR
+          ═══════════════════════════════════════════════════════════════════════ */}
+          {isCustomMealModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
+                <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-sm font-black text-slate-900">
+                    Create Custom Camp Meal
+                  </h3>
+                  <button
+                    onClick={() => setIsCustomMealModalOpen(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveCustomMeal} className="space-y-3.5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Camp Day *</label>
+                      <select
+                        value={customMealDay}
+                        onChange={(e) => setCustomMealDay(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
+                      >
+                        {Array.from({ length: totalCampDays }).map((_, idx) => (
+                          <option key={idx + 1} value={idx + 1}>
+                            Day {idx + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Meal Slot Type *</label>
+                      <select
+                        value={customMealType}
+                        onChange={(e) => setCustomMealType(e.target.value as any)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
+                      >
+                        <option value="breakfast">☀️ Breakfast (الترويقة)</option>
+                        <option value="lunch">🍲 Lunch (الغداء)</option>
+                        <option value="dinner">🌙 Dinner (العشاء)</option>
+                        <option value="snack">🔥 Campfire Snack (سهرة النار)</option>
+                        <option value="custom">⭐ Custom Snack / Activity Meal</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Meal Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Afternoon Watermelon & Halloumi, Hike Energy Pack…"
+                      value={customMealTitle}
+                      onChange={(e) => setCustomMealTitle(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Headcount Portion Override (optional, default: {defaultCampHeadcount})
+                    </label>
+                    <input
+                      type="number"
+                      placeholder={`Leave blank to use ${defaultCampHeadcount} attendees`}
+                      value={customMealHeadcountOverride}
+                      onChange={(e) => setCustomMealHeadcountOverride(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                    />
+                  </div>
+
+                  {/* Add Ingredients to Custom Meal */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800">
+                        Ingredients List ({customMealIngredients.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomMealIngredients((prev) => [
+                            ...prev,
+                            { name: '', portion_per_person: 100, unit: 'g', category: 'supermarket' },
+                          ])
+                        }}
+                        className="text-xs font-bold text-teal-700 hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Add Ingredient</span>
+                      </button>
+                    </div>
+
+                    {customMealIngredients.length === 0 ? (
+                      <div className="p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+                        No custom ingredients added yet. Click &quot;+ Add Ingredient&quot; above.
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {customMealIngredients.map((ing, idx) => (
+                          <div key={idx} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                required
+                                placeholder="Ingredient name (e.g. Watermelon, Cheese…)"
+                                value={ing.name}
+                                onChange={(e) => {
+                                  const val = e.target.value
+                                  setCustomMealIngredients((prev) =>
+                                    prev.map((item, i) => (i === idx ? { ...item, name: val } : item))
+                                  )
+                                }}
+                                className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:border-teal-600"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomMealIngredients((prev) => prev.filter((_, i) => i !== idx))
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 shrink-0"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Portion / Person</label>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  min="0.1"
+                                  required
+                                  value={ing.portion_per_person}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 1
+                                    setCustomMealIngredients((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, portion_per_person: val } : item))
+                                    )
+                                  }}
+                                  className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-bold"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Unit</label>
+                                <select
+                                  value={ing.unit}
+                                  onChange={(e) => {
+                                    const val = e.target.value as any
+                                    setCustomMealIngredients((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, unit: val } : item))
+                                    )
+                                  }}
+                                  className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-bold"
+                                >
+                                  <option value="g">g (Grams)</option>
+                                  <option value="kg">kg (Kg)</option>
+                                  <option value="pieces">pieces (حبة)</option>
+                                  <option value="cans">cans (علبة)</option>
+                                  <option value="loaves">loaves (خبز)</option>
+                                  <option value="packs">packs (كيس)</option>
+                                  <option value="ml">ml</option>
+                                  <option value="liters">liters</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Category</label>
+                                <select
+                                  value={ing.category}
+                                  onChange={(e) => {
+                                    const val = e.target.value as any
+                                    setCustomMealIngredients((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, category: val } : item))
+                                    )
+                                  }}
+                                  className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-bold"
+                                >
+                                  <option value="supermarket">Supermarket</option>
+                                  <option value="bakery">Bakery</option>
+                                  <option value="butchery">Butchery</option>
+                                  <option value="produce">Produce</option>
+                                  <option value="pantry">Pantry</option>
+                                  <option value="supplies">Supplies</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomMealModalOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingProvisions}
+                      className="flex-1 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      {isSubmittingProvisions ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                      <span>Save Custom Meal</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════
+              MODAL 3: ADD AD-HOC GROCERY SHOPPING ITEM
+          ═══════════════════════════════════════════════════════════════════════ */}
+          {isShoppingItemModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
+                <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-sm font-black text-slate-900">
+                    Add Grocery Item to Checklist
+                  </h3>
+                  <button
+                    onClick={() => setIsShoppingItemModalOpen(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleAddShoppingItem} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Item Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Arabic Bread, Drinking Water Gallons…"
+                      value={shoppingItemName}
+                      onChange={(e) => setShoppingItemName(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
+                      <select
+                        value={shoppingItemCategory}
+                        onChange={(e) => setShoppingItemCategory(e.target.value as any)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
+                      >
+                        <option value="supermarket">🛒 Supermarket</option>
+                        <option value="bakery">🍞 Bakery</option>
+                        <option value="butchery">🥩 Butchery</option>
+                        <option value="produce">🥦 Produce</option>
+                        <option value="supplies">🧼 Supplies</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Unit *</label>
+                      <select
+                        value={shoppingItemUnit}
+                        onChange={(e) => setShoppingItemUnit(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
+                      >
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="pieces">pieces</option>
+                        <option value="cans">cans</option>
+                        <option value="loaves">loaves</option>
+                        <option value="packs">packs</option>
+                        <option value="liters">liters</option>
+                        <option value="gallons">gallons</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Quantity *</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0.1"
+                        required
+                        value={shoppingItemQty}
+                        onChange={(e) => setShoppingItemQty(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold text-teal-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Estimated Cost ($)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={shoppingItemEstCost}
+                        onChange={(e) => setShoppingItemEstCost(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Notes (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Brand, store location, size"
+                      value={shoppingItemNotes}
+                      onChange={(e) => setShoppingItemNotes(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsShoppingItemModalOpen(false)}
+                      className="flex-1 py-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors"
+                    >
+                      Add Item
                     </button>
                   </div>
                 </form>
