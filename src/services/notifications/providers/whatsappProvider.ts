@@ -37,8 +37,32 @@ ${payload.actionUrl ? `🔗 *Open in Portal:* ${fullActionUrl}` : ''}
 
 _Scouts des Cèdres Leader Portal_`.trim()
 
-      // Platform specific WhatsApp dispatch logic (e.g. Meta WhatsApp Cloud API, Twilio, or UltraMsg webhook)
-      if (process.env.WHATSAPP_API_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
+      // 1. Evolution API / Self-Hosted Webhook Gateway
+      if (process.env.WHATSAPP_WEBHOOK_URL) {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        }
+        if (process.env.WHATSAPP_API_TOKEN) {
+          headers['apikey'] = process.env.WHATSAPP_API_TOKEN
+          headers['Authorization'] = `Bearer ${process.env.WHATSAPP_API_TOKEN}`
+        }
+
+        const response = await fetch(process.env.WHATSAPP_WEBHOOK_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            number: sanitizedNumber.replace('+', ''),
+            text: whatsappText,
+          }),
+        })
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}))
+          console.warn('[WhatsAppNotificationProvider] Webhook error:', errData)
+          return { channel: 'whatsapp', success: false, error: errData?.response?.message || 'WhatsApp webhook request failed' }
+        }
+      } else if (process.env.WHATSAPP_API_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
+        // 2. Official Meta WhatsApp Cloud API
         const response = await fetch(
           `https://graph.facebook.com/v20.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
           {
@@ -57,12 +81,12 @@ _Scouts des Cèdres Leader Portal_`.trim()
         )
 
         if (!response.ok) {
-          const errData = await response.json()
+          const errData = await response.json().catch(() => ({}))
           console.warn('[WhatsAppNotificationProvider] Meta API error:', errData)
           return { channel: 'whatsapp', success: false, error: errData?.error?.message || 'WhatsApp API failed' }
         }
       } else {
-        // Fallback logger for development or when WhatsApp API keys are pending
+        // 3. Simulated logging when API keys are not yet configured
         console.log(`[WhatsAppNotificationProvider - Simulated] To: ${sanitizedNumber}\n${whatsappText}`)
       }
 
