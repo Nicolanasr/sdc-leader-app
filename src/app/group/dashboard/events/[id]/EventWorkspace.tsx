@@ -7,7 +7,7 @@ import { createClient } from '@/utils/supabase/client'
 import {
     Menu, X, ArrowLeft, Calendar, MapPin, DollarSign, Users, FileText,
     CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit, Edit3, Loader2, UploadCloud, FileSpreadsheet, Paperclip,
-    Package, ShoppingCart, Send, Minus, RefreshCw, Search, UtensilsCrossed, Apple, ShoppingBag, Check, CheckSquare, Square, ChefHat, Sparkles, BookOpen, History, ChevronRight
+    Package, ShoppingCart, Send, Minus, RefreshCw, Search, UtensilsCrossed, Apple, ShoppingBag, Check, CheckSquare, Square, ChefHat, Sparkles, BookOpen, History, ChevronRight, UserPlus, Key, Copy
 } from 'lucide-react'
 import DashboardShell from '../../DashboardShell'
 import DashboardSidebar from '../../DashboardSidebar'
@@ -476,6 +476,104 @@ export default function EventWorkspace({
     const [eventItem, setEventItem] = useState<EventItem>(initialEvent)
     const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
+    // Leaders list with dynamic member additions
+    const [leadersList, setLeadersList] = useState<Leader[]>(leaders)
+    const [isProvisionMemberModalOpen, setIsProvisionMemberModalOpen] = useState(false)
+    const [provisionMemberId, setProvisionMemberId] = useState('')
+    const [provisionEmail, setProvisionEmail] = useState('')
+    const [provisionPassword, setProvisionPassword] = useState('')
+    const [provisionTargetRole, setProvisionTargetRole] = useState('')
+    const [provisionSuccessData, setProvisionSuccessData] = useState<{ email: string; pass: string; name: string } | null>(null)
+    const [copiedProvisionPass, setCopiedProvisionPass] = useState(false)
+    const [memberSearchQuery, setMemberSearchQuery] = useState('')
+
+    const filteredProvisionMembers = useMemo(() => {
+        if (!memberSearchQuery.trim()) return allMembers
+        const q = memberSearchQuery.toLowerCase()
+        return allMembers.filter(
+            (m) =>
+                `${m.first_name} ${m.last_name}`.toLowerCase().includes(q) ||
+                (m.current_rank && m.current_rank.toLowerCase().includes(q))
+        )
+    }, [allMembers, memberSearchQuery])
+
+    const handleGenerateMemberPassword = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$'
+        let pass = ''
+        for (let i = 0; i < 10; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        setProvisionPassword(pass)
+    }
+
+    const handleProvisionMemberSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!provisionMemberId || !provisionEmail || !provisionPassword) {
+            return showStatus('Please fill in all member login fields.', 'error')
+        }
+
+        setLoading(true)
+        try {
+            const res = await fetch('/api/group/onboard-member-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    memberId: provisionMemberId,
+                    email: provisionEmail,
+                    password: provisionPassword,
+                }),
+            })
+
+            const data = await res.json()
+            if (!res.ok) {
+                showStatus(data.error || 'Failed to provision member login', 'error')
+                setLoading(false)
+                return
+            }
+
+            const newLeader: Leader = {
+                id: data.profileId,
+                fullName: `${data.fullName} (Scout Member)`,
+                email: data.email,
+                rank: 'Scout',
+            }
+
+            setLeadersList((prev) => [...prev.filter((l) => l.id !== data.profileId), newLeader])
+
+            // If target role specified, assign them directly
+            if (provisionTargetRole) {
+                await supabase
+                    .from('event_staff')
+                    .delete()
+                    .eq('event_id', eventItem.id)
+                    .eq('event_role', provisionTargetRole)
+
+                await supabase.from('event_staff').insert({
+                    event_id: eventItem.id,
+                    profile_id: data.profileId,
+                    event_role: provisionTargetRole,
+                    attendance_status: 'present',
+                })
+
+                const { data: updatedStaff } = await supabase
+                    .from('event_staff')
+                    .select('*, profiles(full_name)')
+                    .eq('event_id', eventItem.id)
+
+                if (updatedStaff) {
+                    setEventItem((prev) => ({ ...prev, event_staff: updatedStaff }))
+                }
+            }
+
+            setProvisionSuccessData({ email: data.email, pass: provisionPassword, name: data.fullName })
+            showStatus(`Login successfully provisioned for ${data.fullName}!`, 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Error occurred', 'error')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // Equipment Checkouts state for this Event
     const [eventCheckouts, setEventCheckouts] = useState<any[]>(initialCheckouts)
     const [inventoryList, setInventoryList] = useState<any[]>(groupInventory)
@@ -797,7 +895,7 @@ export default function EventWorkspace({
         e.preventDefault()
         setLoading(true)
         try {
-            const { data: updated, error } = await supabase
+            const { error: updateError } = await supabase
                 .from('events')
                 .update({
                     title: editTitle,
@@ -811,10 +909,16 @@ export default function EventWorkspace({
                     participant_fee: parseFloat(editParticipantFee) || 0,
                 })
                 .eq('id', eventItem.id)
-                .select('*, event_staff(*, profiles(full_name)), event_participants(*, members(first_name, last_name, troop_id, current_rank)), event_expenses(*), event_documents(*)')
-                .single()
 
-            if (error || !updated) throw error || new Error('Failed to update event details.')
+            if (updateError) throw updateError
+
+            const { data: updated, error: fetchError } = await supabase
+                .from('events')
+                .select('*, event_staff(*, profiles(full_name)), event_participants(*, members(first_name, last_name, troop_id, current_rank)), event_expenses(*), event_documents(*)')
+                .eq('id', eventItem.id)
+                .maybeSingle()
+
+            if (fetchError || !updated) throw fetchError || new Error('Failed to retrieve updated event.')
 
             setEventItem(updated)
             setIsEditEventModalOpen(false)
@@ -2023,7 +2127,7 @@ export default function EventWorkspace({
                                 <h3 className="text-lg font-bold text-slate-900">
                                     Edit Staff Roles ({eventItem.event_type === 'camp' ? 'هيكلية المخيّم' : 'هيكلية النشاط'})
                                 </h3>
-                                <p className="text-xs text-slate-500">Assign leaders to official staff roles 1-by-1 or for all roles.</p>
+                                <p className="text-xs text-slate-500">Assign leaders and senior scout members to official staff roles.</p>
                             </div>
                             <button onClick={() => setIsEditHierarchyModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 <X className="h-5 w-5" />
@@ -2041,12 +2145,33 @@ export default function EventWorkspace({
                                             className="sm:w-1/2 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-800 focus:outline-none"
                                         >
                                             <option value="">-- Unassigned --</option>
-                                            {leaders.map((l) => (
+                                            {leadersList.map((l) => (
                                                 <option key={l.id} value={l.id}>{l.fullName}</option>
                                             ))}
                                         </select>
                                     </div>
                                 ))}
+                            </div>
+
+                            <div className="p-3 bg-teal-50 border border-teal-100 rounded-xl flex items-center justify-between gap-3">
+                                <div className="text-xs text-teal-900">
+                                    <strong>Want to assign a Scout Member?</strong> You can provision them a login account so they can perform their role duties.
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProvisionTargetRole('')
+                                        setProvisionMemberId('')
+                                        setProvisionEmail('')
+                                        setProvisionPassword('')
+                                        setProvisionSuccessData(null)
+                                        setIsProvisionMemberModalOpen(true)
+                                    }}
+                                    className="px-3 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5 transition-colors"
+                                >
+                                    <UserPlus className="h-3.5 w-3.5" />
+                                    <span>Provision Member Login</span>
+                                </button>
                             </div>
 
                             <div className="pt-3 border-t border-slate-100 flex gap-3">
@@ -2060,9 +2185,10 @@ export default function EventWorkspace({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors"
+                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Saving Hierarchy…' : 'Save Hierarchy Changes'}
+                                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                    <span>{loading ? 'Saving Hierarchy…' : 'Save Hierarchy Changes'}</span>
                                 </button>
                             </div>
                         </form>
@@ -2079,7 +2205,7 @@ export default function EventWorkspace({
                                 <h3 className="text-lg font-bold text-slate-900">
                                     Assign {getRoleLabel(singleEditingRoleKey, eventItem.event_type)}
                                 </h3>
-                                <p className="text-xs text-slate-500">Select a leader specifically for this role.</p>
+                                <p className="text-xs text-slate-500">Select a leader or scout member for this role.</p>
                             </div>
                             <button onClick={() => setSingleEditingRoleKey(null)} className="text-slate-400 hover:text-slate-600">
                                 <X className="h-5 w-5" />
@@ -2088,17 +2214,39 @@ export default function EventWorkspace({
 
                         <form onSubmit={handleSaveSingleRole} className="space-y-4 text-xs">
                             <div>
-                                <label className="block font-bold text-slate-700 mb-1">Leader Assignment</label>
+                                <label className="block font-bold text-slate-700 mb-1">Assigned Person</label>
                                 <select
                                     value={singleSelectedProfileId}
                                     onChange={(e) => setSingleSelectedProfileId(e.target.value)}
                                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
                                 >
                                     <option value="">-- Unassigned --</option>
-                                    {leaders.map((l) => (
+                                    {leadersList.map((l) => (
                                         <option key={l.id} value={l.id}>{l.fullName}</option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div className="p-3 bg-teal-50 border border-teal-100 rounded-xl space-y-1.5">
+                                <p className="font-bold text-teal-900">Assign a Scout Member?</p>
+                                <p className="text-[11px] text-teal-800 leading-tight">
+                                    If this role is held by a scout, create their login account so they can perform their duties.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProvisionTargetRole(singleEditingRoleKey)
+                                        setProvisionMemberId('')
+                                        setProvisionEmail('')
+                                        setProvisionPassword('')
+                                        setProvisionSuccessData(null)
+                                        setIsProvisionMemberModalOpen(true)
+                                    }}
+                                    className="mt-1 w-full py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                                >
+                                    <UserPlus className="h-3.5 w-3.5" />
+                                    <span>Provision Login for Member</span>
+                                </button>
                             </div>
 
                             <div className="pt-3 border-t border-slate-100 flex gap-3">
@@ -2112,12 +2260,175 @@ export default function EventWorkspace({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 py-2 bg-teal-800 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow transition-colors"
+                                    className="flex-1 py-2 bg-teal-800 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow transition-colors disabled:bg-slate-300 flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Saving…' : 'Save Role'}
+                                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                    <span>{loading ? 'Saving…' : 'Save Role'}</span>
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── PROVISION MEMBER LOGIN MODAL ─────────────────────────────────── */}
+            {isProvisionMemberModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-800 border border-teal-200 flex items-center justify-center">
+                                    <UserPlus className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">Provision Member Login</h3>
+                                    <p className="text-xs text-slate-500">Create login credentials for a scout member.</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsProvisionMemberModalOpen(false)
+                                    setProvisionSuccessData(null)
+                                }}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {provisionSuccessData ? (
+                            <div className="space-y-4 pt-1">
+                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                                    <p className="text-xs font-bold text-emerald-900">✓ Member Login Created & Role Assigned!</p>
+                                    <p className="text-xs text-emerald-800">Share these login credentials with <strong>{provisionSuccessData.name}</strong>:</p>
+                                    <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs font-mono space-y-1">
+                                        <div><strong>Email:</strong> {provisionSuccessData.email}</div>
+                                        <div><strong>Password:</strong> {provisionSuccessData.pass}</div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`Scout Leader Portal Login:\nEmail: ${provisionSuccessData.email}\nPassword: ${provisionSuccessData.pass}`)
+                                            setCopiedProvisionPass(true)
+                                            setTimeout(() => setCopiedProvisionPass(false), 3000)
+                                        }}
+                                        className="flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                                    >
+                                        {copiedProvisionPass ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                        <span>{copiedProvisionPass ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsProvisionMemberModalOpen(false)
+                                            setProvisionSuccessData(null)
+                                            setSingleEditingRoleKey(null)
+                                        }}
+                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+                                    >
+                                        Done
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleProvisionMemberSubmit} className="space-y-4 text-xs">
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Search & Select Scout Member</label>
+                                    <div className="relative mb-1.5">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            value={memberSearchQuery}
+                                            onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                            placeholder="Type scout name or rank to filter..."
+                                            className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                                        />
+                                    </div>
+                                    <select
+                                        value={provisionMemberId}
+                                        onChange={(e) => {
+                                            setProvisionMemberId(e.target.value)
+                                            const m = allMembers.find((item) => item.id === e.target.value)
+                                            if (m) {
+                                                const autoEmail = `${m.first_name.toLowerCase().replace(/[^a-z0-9]/g, '')}.${m.last_name.toLowerCase().replace(/[^a-z0-9]/g, '')}@sdcsaintjeanmarc.org`
+                                                setProvisionEmail(autoEmail)
+                                                handleGenerateMemberPassword()
+                                            }
+                                        }}
+                                        required
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
+                                    >
+                                        <option value="">-- Choose Member ({filteredProvisionMembers.length} listed) --</option>
+                                        {filteredProvisionMembers.map((m) => (
+                                            <option key={m.id} value={m.id}>
+                                                {m.first_name} {m.last_name} ({m.current_rank || 'Scout'})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Login Email</label>
+                                    <input
+                                        type="email"
+                                        value={provisionEmail}
+                                        onChange={(e) => setProvisionEmail(e.target.value)}
+                                        required
+                                        placeholder="scout.member@domain.com"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none font-mono"
+                                    />
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="block font-bold text-slate-700">Initial Password</label>
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateMemberPassword}
+                                            className="text-[11px] font-bold text-teal-700 hover:text-teal-800 inline-flex items-center gap-1 hover:underline"
+                                        >
+                                            <Sparkles className="h-3 w-3" /> Auto-generate
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={provisionPassword}
+                                        onChange={(e) => setProvisionPassword(e.target.value)}
+                                        required
+                                        minLength={6}
+                                        placeholder="Min 6 characters"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none font-mono"
+                                    />
+                                </div>
+
+                                {provisionTargetRole && (
+                                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                                        <span className="text-slate-500">Will be assigned to role:</span>{' '}
+                                        <strong className="text-teal-900">{getRoleLabel(provisionTargetRole, eventItem.event_type)}</strong>
+                                    </div>
+                                )}
+
+                                <div className="pt-3 border-t border-slate-100 flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsProvisionMemberModalOpen(false)}
+                                        className="flex-1 py-2 border border-slate-300 rounded-xl text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading || !provisionMemberId || provisionPassword.length < 6}
+                                        className="flex-1 py-2 bg-teal-800 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow transition-colors disabled:bg-slate-300 flex items-center justify-center gap-1.5"
+                                    >
+                                        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{loading ? 'Creating Login…' : 'Create & Assign Login'}</span>
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}
@@ -3769,9 +4080,10 @@ export default function EventWorkspace({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors"
+                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Saving Changes…' : 'Save Changes'}
+                                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                    <span>{loading ? 'Saving Changes…' : 'Save Changes'}</span>
                                 </button>
                             </div>
                         </form>
@@ -4063,12 +4375,14 @@ export default function EventWorkspace({
 
                             <button
                                 type="submit"
-                                disabled={eventCartItems.length === 0}
-                                className="w-full py-2.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5"
+                                disabled={loading || eventCartItems.length === 0}
+                                className="w-full py-2.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:bg-slate-300"
                             >
-                                <Send className="h-4 w-4" />
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                 <span>
-                                    {isQuartermaster
+                                    {loading
+                                        ? 'Processing Gear…'
+                                        : isQuartermaster
                                         ? `Hand Out Gear (${eventCartItems.length} items)`
                                         : `Submit Loan Request (${eventCartItems.length} items)`}
                                 </span>
@@ -4672,9 +4986,11 @@ export default function EventWorkspace({
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors"
+                                    disabled={isSubmittingProvisions}
+                                    className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:bg-slate-300"
                                 >
-                                    Add Item
+                                    {isSubmittingProvisions ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                                    <span>{isSubmittingProvisions ? 'Adding…' : 'Add Item'}</span>
                                 </button>
                             </div>
                         </form>

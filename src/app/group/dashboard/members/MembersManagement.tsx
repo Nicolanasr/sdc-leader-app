@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -1655,9 +1655,10 @@ export default function MembersManagement({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                                    className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    {isEdit ? 'Save Profile Changes' : 'Register Scout'}
+                                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    <span>{loading ? 'Saving…' : isEdit ? 'Save Profile Changes' : 'Register Scout'}</span>
                                 </button>
                             </div>
                         </form>
@@ -1729,9 +1730,10 @@ export default function MembersManagement({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                                    className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    Create Patrol
+                                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    <span>{loading ? 'Creating…' : 'Create Patrol'}</span>
                                 </button>
                             </div>
                         </form>

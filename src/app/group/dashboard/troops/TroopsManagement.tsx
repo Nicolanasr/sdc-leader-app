@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import DashboardShell from '../DashboardShell'
-import { Menu, X, Plus, Users, Landmark, Layers, Edit, Trash2 } from 'lucide-react'
+import { Menu, X, Plus, Users, Landmark, Layers, Edit, Trash2, Loader2 } from 'lucide-react'
 
 interface Troop {
   id: string
@@ -282,9 +282,10 @@ export default function TroopsManagement({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300"
+                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300 flex items-center justify-center gap-1.5"
                 >
-                  {loading ? 'Creating…' : 'Create Unit'}
+                  {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{loading ? 'Creating…' : 'Create Unit'}</span>
                 </button>
               </div>
             </form>
@@ -342,9 +343,10 @@ export default function TroopsManagement({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300"
+                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300 flex items-center justify-center gap-1.5"
                 >
-                  {loading ? 'Saving…' : 'Save Changes'}
+                  {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{loading ? 'Saving…' : 'Save Changes'}</span>
                 </button>
               </div>
             </form>

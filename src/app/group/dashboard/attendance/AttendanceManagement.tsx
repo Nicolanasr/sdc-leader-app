@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import {
-    Menu, Plus, Calendar, ChevronLeft, AlertTriangle, ClipboardList, Users,
+    Menu, Plus, Calendar, ChevronLeft, AlertTriangle, ClipboardList, Users, Loader2
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
@@ -543,9 +543,10 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                                         type="button"
                                         disabled={loading}
                                         onClick={handleCreateSession}
-                                        className="flex-1 px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow disabled:bg-slate-300 transition-colors"
+                                        className="flex-1 px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                                     >
-                                        {loading ? 'Creating…' : 'Start Taking Attendance'}
+                                        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        <span>{loading ? 'Creating…' : 'Start Taking Attendance'}</span>
                                     </button>
                                 </div>
                             </div>
@@ -657,9 +658,10 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                                 <button
                                     onClick={handleSaveSheet}
                                     disabled={loading}
-                                    className="w-full py-3 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-sm font-bold shadow disabled:bg-slate-300 transition-colors"
+                                    className="w-full py-3 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-sm font-bold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Saving…' : 'Save Attendance'}
+                                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    <span>{loading ? 'Saving…' : 'Save Attendance'}</span>
                                 </button>
                             </div>
                         </div>

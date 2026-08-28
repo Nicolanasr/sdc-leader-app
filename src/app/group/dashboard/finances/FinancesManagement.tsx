@@ -7,7 +7,7 @@ import {
     Menu, X, Wallet, DollarSign, ArrowUpRight, ArrowDownRight, Users,
     CheckCircle2, AlertCircle, Clock, Search, Filter, Plus, FileSpreadsheet,
     Receipt, ArrowRight, ShieldCheck, Download, Trash2, Calendar, Edit3,
-    Layers, Percent, Tag, CreditCard, ChevronLeft, ChevronRight, HelpCircle, Send, Check, Ban, Settings, Printer
+    Layers, Percent, Tag, CreditCard, ChevronLeft, ChevronRight, HelpCircle, Send, Check, Ban, Settings, Printer, Loader2
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 
@@ -3322,9 +3322,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isProcessingQuickPay}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold shadow-sm disabled:opacity-50"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isProcessingQuickPay ? 'Saving…' : 'Save Payment'}
+                                        {isProcessingQuickPay && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isProcessingQuickPay ? 'Saving…' : 'Save Payment'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -3373,9 +3374,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isSavingTarget}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isSavingTarget ? 'Saving…' : 'Update Target'}
+                                        {isSavingTarget && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isSavingTarget ? 'Saving…' : 'Update Target'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -3451,9 +3453,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isSubmittingHandover}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isSubmittingHandover ? 'Submitting…' : 'Submit Handover'}
+                                        {isSubmittingHandover && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isSubmittingHandover ? 'Submitting…' : 'Submit Handover'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -3514,9 +3517,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isSubmittingDisbursement}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isSubmittingDisbursement ? 'Submitting…' : 'Submit Request'}
+                                        {isSubmittingDisbursement && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isSubmittingDisbursement ? 'Submitting…' : 'Submit Request'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -3594,9 +3598,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isProcessingAnnualPay}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isProcessingAnnualPay ? 'Saving…' : 'Record Payment'}
+                                        {isProcessingAnnualPay && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isProcessingAnnualPay ? 'Saving…' : 'Record Payment'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -3645,9 +3650,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isProcessingBulkAnnual}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isProcessingBulkAnnual ? 'Processing…' : 'Generate Annual Fees'}
+                                        {isProcessingBulkAnnual && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isProcessingBulkAnnual ? 'Processing…' : 'Generate Annual Fees'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -3786,9 +3792,10 @@ export default function FinancesManagement({
                                     <button
                                         type="submit"
                                         disabled={isProcessingTx}
-                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold transition-colors shadow-2xs"
+                                        className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold transition-colors shadow-2xs disabled:opacity-50 flex items-center justify-center gap-1.5"
                                     >
-                                        {isProcessingTx ? 'Saving…' : 'Record Transaction'}
+                                        {isProcessingTx && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                        <span>{isProcessingTx ? 'Saving…' : 'Record Transaction'}</span>
                                     </button>
                                 </div>
                             </form>

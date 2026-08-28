@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import DashboardShell from '../DashboardShell'
-import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2, Key, Copy, Check, Sparkles } from 'lucide-react'
+import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2, Key, Copy, Check, Sparkles, Loader2 } from 'lucide-react'
 
 interface LeaderRole {
   roleId?: string
@@ -595,9 +595,10 @@ export default function LeadersManagement({
                         <button
                           type="submit"
                           disabled={loading || newPassword.length < 6}
-                          className="w-1/2 bg-amber-700 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300"
+                          className="w-1/2 bg-amber-700 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300 flex items-center justify-center gap-1.5"
                         >
-                          {loading ? 'Updating…' : 'Update Password'}
+                          {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                          <span>{loading ? 'Updating…' : 'Update Password'}</span>
                         </button>
                       </div>
                     </form>
@@ -702,9 +703,10 @@ export default function LeadersManagement({
                       <button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-xs font-bold shadow disabled:bg-slate-300 transition-colors"
+                        className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-lg text-xs font-bold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                       >
-                        {loading ? 'Saving…' : 'Save Changes'}
+                        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        <span>{loading ? 'Saving…' : 'Save Changes'}</span>
                       </button>
                     </div>
                   </form>
@@ -828,9 +830,10 @@ export default function LeadersManagement({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300"
+                  className="w-1/2 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300 flex items-center justify-center gap-1.5"
                 >
-                  {loading ? 'Onboarding…' : 'Onboard Leader'}
+                  {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{loading ? 'Onboarding…' : 'Onboard Leader'}</span>
                 </button>
               </div>
             </form>

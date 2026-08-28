@@ -7,7 +7,7 @@ import EventCalendar from './EventCalendar'
 import {
     Menu, X, Plus, Calendar, MapPin, DollarSign, Users, FileText,
     CheckCircle2, XCircle, Clock, ShieldCheck, Trash2, Edit, ExternalLink, AlertTriangle, Layers,
-    Smartphone, Copy, Check, Grid
+    Smartphone, Copy, Check, Grid, Loader2
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
@@ -159,7 +159,17 @@ export default function EventsManagement({
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [openingEventId, setOpeningEventId] = useState<string | null>(null)
     const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+
+    const handleOpenEvent = (id: string) => {
+        if (openingEventId) return
+        setOpeningEventId(id)
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('start-navigation'))
+        }
+        router.push(`/group/dashboard/events/${id}`)
+    }
 
     const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
 
@@ -258,7 +268,7 @@ export default function EventsManagement({
 
         setLoading(true)
         try {
-            const { data: updatedRow, error: uErr } = await supabase
+            const { error: uErr } = await supabase
                 .from('events')
                 .update({
                     title,
@@ -272,6 +282,11 @@ export default function EventsManagement({
                     participant_fee: parseFloat(participantFee) || 0,
                 })
                 .eq('id', editingEventId)
+
+            if (uErr) throw uErr
+
+            const { data: updatedRow, error: fetchErr } = await supabase
+                .from('events')
                 .select(`
           *,
           event_staff (*, profiles(full_name)),
@@ -279,9 +294,10 @@ export default function EventsManagement({
           event_expenses (*),
           event_documents (*)
         `)
-                .single()
+                .eq('id', editingEventId)
+                .maybeSingle()
 
-            if (uErr || !updatedRow) throw uErr || new Error('Failed to update event.')
+            if (fetchErr || !updatedRow) throw fetchErr || new Error('Failed to retrieve updated event.')
 
             setEvents((prev: EventItem[]) => prev.map((ev: EventItem) => (ev.id === editingEventId ? updatedRow : ev)))
             setIsEditModalOpen(false)
@@ -538,7 +554,7 @@ export default function EventsManagement({
                 <div className="fc-theme-scout">
                     <EventCalendar
                         events={events}
-                        onEventClick={(id) => router.push(`/group/dashboard/events/${id}`)}
+                        onEventClick={(id) => handleOpenEvent(id)}
                     />
                 </div>
             )}
@@ -560,12 +576,20 @@ export default function EventsManagement({
                             const isGroupLeader = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
                             const isEventLeader = (ev.event_staff || []).some((s: EventStaff) => s.profile_id === userProfileId && s.event_role === 'ka2ed_mouskhayyam')
                             const canEditThisEvent = isGroupLeader || isEventLeader
+                            const isThisOpening = openingEventId === ev.id
+                            const isAnyOpening = Boolean(openingEventId)
 
                             return (
                                 <div
                                     key={ev.id}
-                                    onClick={() => router.push(`/group/dashboard/events/${ev.id}`)}
-                                    className="bg-white border border-slate-200 hover:border-teal-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                                    onClick={() => handleOpenEvent(ev.id)}
+                                    className={`bg-white border rounded-2xl p-6 shadow-sm transition-all flex flex-col justify-between ${
+                                        isThisOpening
+                                            ? 'border-teal-600 ring-2 ring-teal-500/20 shadow-md cursor-wait'
+                                            : isAnyOpening
+                                            ? 'border-slate-200 opacity-50 pointer-events-none'
+                                            : 'border-slate-200 hover:border-teal-500 hover:shadow-md cursor-pointer'
+                                    }`}
                                 >
                                     <div>
                                         <div className="flex items-center justify-between gap-2 mb-3">
@@ -612,9 +636,17 @@ export default function EventsManagement({
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                                        <span className="text-slate-500">Scouts: <strong>{presentCount}/{totalParticipants}</strong></span>
-                                        <span className="font-bold text-teal-700">Fee: ${ev.participant_fee}</span>
+                                    <div>
+                                        {isThisOpening && (
+                                            <div className="mb-3 py-2 px-3 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center gap-2 text-xs font-bold text-teal-800 animate-pulse">
+                                                <Loader2 className="h-4 w-4 animate-spin text-teal-700" />
+                                                <span>Opening Event Workspace…</span>
+                                            </div>
+                                        )}
+                                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span className="text-slate-500">Scouts: <strong>{presentCount}/{totalParticipants}</strong></span>
+                                            <span className="font-bold text-teal-700">Fee: ${ev.participant_fee}</span>
+                                        </div>
                                     </div>
                                 </div>
                             )
@@ -769,9 +801,10 @@ export default function EventsManagement({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors"
+                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Creating…' : 'Create Event'}
+                                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                    <span>{loading ? 'Creating…' : 'Create Event'}</span>
                                 </button>
                             </div>
                         </form>
@@ -914,9 +947,10 @@ export default function EventsManagement({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors"
+                                    className="flex-1 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold shadow disabled:bg-slate-300 transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Saving Changes…' : 'Save Changes'}
+                                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                    <span>{loading ? 'Saving Changes…' : 'Save Changes'}</span>
                                 </button>
                             </div>
                         </form>

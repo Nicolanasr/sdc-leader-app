@@ -26,6 +26,10 @@ export default async function GroupDashboardPage() {
     'mouse3ed_ka2ed_fer2a',
   ]
 
+  if (role === 'scout_member') {
+    redirect('/group/dashboard/events')
+  }
+
   if (!user || !role || !groupId || !allowedRoles.includes(role)) {
     redirect('/login?message=Unauthorized. Group Leader access only.')
   }

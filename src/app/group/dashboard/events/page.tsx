@@ -25,10 +25,11 @@ export default async function EventsPage() {
     'ka2ed_idare',
     'ka2ed_fer2a',
     'mouse3ed_ka2ed_fer2a',
+    'scout_member',
   ]
 
   if (!user || !role || !groupId || !allowedRoles.includes(role)) {
-    redirect('/login?message=Unauthorized. Leader access only.')
+    redirect('/login?message=Unauthorized. Event access only.')
   }
 
   // 2. Fetch Group Name
@@ -89,6 +90,16 @@ export default async function EventsPage() {
     .eq('is_deleted', false)
     .order('start_time', { ascending: false })
 
+  let finalEvents = eventsData || []
+  if (role === 'scout_member') {
+    const memberId = user.app_metadata?.member_id
+    finalEvents = finalEvents.filter((ev: any) => {
+      const isStaff = (ev.event_staff || []).some((s: any) => s.profile_id === user.id)
+      const isPart = (ev.event_participants || []).some((p: any) => p.member_id === memberId)
+      return isStaff || isPart
+    })
+  }
+
   // 7. Fetch logged in user full_name
   const { data: userProfile } = await supabase
     .from('profiles')
@@ -96,11 +107,11 @@ export default async function EventsPage() {
     .eq('id', user.id)
     .single()
 
-  const userName = userProfile?.full_name || user.email || 'Leader'
+  const userName = userProfile?.full_name || user.email || 'Scout Member'
 
   return (
     <EventsManagement
-      initialEvents={eventsData || []}
+      initialEvents={finalEvents}
       troops={troopsData || []}
       leaders={leaders || []}
       members={membersData || []}
