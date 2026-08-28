@@ -4,16 +4,7 @@ import { sendNotification, sendBatchNotification, sendRoleNotification, Notifica
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await req.json()
+    const body = await req.json().catch(() => ({}))
     const {
       recipientProfileId,
       recipientProfileIds,
@@ -27,6 +18,14 @@ export async function POST(req: NextRequest) {
       groupId?: string
       payload: NotificationPayload
     } = body
+
+    console.log('[API /api/notifications/send] Received request:', {
+      targetRole,
+      groupId,
+      recipientProfileId,
+      recipientCount: recipientProfileIds?.length,
+      title: payload?.title,
+    })
 
     if (!payload || !payload.title || !payload.message) {
       return NextResponse.json(

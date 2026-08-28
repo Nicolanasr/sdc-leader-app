@@ -8,11 +8,14 @@ export async function triggerNotification(
   payload: NotificationPayload
 ): Promise<void> {
   try {
-    fetch('/api/notifications/send', {
+    console.log('[ClientNotification] Triggering single notification:', { recipientProfileId, title: payload.title })
+    const res = await fetch('/api/notifications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipientProfileId, payload }),
-    }).catch((err) => console.warn('[ClientNotification] Failed to send:', err))
+    })
+    const data = await res.json().catch(() => ({}))
+    console.log('[ClientNotification] Send response:', data)
   } catch (err) {
     console.warn('[ClientNotification] Trigger error:', err)
   }
@@ -26,11 +29,14 @@ export async function triggerBatchNotification(
   payload: NotificationPayload
 ): Promise<void> {
   try {
-    fetch('/api/notifications/send', {
+    console.log('[ClientNotification] Triggering batch notifications:', { count: recipientProfileIds.length, title: payload.title })
+    const res = await fetch('/api/notifications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipientProfileIds, payload }),
-    }).catch((err) => console.warn('[ClientNotification] Failed batch send:', err))
+    })
+    const data = await res.json().catch(() => ({}))
+    console.log('[ClientNotification] Batch send response:', data)
   } catch (err) {
     console.warn('[ClientNotification] Batch trigger error:', err)
   }
@@ -46,11 +52,14 @@ export async function triggerRoleNotification(
   payload: NotificationPayload
 ): Promise<void> {
   try {
-    fetch('/api/notifications/send', {
+    console.log('[ClientNotification] Triggering role notification:', { groupId, targetRole, title: payload.title })
+    const res = await fetch('/api/notifications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ groupId, targetRole, payload }),
-    }).catch((err) => console.warn('[ClientNotification] Failed role send:', err))
+    })
+    const data = await res.json().catch(() => ({}))
+    console.log('[ClientNotification] Role send response:', data)
   } catch (err) {
     console.warn('[ClientNotification] Role trigger error:', err)
   }

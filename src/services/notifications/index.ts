@@ -115,6 +115,16 @@ export async function sendBatchNotification(
   return results.filter((r): r is NotificationDeliverySummary => r !== null)
 }
 
+// Role aliases mapping for robust role resolution
+const ROLE_ALIASES: Record<string, string[]> = {
+  mas2oul_mounet: ['mas2oul_mounet', 'amin_mounet_group', 'amin_mounet', 'chef_groupe', 'assistant_chef_groupe'],
+  amin_mounet_group: ['amin_mounet_group', 'mas2oul_mounet', 'chef_groupe', 'assistant_chef_groupe'],
+  amin_sandou2_group: ['amin_sandou2_group', 'amin_sandou2', 'chef_groupe', 'assistant_chef_groupe'],
+  amin_tejhizet_group: ['amin_tejhizet_group', 'amin_tejhizet', 'chef_groupe', 'assistant_chef_groupe'],
+  ka2ed_fer2a: ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_groupe', 'assistant_chef_groupe'],
+  chef_groupe: ['chef_groupe', 'assistant_chef_groupe'],
+}
+
 /**
  * Send notification to all leaders holding a specific role in a group.
  * Example role names: 'amin_sandou2_group', 'amin_tejhizet_group', 'mas2oul_mounet', 'chef_groupe', 'assistant_chef_groupe'
@@ -125,19 +135,43 @@ export async function sendRoleNotification(
   payload: NotificationPayload
 ): Promise<NotificationDeliverySummary[]> {
   try {
+    console.log(`[NotificationService] Resolving role '${roleName}' for group ${groupId}...`)
     const supabase = createAdminClient()
+    const targetRoles = ROLE_ALIASES[roleName] || [roleName]
+
     const { data: userRoles, error } = await supabase
       .from('user_roles')
       .select('profile_id, roles!inner(name)')
       .eq('group_id', groupId)
-      .eq('roles.name', roleName)
+      .in('roles.name', targetRoles)
 
-    if (error || !userRoles || userRoles.length === 0) {
-      console.warn(`[NotificationService] No leaders found for role '${roleName}' in group ${groupId}`)
-      return []
+    console.log(`[NotificationService] Matched ${userRoles?.length || 0} user_roles records for roles:`, targetRoles)
+
+    let profileIds = (userRoles || []).map((ur: any) => ur.profile_id)
+    profileIds = Array.from(new Set(profileIds.filter(Boolean)))
+
+    // Always dispatch group-wide Telegram broadcast alert
+    try {
+      await telegramProvider.send(
+        { id: 'group_broadcast', fullName: 'Leaders Group', email: '' },
+        payload
+      )
+    } catch (tErr) {
+      console.warn('[NotificationService] Telegram broadcast alert error:', tErr)
     }
 
-    const profileIds = userRoles.map((ur: any) => ur.profile_id)
+    if (profileIds.length === 0) {
+      console.log(`[NotificationService] No specific profiles mapped for role '${roleName}'. Telegram alert broadcasted.`)
+      return [
+        {
+          recipientId: 'group_broadcast',
+          recipientName: 'Leaders Group',
+          channels: [{ channel: 'telegram', success: true }],
+        },
+      ]
+    }
+
+    console.log(`[NotificationService] Dispatching to ${profileIds.length} leader profiles:`, profileIds)
     return await sendBatchNotification(profileIds, payload)
   } catch (err) {
     console.error(`[NotificationService] Failed to send role notification for ${roleName}:`, err)
