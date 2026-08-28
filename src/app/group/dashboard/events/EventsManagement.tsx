@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
+import { toLocalDatetimeInputValue, formatDateDisplay, formatTimeDisplay } from '@/utils/dateTimeUtils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Leader {
@@ -242,8 +243,8 @@ export default function EventsManagement({
         setEventType(ev.event_type)
         setScope(ev.scope)
         setTargetTroopId(ev.troop_id || '')
-        setStartTime(ev.start_time ? new Date(ev.start_time).toISOString().slice(0, 16) : '')
-        setEndTime(ev.end_time ? new Date(ev.end_time).toISOString().slice(0, 16) : '')
+        setStartTime(toLocalDatetimeInputValue(ev.start_time))
+        setEndTime(toLocalDatetimeInputValue(ev.end_time))
         setLocation(ev.location || '')
         setParticipantFee(String(ev.participant_fee || 0))
         setIsEditModalOpen(true)
@@ -553,7 +554,7 @@ export default function EventsManagement({
                         events.map((ev: EventItem) => {
                             const troopName = troops.find((t: Troop) => t.id === ev.troop_id)?.name
                             const leaderStaff = (ev.event_staff || []).find((s: EventStaff) => s.event_role === 'ka2ed_mouskhayyam')?.profiles?.full_name
-                            const startDateStr = new Date(ev.start_time).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                            const startDateStr = formatDateDisplay(ev.start_time)
                             const totalParticipants = (ev.event_participants || []).length
                             const presentCount = (ev.event_participants || []).filter((p: EventParticipant) => p.attendance_status === 'present').length
 

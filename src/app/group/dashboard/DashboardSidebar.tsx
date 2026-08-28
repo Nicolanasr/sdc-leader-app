@@ -76,7 +76,9 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
         {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)}
         {navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)}
         {navLink('/group/dashboard/inventory', 'Equipment & Gear', <Package className="h-4 w-4" />, pathname.startsWith('/group/dashboard/inventory'), onClose)}
-        {navLink('/group/dashboard/pantry', 'Provisions & Pantry', <UtensilsCrossed className="h-4 w-4" />, pathname.startsWith('/group/dashboard/pantry'), onClose)}
+        {['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'configurator'].includes(currentRole) && (
+          navLink('/group/dashboard/pantry', 'Provisions & Pantry', <UtensilsCrossed className="h-4 w-4" />, pathname.startsWith('/group/dashboard/pantry'), onClose)
+        )}
       </nav>
 
       {/* Logout */}

@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
+import { formatDateDisplay } from '@/utils/dateTimeUtils'
 
 interface Member {
     id: string
@@ -674,7 +675,7 @@ export default function MembersManagement({
 
     // Friendly log text formatter
     const formatHistoryLog = (log: HistoryLog) => {
-        const time = new Date(log.created_at).toLocaleDateString()
+        const time = formatDateDisplay(log.created_at)
         switch (log.event_type) {
             case 'rank_change':
                 return `Promoted Rank from ${log.old_value} to ${log.new_value} (on ${time})`
@@ -1621,7 +1622,7 @@ export default function MembersManagement({
                                                     .map((log) => (
                                                         <div key={log.id} className="p-2 text-xs bg-white hover:bg-slate-50">
                                                             <p className="font-semibold text-slate-700">{log.new_value}</p>
-                                                            <p className="text-[10px] text-slate-400">{log.event_type} · {new Date(log.created_at).toLocaleDateString()}</p>
+                                                            <p className="text-[10px] text-slate-400">{log.event_type} · {formatDateDisplay(log.created_at)}</p>
                                                         </div>
                                                     ))}
                                             </div>

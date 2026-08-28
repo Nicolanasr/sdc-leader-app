@@ -9,6 +9,7 @@ import {
   Archive, ArrowRight, Eye, RefreshCw, ChevronRight, Tag, HelpCircle, ChevronDown, Sparkles, SlidersHorizontal, ShoppingCart, Minus, Folder, Users, Tent, Loader2, Info, ClipboardCheck, UtensilsCrossed, Apple, ShoppingBag
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
+import { formatLocalDateKey, formatDateDisplay } from '@/utils/dateTimeUtils'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -396,9 +397,9 @@ export default function InventoryManagement({
   const [checkoutScope, setCheckoutScope] = useState<'troop' | 'event'>(canRequestForTroop ? 'troop' : 'event')
   const [checkoutTroopId, setCheckoutTroopId] = useState(userTroopId || troops[0]?.id || '')
   const [checkoutEventId, setCheckoutEventId] = useState(permittedEvents[0]?.id || '')
-  const [checkoutDate, setCheckoutDate] = useState(new Date().toISOString().split('T')[0])
-  const [checkoutReturnDate, setCheckoutReturnDate] = useState(
-    new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+  const [checkoutDate, setCheckoutDate] = useState(() => formatLocalDateKey(new Date()))
+  const [checkoutReturnDate, setCheckoutReturnDate] = useState(() =>
+    formatLocalDateKey(new Date(Date.now() + 7 * 86400000))
   )
   const [checkoutNotes, setCheckoutNotes] = useState('')
 
@@ -408,11 +409,11 @@ export default function InventoryManagement({
       const selectedEv = events.find((e) => e.id === checkoutEventId)
       if (selectedEv) {
         if (selectedEv.start_time) {
-          setCheckoutDate(selectedEv.start_time.split('T')[0])
+          setCheckoutDate(formatLocalDateKey(selectedEv.start_time))
         }
         const toDate = selectedEv.end_time || selectedEv.start_time
         if (toDate) {
-          setCheckoutReturnDate(toDate.split('T')[0])
+          setCheckoutReturnDate(formatLocalDateKey(toDate))
         }
       }
     }
@@ -2386,7 +2387,7 @@ export default function InventoryManagement({
                           <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
                             <span>Requested: {reqLeader}</span>
                             <span>•</span>
-                            <span>Date: {new Date(wo.requested_at).toLocaleDateString()}</span>
+                            <span>Date: {formatDateDisplay(wo.requested_at)}</span>
                             {appLeader && <span>• Approved by: {appLeader}</span>}
                           </div>
 
@@ -2440,7 +2441,7 @@ export default function InventoryManagement({
                           <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
                             <span>Requested by: {reqLeader}</span>
                             <span>•</span>
-                            <span>Date: {new Date(wo.requested_at).toLocaleDateString()}</span>
+                            <span>Date: {formatDateDisplay(wo.requested_at)}</span>
                           </div>
 
                           {wo.notes && (
@@ -3409,7 +3410,7 @@ export default function InventoryManagement({
                       >
                         {permittedEvents.map((ev) => (
                           <option key={ev.id} value={ev.id}>
-                            {ev.title} ({new Date(ev.start_time).toLocaleDateString()})
+                            {ev.title} ({formatDateDisplay(ev.start_time)})
                           </option>
                         ))}
                       </select>

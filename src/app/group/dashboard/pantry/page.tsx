@@ -17,29 +17,18 @@ export default async function PantryPage() {
     redirect('/login?message=Unauthorized. Leader access only.')
   }
 
-  // Check if user is an event leader / food staff
-  const { data: eventStaffAssignments } = await supabase
-    .from('event_staff')
-    .select('id, event_id, event_role')
-    .eq('profile_id', user.id)
-
-  const isEventStaff = (eventStaffAssignments || []).length > 0
-
   const strictlyAllowedRoles = [
     'chef_groupe',
     'assistant_chef_groupe',
     'amin_mounet_group',
     'mas2oul_mounet',
-    'amin_tejhizet_group',
-    'ka2ed_fer2a',
-    'mouse3ed_ka2ed_fer2a',
     'configurator',
   ]
 
-  const hasAccess = strictlyAllowedRoles.includes(role) || isEventStaff
+  const hasAccess = strictlyAllowedRoles.includes(role)
 
   if (!hasAccess) {
-    redirect('/group/dashboard?message=Access to Provisions & Pantry is restricted.')
+    redirect('/group/dashboard?message=Access to Central Group Pantry is restricted to Group Leaders and the Pantry Master.')
   }
 
   // 2. Fetch Group details
@@ -69,13 +58,22 @@ export default async function PantryPage() {
     .order('category', { ascending: true })
     .order('name', { ascending: true })
 
+  // 5. Fetch Event Pantry Requests
+  const { data: requestsData } = await supabase
+    .from('event_pantry_requests')
+    .select('*, events(id, title, start_time), profiles:requested_by(full_name), group_pantry_items(name, unit)')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false })
+
   return (
     <PantryManagement
       groupId={groupId}
       groupName={groupName}
       currentRole={role}
       userName={userName}
+      userId={user.id}
       initialPantry={pantryData || []}
+      initialRequests={requestsData || []}
     />
   )
 }

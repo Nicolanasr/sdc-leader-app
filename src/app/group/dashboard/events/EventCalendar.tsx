@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock } from 'lucide-react'
+import { formatLocalDateKey, formatTimeDisplay } from '@/utils/dateTimeUtils'
 
 interface EventItem {
   id: string
@@ -21,7 +22,7 @@ interface EventCalendarProps {
 
 export default function EventCalendar({ events, onEventClick }: EventCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDateStr, setSelectedDateStr] = useState<string>(new Date().toISOString().slice(0, 10))
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(() => formatLocalDateKey(new Date()))
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -32,7 +33,7 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
   const goToday = () => {
     const today = new Date()
     setCurrentDate(today)
-    setSelectedDateStr(today.toISOString().slice(0, 10))
+    setSelectedDateStr(formatLocalDateKey(today))
   }
 
   const monthLabel = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -92,7 +93,7 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
     const map: Record<string, EventItem[]> = {}
     for (const ev of events) {
       if (!ev.start_time) continue
-      const dateStr = new Date(ev.start_time).toISOString().slice(0, 10)
+      const dateStr = formatLocalDateKey(ev.start_time)
       if (!map[dateStr]) map[dateStr] = []
       map[dateStr].push(ev)
     }
@@ -182,7 +183,7 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
         {/* Calendar Days Grid */}
         <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
           {calendarDays.map(({ date, isCurrentMonth, isToday }, idx) => {
-            const dayKey = date.toISOString().slice(0, 10)
+            const dayKey = formatLocalDateKey(date)
             const dayEvents = eventsByDay[dayKey] || []
             const isSelected = selectedDateStr === dayKey
 
@@ -220,33 +221,31 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
                   )}
                 </div>
 
-                {/* Event Dot Indicators for Mobile & Pills for Desktop */}
-                <div className="flex flex-wrap justify-center sm:justify-start gap-1 mt-1">
-                  {/* Mobile Dots */}
-                  <div className="flex sm:hidden justify-center gap-0.5 pt-0.5">
-                    {dayEvents.slice(0, 3).map((ev) => (
-                      <span key={ev.id} className={`h-1.5 w-1.5 rounded-full ${getDotColor(ev.event_type)}`} />
-                    ))}
-                  </div>
+                {/* Event Dots/Pills in Calendar Cell */}
+                <div className="space-y-1 mt-1">
+                  {dayEvents.slice(0, 2).map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/90 rounded px-1 py-0.5 truncate hover:bg-slate-200"
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${getDotColor(ev.event_type)}`} />
+                      <span className="truncate">{ev.title}</span>
+                    </div>
+                  ))}
+                  {dayEvents.length > 2 && (
+                    <span className="hidden sm:block text-[9px] font-bold text-slate-400 pl-1">
+                      +{dayEvents.length - 2} more
+                    </span>
+                  )}
 
-                  {/* Desktop Pills */}
-                  <div className="hidden sm:block space-y-1 w-full overflow-y-auto max-h-16">
-                    {dayEvents.map((ev) => (
-                      <button
-                        key={ev.id}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEventClick(ev.id)
-                        }}
-                        className={`w-full text-left px-2 py-0.5 rounded-md text-[11px] font-bold truncate transition-transform hover:scale-[1.02] ${getEventTypeBadge(
-                          ev.event_type
-                        )}`}
-                        title={`${ev.title} — ${ev.event_type.toUpperCase()}`}
-                      >
-                        {ev.title}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Mobile Indicator Dot */}
+                  {dayEvents.length > 0 && (
+                    <div className="sm:hidden flex justify-center gap-0.5 mt-1">
+                      {dayEvents.slice(0, 3).map((ev) => (
+                        <span key={ev.id} className={`h-1.5 w-1.5 rounded-full ${getDotColor(ev.event_type)}`} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -271,7 +270,7 @@ export default function EventCalendar({ events, onEventClick }: EventCalendarPro
         ) : (
           <div className="space-y-2">
             {selectedDayEvents.map((ev) => {
-              const timeStr = new Date(ev.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              const timeStr = formatTimeDisplay(ev.start_time)
               return (
                 <div
                   key={ev.id}

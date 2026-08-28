@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
+import { formatLocalDateKey } from '@/utils/dateTimeUtils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ export default function AttendanceManagement({
     const [sheetMode, setSheetMode] = useState<'troop' | 'leadership'>('troop')
 
     // ── New session form ──
-    const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10))
+    const [newDate, setNewDate] = useState(() => formatLocalDateKey(new Date()))
     const [newTroopId, setNewTroopId] = useState(isTroopLeader ? (userTroopId || '') : (troops[0]?.id || ''))
     const [newSessionType, setNewSessionType] = useState<'weekly_meeting' | 'leadership_meeting'>('weekly_meeting')
 

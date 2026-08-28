@@ -2551,7 +2551,7 @@ export default function FinancesManagement({
                                     <div className="text-lg font-black text-slate-900">
                                         عن شهر: {ARABIC_MONTH_NAMES[statementMonth] || statementMonth} {selectedYearNum}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500" suppressHydrationWarning>
                                         تاريخ الإصدار: {new Date().toISOString().split('T')[0]}
                                     </div>
                                 </div>
