@@ -9,6 +9,7 @@ import {
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatLocalDateKey } from '@/utils/dateTimeUtils'
+import { triggerRoleNotification } from '@/utils/notifications'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -309,6 +310,17 @@ export default function AttendanceManagement({
             ...prev.filter((r) => r.attendance_id !== activeSession.id),
             ...newRecs,
         ])
+
+        const troop = troops.find((t) => t.id === activeSession.troop_id)
+        const presentCount = upserts.filter((u) => u.status === 'present').length
+
+        triggerRoleNotification(groupId, 'chef_groupe', {
+            title: `Attendance Logged: ${troop?.name || 'Troop Meeting'}`,
+            message: `${presentCount} of ${upserts.length} scouts were marked present for session on ${activeSession.date}.`,
+            actionUrl: '/group/dashboard/attendance',
+            category: 'attendance',
+        })
+
         showStatus('Attendance saved successfully!', 'success')
     }
 

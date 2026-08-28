@@ -100,6 +100,16 @@ export async function POST(request: Request) {
         .eq('id', userId)
     }
 
+    // 7. Dispatch multi-channel notification to the leader
+    const { sendNotification } = await import('@/services/notifications')
+    sendNotification(userId, {
+      title: 'Password Reset Notice',
+      message: `Your portal password was updated by a group administrator.\n\nYour new temporary password is: ${newPassword}\n\nPlease login and update your password.`,
+      actionUrl: '/login',
+      category: 'leaders',
+      channels: ['in_app', 'email', 'whatsapp'],
+    }).catch((notifErr) => console.warn('[ResetLeaderPassword] Notification warning:', notifErr))
+
     return NextResponse.json({ success: true, message: 'Password updated successfully.' })
   } catch (err: any) {
     console.error('Reset password API exception:', err)

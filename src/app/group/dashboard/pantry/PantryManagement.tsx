@@ -21,6 +21,14 @@ export const PANTRY_CATEGORIES = [
     { id: 'other', label: 'Other Consumables', ar: 'أخرى / متنوع', color: 'bg-slate-50 text-slate-900 border-slate-200' },
 ]
 
+export interface PantryBatch {
+    id: string
+    quantity: number
+    expiry_date: string
+    lot_number?: string
+    notes?: string
+}
+
 export interface PantryItem {
     id: string
     group_id: string
@@ -31,6 +39,7 @@ export interface PantryItem {
     unit: string
     min_threshold: number
     expiry_date?: string | null
+    expiry_batches?: PantryBatch[] | null
     location_stored?: string | null
     notes?: string | null
     created_at?: string
@@ -64,6 +73,26 @@ interface Props {
     initialRequests?: EventPantryRequest[]
 }
 
+function normalizePantryItem(item: PantryItem): PantryItem {
+    let batches: PantryBatch[] = []
+    if (item.expiry_batches && Array.isArray(item.expiry_batches) && item.expiry_batches.length > 0) {
+        batches = item.expiry_batches
+    } else if (item.expiry_date || item.quantity_available) {
+        batches = [
+            {
+                id: 'b_' + item.id,
+                quantity: Number(item.quantity_available) || 1,
+                expiry_date: item.expiry_date || '',
+                lot_number: 'Batch #1',
+            }
+        ]
+    }
+    return {
+        ...item,
+        expiry_batches: batches,
+    }
+}
+
 export default function PantryManagement({
     groupId,
     groupName,
@@ -76,7 +105,7 @@ export default function PantryManagement({
     const supabase = createClient()
 
     const [activeView, setActiveView] = useState<'inventory' | 'requests'>('inventory')
-    const [pantryList, setPantryList] = useState<PantryItem[]>(initialPantry)
+    const [pantryList, setPantryList] = useState<PantryItem[]>(() => initialPantry.map(normalizePantryItem))
     const [requestsList, setRequestsList] = useState<EventPantryRequest[]>(initialRequests)
     const [search, setSearch] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -93,6 +122,7 @@ export default function PantryManagement({
     const [formUnit, setFormUnit] = useState('kg')
     const [formMinThreshold, setFormMinThreshold] = useState('2')
     const [formExpiryDate, setFormExpiryDate] = useState('')
+    const [formBatches, setFormBatches] = useState<PantryBatch[]>([])
     const [formLocation, setFormLocation] = useState('Pantry Shelf A')
     const [formNotes, setFormNotes] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -104,6 +134,29 @@ export default function PantryManagement({
     const showStatus = (text: string, type: 'success' | 'error') => {
         setStatusMessage({ text, type })
         setTimeout(() => setStatusMessage(null), 6000)
+    }
+
+    const handleAddBatch = () => {
+        const newBatch: PantryBatch = {
+            id: 'batch_' + Date.now(),
+            quantity: 1,
+            expiry_date: '',
+            lot_number: `Lot #${formBatches.length + 1}`,
+        }
+        setFormBatches((prev) => [...prev, newBatch])
+    }
+
+    const handleRemoveBatch = (batchId: string) => {
+        setFormBatches((prev) => {
+            const filtered = prev.filter((b) => b.id !== batchId)
+            return filtered.length > 0 ? filtered : [
+                { id: 'batch_' + Date.now(), quantity: 1, expiry_date: '', lot_number: 'Batch #1' }
+            ]
+        })
+    }
+
+    const handleUpdateBatch = (batchId: string, field: keyof PantryBatch, val: any) => {
+        setFormBatches((prev) => prev.map((b) => (b.id === batchId ? { ...b, [field]: val } : b)))
     }
 
     // Calculate expiring soon (< 30 days)
@@ -160,20 +213,46 @@ export default function PantryManagement({
         if (!isProvisionsLeader) return
         const newQty = Math.max(0, Number(item.quantity_available) + delta)
 
+        let updatedBatches = item.expiry_batches ? [...item.expiry_batches] : []
+        if (updatedBatches.length > 0) {
+            updatedBatches[0] = {
+                ...updatedBatches[0],
+                quantity: Math.max(0, Number(updatedBatches[0].quantity) + delta),
+            }
+        }
+
         setPantryList((prev) =>
-            prev.map((i) => (i.id === item.id ? { ...i, quantity_available: newQty } : i))
+            prev.map((i) =>
+                i.id === item.id
+                    ? { ...i, quantity_available: newQty, expiry_batches: updatedBatches }
+                    : i
+            )
         )
 
-        const { error } = await supabase
+        const updatePayload: any = { quantity_available: newQty }
+        if (updatedBatches.length > 0) {
+            updatePayload.expiry_batches = updatedBatches
+        }
+
+        let { error } = await supabase
             .from('group_pantry_items')
-            .update({ quantity_available: newQty })
+            .update(updatePayload)
             .eq('id', item.id)
+
+        if (error && error.message?.includes('expiry_batches')) {
+            delete updatePayload.expiry_batches
+            const retryRes = await supabase
+                .from('group_pantry_items')
+                .update(updatePayload)
+                .eq('id', item.id)
+            error = retryRes.error
+        }
 
         if (error) {
             showStatus('Failed to update quantity.', 'error')
             // Rollback
             setPantryList((prev) =>
-                prev.map((i) => (i.id === item.id ? { ...i, quantity_available: item.quantity_available } : i))
+                prev.map((i) => (i.id === item.id ? item : i))
             )
         }
     }
@@ -188,6 +267,14 @@ export default function PantryManagement({
         setFormExpiryDate('')
         setFormLocation('Pantry Shelf A')
         setFormNotes('')
+        setFormBatches([
+            {
+                id: 'batch_' + Date.now(),
+                quantity: 1,
+                expiry_date: '',
+                lot_number: 'Batch #1',
+            }
+        ])
         setIsModalOpen(true)
     }
 
@@ -201,6 +288,19 @@ export default function PantryManagement({
         setFormExpiryDate(item.expiry_date || '')
         setFormLocation(item.location_stored || 'Pantry Shelf A')
         setFormNotes(item.notes || '')
+        const normalized = normalizePantryItem(item)
+        setFormBatches(
+            normalized.expiry_batches && normalized.expiry_batches.length > 0
+                ? normalized.expiry_batches
+                : [
+                    {
+                        id: 'batch_' + Date.now(),
+                        quantity: Number(item.quantity_available) || 1,
+                        expiry_date: item.expiry_date || '',
+                        lot_number: 'Batch #1',
+                    }
+                ]
+        )
         setIsModalOpen(true)
     }
 
@@ -260,15 +360,31 @@ export default function PantryManagement({
         const qty = parseFloat(formQuantity) || 0
         const minThresh = parseFloat(formMinThreshold) || 0
 
+        // If multiple batches are added, compute total quantity & earliest expiry date
+        let finalQty = qty
+        let finalExpiry = formExpiryDate || null
+
+        if (formBatches.length > 0) {
+            finalQty = formBatches.reduce((acc, b) => acc + (parseFloat(String(b.quantity)) || 0), 0)
+            const sortedDates = formBatches
+                .map((b) => b.expiry_date)
+                .filter(Boolean)
+                .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+            if (sortedDates.length > 0) {
+                finalExpiry = sortedDates[0]
+            }
+        }
+
         try {
             if (editingItem) {
                 // Update
                 const payload: any = {
                     name: formName.trim(),
                     category: formCategory,
-                    quantity_available: qty,
+                    quantity_available: finalQty,
                     unit: formUnit,
-                    expiry_date: formExpiryDate || null,
+                    expiry_date: finalExpiry,
+                    expiry_batches: formBatches.length > 0 ? formBatches : null,
                     location_stored: formLocation.trim() || null,
                     notes: formNotes.trim() || null,
                 }
@@ -280,11 +396,17 @@ export default function PantryManagement({
                     .select('*')
                     .single()
 
-                if (res.error && res.error.message?.includes('min_threshold')) {
-                    // Retry without min_threshold in case column isn't in DB yet
+                if (res.error && (res.error.message?.includes('expiry_batches') || res.error.message?.includes('min_threshold'))) {
+                    // Fallback without unsupported columns
+                    const safePayload = { ...payload }
+                    delete safePayload.expiry_batches
+                    if (formBatches.length > 0) {
+                        const batchNote = `[Batches: ${formBatches.map(b => `${b.quantity}x exp ${b.expiry_date}`).join(', ')}]`
+                        safePayload.notes = safePayload.notes ? `${safePayload.notes} | ${batchNote}` : batchNote
+                    }
                     res = await supabase
                         .from('group_pantry_items')
-                        .update(payload)
+                        .update(safePayload)
                         .eq('id', editingItem.id)
                         .select('*')
                         .single()
@@ -292,18 +414,19 @@ export default function PantryManagement({
 
                 if (res.error) throw res.error
                 const data = res.data
-                setPantryList((prev) => prev.map((i) => (i.id === data.id ? data : i)))
-                showStatus(`Updated "${data.name}" successfully!`, 'success')
+                setPantryList((prev) => prev.map((i) => (i.id === data.id ? { ...data, expiry_batches: formBatches } : i)))
+                showStatus(`Updated "${data.name}" successfully with ${formBatches.length > 0 ? formBatches.length + ' expiry batch(es)' : 'stock details'}!`, 'success')
             } else {
                 // Insert
                 const payload: any = {
                     group_id: groupId,
                     name: formName.trim(),
                     category: formCategory,
-                    quantity_available: qty,
-                    quantity_total: qty,
+                    quantity_available: finalQty,
+                    quantity_total: finalQty,
                     unit: formUnit,
-                    expiry_date: formExpiryDate || null,
+                    expiry_date: finalExpiry,
+                    expiry_batches: formBatches.length > 0 ? formBatches : null,
                     location_stored: formLocation.trim() || 'Pantry Shelf A',
                     notes: formNotes.trim() || null,
                 }
@@ -314,18 +437,24 @@ export default function PantryManagement({
                     .select('*')
                     .single()
 
-                if (res.error && res.error.message?.includes('min_threshold')) {
-                    // Retry without min_threshold in case column isn't in DB yet
+                if (res.error && (res.error.message?.includes('expiry_batches') || res.error.message?.includes('min_threshold'))) {
+                    // Fallback without unsupported columns
+                    const safePayload = { ...payload }
+                    delete safePayload.expiry_batches
+                    if (formBatches.length > 0) {
+                        const batchNote = `[Batches: ${formBatches.map(b => `${b.quantity}x exp ${b.expiry_date}`).join(', ')}]`
+                        safePayload.notes = safePayload.notes ? `${safePayload.notes} | ${batchNote}` : batchNote
+                    }
                     res = await supabase
                         .from('group_pantry_items')
-                        .insert(payload)
+                        .insert(safePayload)
                         .select('*')
                         .single()
                 }
 
                 if (res.error) throw res.error
                 const data = res.data
-                setPantryList((prev) => [data, ...prev])
+                setPantryList((prev) => [{ ...data, expiry_batches: formBatches }, ...prev])
                 showStatus(`Added "${data.name}" to central pantry!`, 'success')
             }
 
@@ -504,14 +633,8 @@ export default function PantryManagement({
                         </div>
                         <div>
                             <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                <span>Group Central Pantry</span>
-                                <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
-                                    مؤونة الفوج
-                                </span>
+                                <span>Group Pantry</span>
                             </h1>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Bulk non-perishable consumables stock, grains, canned supplies, oils, and hygiene for camps.
-                            </p>
                         </div>
                     </div>
 
@@ -536,7 +659,7 @@ export default function PantryManagement({
                             }`}
                     >
                         <Package className="h-3.5 w-3.5" />
-                        <span>Pantry Inventory</span>
+                        <span>Inventory</span>
                         <span className="opacity-75 font-normal">({pantryList.length})</span>
                     </button>
 
@@ -548,7 +671,7 @@ export default function PantryManagement({
                             }`}
                     >
                         <Send className="h-3.5 w-3.5" />
-                        <span>Camp Sourcing Requests</span>
+                        <span>Requests</span>
                         {pendingRequestsCount > 0 ? (
                             <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
                                 {pendingRequestsCount} new
@@ -756,6 +879,56 @@ export default function PantryManagement({
                                                         </span>
                                                     )}
                                                 </div>
+
+                                                {item.expiry_batches && item.expiry_batches.length > 0 && (
+                                                    <div className="pt-1">
+                                                        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 space-y-1.5 shadow-2xs">
+                                                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-700">
+                                                                <span className="flex items-center gap-1.5 text-amber-900 font-black">
+                                                                    <Layers className="h-3.5 w-3.5 text-amber-800" />
+                                                                    <span>
+                                                                        {item.expiry_batches.length === 1 ? '1 Expiry Batch' : `${item.expiry_batches.length} Expiry Batches (FIFO)`}
+                                                                    </span>
+                                                                </span>
+                                                                <span className="text-[9px] text-slate-400 font-semibold">Tracked Lots</span>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                {item.expiry_batches.map((batch, idx) => {
+                                                                    const bExp = isItemExpired(batch.expiry_date)
+                                                                    const bSoon = isItemExpiringSoon(batch.expiry_date)
+                                                                    return (
+                                                                        <div
+                                                                            key={batch.id || idx}
+                                                                            className="flex items-center justify-between text-[11px] bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/80 shadow-2xs"
+                                                                        >
+                                                                            <span className="font-bold text-slate-900 flex items-center gap-1 truncate">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-teal-800 shrink-0" />
+                                                                                <span>{batch.quantity} {item.unit}</span>
+                                                                                {batch.lot_number && (
+                                                                                    <span className="text-[10px] text-slate-500 font-normal truncate">
+                                                                                        • {batch.lot_number}
+                                                                                    </span>
+                                                                                )}
+                                                                            </span>
+                                                                            <span
+                                                                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ml-1.5 ${bExp
+                                                                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                                                                    : bSoon
+                                                                                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                                                        : batch.expiry_date
+                                                                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                                                            : 'bg-slate-100 text-slate-500'
+                                                                                    }`}
+                                                                            >
+                                                                                {batch.expiry_date ? formatDateDisplay(batch.expiry_date) : 'No exp date'}
+                                                                            </span>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {item.notes && (
                                                     <p className="text-[11px] text-slate-500 line-clamp-2 italic bg-slate-50 p-2 rounded-xl border border-slate-100">
@@ -1108,15 +1281,18 @@ export default function PantryManagement({
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Available Quantity *</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                                            {formBatches.length > 0 ? 'Total Stock (From Batches)' : 'Available Quantity *'}
+                                        </label>
                                         <input
                                             type="number"
                                             step="any"
                                             min="0"
                                             required
-                                            value={formQuantity}
+                                            disabled={formBatches.length > 0}
+                                            value={formBatches.length > 0 ? formBatches.reduce((acc, b) => acc + (parseFloat(String(b.quantity)) || 0), 0) : formQuantity}
                                             onChange={(e) => setFormQuantity(e.target.value)}
-                                            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold"
+                                            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold disabled:bg-slate-50 disabled:text-teal-900"
                                         />
                                     </div>
 
@@ -1133,7 +1309,7 @@ export default function PantryManagement({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className={formBatches.length === 0 ? "grid grid-cols-2 gap-3" : "w-full"}>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">Storage Shelf / Depot</label>
                                         <input
@@ -1145,40 +1321,141 @@ export default function PantryManagement({
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Expiry Date (Optional)</label>
-                                        <input
-                                            type="date"
-                                            value={formExpiryDate}
-                                            onChange={(e) => setFormExpiryDate(e.target.value)}
-                                            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
-                                        />
+                                    {formBatches.length === 0 && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1">Expiry Date (Optional)</label>
+                                            <input
+                                                type="date"
+                                                value={formExpiryDate}
+                                                onChange={(e) => setFormExpiryDate(e.target.value)}
+                                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* ── MULTI-BATCH EXPIRATION LOTS SECTION ── */}
+                                <div className="p-3 sm:p-3.5 bg-amber-50/80 border border-amber-200/90 rounded-2xl space-y-3 shadow-2xs">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 border border-amber-200 flex items-center justify-center shrink-0">
+                                                <Layers className="h-4 w-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="text-xs font-black text-slate-900 leading-tight truncate">
+                                                    Expiry Batches / Lots
+                                                </h4>
+                                                <span className="text-[10px] font-bold text-amber-800 block">
+                                                    تواريخ انتهاء متعددة
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleAddBatch}
+                                            className="text-[11px] font-black bg-amber-800 hover:bg-amber-700 active:scale-95 text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shrink-0 shadow-2xs"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            <span>Add Batch</span>
+                                        </button>
                                     </div>
+
+                                    {formBatches.length === 0 ? (
+                                        <p className="text-[11px] text-amber-900/80 leading-relaxed bg-amber-100/50 p-2.5 rounded-xl border border-amber-200/50">
+                                            Have stock expiring on different dates? Tap <strong>Add Batch</strong> to record separate quantities and expiration dates per lot (FIFO enabled).
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2.5">
+                                            {formBatches.map((batch, idx) => (
+                                                <div
+                                                    key={batch.id}
+                                                    className="bg-white p-3 rounded-2xl border border-amber-200/90 shadow-2xs space-y-2.5"
+                                                >
+                                                    {/* Top row: Lot # / Note and Delete */}
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                            <span className="text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md shrink-0">
+                                                                Lot #{idx + 1}
+                                                            </span>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Note / Lot # (Optional)"
+                                                                value={batch.lot_number || ''}
+                                                                onChange={(e) => handleUpdateBatch(batch.id, 'lot_number', e.target.value)}
+                                                                className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-teal-600 font-medium placeholder:text-slate-400"
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveBatch(batch.id)}
+                                                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors shrink-0 active:scale-95"
+                                                            title="Remove batch"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Bottom row: Qty & Expiry Date (Responsive 2-col) */}
+                                                    <div className="grid grid-cols-2 gap-2.5">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                                                Qty ({formUnit}) *
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                step="any"
+                                                                min="0.1"
+                                                                required
+                                                                placeholder="Quantity"
+                                                                value={batch.quantity}
+                                                                onChange={(e) => handleUpdateBatch(batch.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                                                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-teal-600 font-black text-slate-900"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                                                Expiry Date *
+                                                            </label>
+                                                            <input
+                                                                type="date"
+                                                                required
+                                                                value={batch.expiry_date}
+                                                                onChange={(e) => handleUpdateBatch(batch.id, 'expiry_date', e.target.value)}
+                                                                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-teal-600 font-medium text-slate-900"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Notes / Batch Details</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">General Notes</label>
                                     <textarea
                                         rows={2}
-                                        placeholder="e.g. Donated batch, brand name, store in cool area..."
+                                        placeholder="e.g. Donated stock, brand name, specific storage instructions..."
                                         value={formNotes}
                                         onChange={(e) => setFormNotes(e.target.value)}
                                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
                                     />
                                 </div>
 
-                                <div className="pt-2 flex gap-2">
+                                <div className="pt-2 flex gap-2 pb-2">
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100"
+                                        className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100 active:scale-95 transition-all"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="flex-1 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5"
+                                        className="flex-1 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5"
                                     >
                                         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                                         <span>{editingItem ? 'Save Changes' : 'Add to Stock'}</span>

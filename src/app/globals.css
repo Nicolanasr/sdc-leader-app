@@ -17,3 +17,13 @@ body {
   color: #0f172a;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Prevent double-tap and gesture auto-zoom without altering designed font sizes */
+html,
+body,
+input,
+select,
+textarea,
+button {
+  touch-action: manipulation;
+}

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import { formatLocalDateKey, formatDateDisplay } from '@/utils/dateTimeUtils'
+import { triggerNotification, triggerRoleNotification } from '@/utils/notifications'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -783,7 +784,9 @@ export default function InventoryManagement({
                     delete payload.qty_fair
                     delete payload.qty_needs_repair
                     delete payload.qty_damaged
-                    payload.notes = `[Conditions: Good: ${g}, Fair: ${f}, Repair: ${r}, Damaged: ${d}]`
+                    payload.description = payload.description
+                        ? `${payload.description} | [Conditions: Good: ${g}, Fair: ${f}, Repair: ${r}, Damaged: ${d}]`
+                        : `[Conditions: Good: ${g}, Fair: ${f}, Repair: ${r}, Damaged: ${d}]`
 
                     const retryRes = await supabase
                         .from('quartermaster_inventory')
@@ -836,7 +839,9 @@ export default function InventoryManagement({
                     delete payload.qty_fair
                     delete payload.qty_needs_repair
                     delete payload.qty_damaged
-                    payload.notes = `[Conditions: Good: ${g}, Fair: ${f}, Repair: ${r}, Damaged: ${d}]`
+                    payload.description = payload.description
+                        ? `${payload.description} | [Conditions: Good: ${g}, Fair: ${f}, Repair: ${r}, Damaged: ${d}]`
+                        : `[Conditions: Good: ${g}, Fair: ${f}, Repair: ${r}, Damaged: ${d}]`
 
                     const retryRes = await supabase
                         .from('quartermaster_inventory')
@@ -956,6 +961,18 @@ export default function InventoryManagement({
 
             setIsSubmitting(false)
             setCheckouts((prev) => [...newCheckouts, ...prev])
+
+            // If this was a loan request (not direct handout), notify Amin Tejhizet
+            if (!isDirectHandout) {
+                const itemListSummary = cartItems.map((c) => `${c.quantity}x ${c.item.name}`).join(', ')
+                triggerRoleNotification(groupId, 'amin_tejhizet_group', {
+                    title: 'New Equipment Loan Request',
+                    message: `A leader submitted a loan request for ${cartItems.length} gear item(s): ${itemListSummary}.`,
+                    actionUrl: '/group/dashboard/inventory',
+                    category: 'inventory',
+                })
+            }
+
             showStatus(
                 isDirectHandout
                     ? `${cartItems.length} item type(s) handed out successfully!`
@@ -1006,6 +1023,17 @@ export default function InventoryManagement({
 
         setCheckouts((prev) => prev.map((c) => (c.id === data.id ? data : c)))
         setBatchActionLoadingId(null)
+
+        // Notify requesting leader that equipment is ready/issued
+        if (checkout.checked_out_to) {
+            triggerNotification(checkout.checked_out_to, {
+                title: 'Equipment Loan Approved',
+                message: `Your equipment loan request for ${checkout.quantity}x "${item.name}" has been approved and marked ready for pickup.`,
+                actionUrl: '/group/dashboard/inventory',
+                category: 'inventory',
+            })
+        }
+
         showStatus(`Equipment marked as handed out! Available stock updated.`)
     }
 

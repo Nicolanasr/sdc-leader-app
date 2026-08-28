@@ -166,6 +166,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to assign leader role permissions: ' + roleMapError.message }, { status: 500 })
     }
 
+    // 10. Dispatch multi-channel welcome notification to new leader
+    const { sendNotification } = await import('@/services/notifications')
+    sendNotification(newUserId, {
+      title: 'Welcome to Scouts des Cèdres Portal',
+      message: `You have been onboarded as a leader.\n\nLogin Email: ${email}\nTemporary Password: ${tempPassword}\n\nPlease login and change your password.`,
+      actionUrl: '/login',
+      category: 'leaders',
+      channels: ['in_app', 'email', 'whatsapp'],
+    }).catch((notifErr) => console.warn('[OnboardLeader] Notification warning:', notifErr))
+
     return NextResponse.json({ success: true, userId: newUserId, tempPassword })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Server error occurred' }, { status: 500 })

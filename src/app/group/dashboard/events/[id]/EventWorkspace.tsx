@@ -19,6 +19,7 @@ import {
     MasterCatalogIngredient
 } from '@/utils/scoutMealRecipes'
 import { toLocalDatetimeInputValue, formatLocalDateKey, formatDateDisplay, formatTimeDisplay } from '@/utils/dateTimeUtils'
+import { triggerNotification, triggerRoleNotification } from '@/utils/notifications'
 
 // ─── SEARCHABLE INGREDIENT COMBOBOX COMPONENT ─────────────────────────────────
 interface SearchableIngredientComboboxProps {
@@ -970,6 +971,19 @@ export default function EventWorkspace({
 
                 if (sErr) throw sErr
                 newStaffList = sData || []
+
+                // Dispatch notification to each newly assigned leader
+                for (const staff of newStaffList) {
+                    if (staff.profile_id) {
+                        const roleTitle = getRoleLabel(staff.event_role, eventItem.event_type)
+                        triggerNotification(staff.profile_id, {
+                            title: `Assigned to Event Leadership: ${eventItem.title}`,
+                            message: `You have been assigned as "${roleTitle}" for "${eventItem.title}". Click below to access your workspace.`,
+                            actionUrl: `/group/dashboard/events/${eventItem.id}`,
+                            category: 'events',
+                        })
+                    }
+                }
             }
 
             setEventItem((prev) => ({ ...prev, event_staff: newStaffList }))
@@ -1869,6 +1883,14 @@ export default function EventWorkspace({
 
                 setPantryRequests((prev) => [data, ...prev])
             }
+
+            // Dispatch notification to Group Pantry Master (Mas2oul Mounet)
+            triggerRoleNotification(groupId, 'mas2oul_mounet', {
+                title: `Pantry Transfer Request: ${eventItem.title}`,
+                message: `${userName || 'Kitchen staff'} requested ${requestedQuantity} ${unit} of "${pantryItem.name}" for "${eventItem.title}".`,
+                actionUrl: `/group/dashboard/events/${eventItem.id}`,
+                category: 'pantry',
+            })
 
             showStatus(`Submitted request for ${requestedQuantity} ${unit} of "${pantryItem.name}" from Group Pantry!`, 'success')
         } catch (err: any) {

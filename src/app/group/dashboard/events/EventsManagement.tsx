@@ -12,6 +12,7 @@ import {
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { toLocalDatetimeInputValue, formatDateDisplay, formatTimeDisplay } from '@/utils/dateTimeUtils'
+import { triggerRoleNotification, triggerNotification } from '@/utils/notifications'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Leader {
@@ -395,6 +396,15 @@ export default function EventsManagement({
             setEvents((prev: EventItem[]) => [fullEvent, ...prev])
             setIsCreateModalOpen(false)
             resetForm()
+
+            // Dispatch notification to Troop Leaders / Group Leaders
+            triggerRoleNotification(groupId, 'ka2ed_fer2a', {
+                title: `New Event Scheduled: ${title}`,
+                message: `An event "${title}" (${eventType}) was created for ${new Date(startTime).toLocaleDateString()}. Open the portal to view details and participants.`,
+                actionUrl: `/group/dashboard/events/${eventRow.id}`,
+                category: 'events',
+            })
+
             showStatus('Event created successfully with full participant roster!', 'success')
         } catch (err: any) {
             showStatus(err.message || 'Failed to create event.', 'error')

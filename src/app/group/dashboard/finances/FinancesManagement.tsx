@@ -10,6 +10,7 @@ import {
     Layers, Percent, Tag, CreditCard, ChevronLeft, ChevronRight, HelpCircle, Send, Check, Ban, Settings, Printer, Loader2
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
+import { triggerNotification, triggerRoleNotification } from '@/utils/notifications'
 
 interface Member {
     id: string
@@ -1059,6 +1060,15 @@ export default function FinancesManagement({
                 setIsHandoverModalOpen(false)
                 setHandoverAmount('')
                 setHandoverNotes('')
+
+                // Dispatch notification to Amin Sandou2
+                triggerRoleNotification(groupId, 'amin_sandou2_group', {
+                    title: 'Cash Handover Submitted',
+                    message: `A troop leader submitted a monthly dues handover of $${amt} for ${handoverMonth}.`,
+                    actionUrl: '/group/dashboard/finances',
+                    category: 'treasury',
+                })
+
                 showStatus(`Handover of $${amt} submitted to Group Treasurer!`, 'success')
             }
         } catch (err: any) {
@@ -1100,7 +1110,7 @@ export default function FinancesManagement({
                     currency: 'USD',
                     payment_method: 'cash',
                     status: 'approved',
-                    description: `Troop Handover: ${handover.troops?.name || 'Troop'} (${handover.month_key})`,
+                    description: `Troop Dues Handover: ${handover.troops?.name || 'Troop'} (${handover.month_key})`,
                     submitted_by: userProfileId,
                 })
                 .select('*, troops(id, name)')
@@ -1112,7 +1122,18 @@ export default function FinancesManagement({
             if (txData) {
                 setTransactions((prev) => [txData, ...prev])
             }
-            showStatus(`Handover of $${handover.amount} confirmed & credited to Group Vault!`, 'success')
+
+            // Notify submitting troop leader of confirmation
+            if (handover.handed_over_by) {
+                triggerNotification(handover.handed_over_by, {
+                    title: 'Troop Cash Handover Verified',
+                    message: `Your dues handover of $${handover.amount} for ${handover.month_key} was confirmed & deposited to the Group Treasury.`,
+                    actionUrl: '/group/dashboard/finances',
+                    category: 'treasury',
+                })
+            }
+
+            showStatus(`Handover confirmed! $${handover.amount} added to Group Treasury Vault.`, 'success')
         } catch (err: any) {
             showStatus(`Error confirming handover: ${err.message}`, 'error')
         }
@@ -1185,6 +1206,15 @@ export default function FinancesManagement({
                 setIsDisbursementModalOpen(false)
                 setDisbursementAmount('')
                 setDisbursementPurpose('')
+
+                // Dispatch notification to Amin Sandou2
+                triggerRoleNotification(groupId, 'amin_sandou2_group', {
+                    title: 'Troop Funds Disbursement Request',
+                    message: `A troop leader requested a disbursement of $${amt} for "${disbursementPurpose.trim()}".`,
+                    actionUrl: '/group/dashboard/finances',
+                    category: 'treasury',
+                })
+
                 showStatus(`Disbursement request for $${amt} submitted to Group Treasurer!`, 'success')
             }
         } catch (err: any) {
@@ -1238,6 +1268,17 @@ export default function FinancesManagement({
             if (txData) {
                 setTransactions((prev) => [txData, ...prev])
             }
+
+            // Notify requesting leader of approval
+            if (disbursement.requested_by) {
+                triggerNotification(disbursement.requested_by, {
+                    title: 'Disbursement Request Approved',
+                    message: `Your fund request of $${disbursement.amount} for "${disbursement.purpose}" was approved by the Group Treasurer.`,
+                    actionUrl: '/group/dashboard/finances',
+                    category: 'treasury',
+                })
+            }
+
             showStatus(`Disbursement of $${disbursement.amount} approved & released!`, 'success')
         } catch (err: any) {
             showStatus(`Error approving disbursement: ${err.message}`, 'error')
