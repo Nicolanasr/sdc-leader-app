@@ -557,6 +557,9 @@ export default function EventsManagement({
                             const startDateStr = formatDateDisplay(ev.start_time)
                             const totalParticipants = (ev.event_participants || []).length
                             const presentCount = (ev.event_participants || []).filter((p: EventParticipant) => p.attendance_status === 'present').length
+                            const isGroupLeader = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
+                            const isEventLeader = (ev.event_staff || []).some((s: EventStaff) => s.profile_id === userProfileId && s.event_role === 'ka2ed_mouskhayyam')
+                            const canEditThisEvent = isGroupLeader || isEventLeader
 
                             return (
                                 <div
@@ -575,13 +578,15 @@ export default function EventsManagement({
                                                     {ev.event_type}
                                                 </span>
                                             </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); openEditModal(ev) }}
-                                                className="text-slate-400 hover:text-teal-800 p-1 transition-colors rounded-lg hover:bg-slate-100"
-                                                title="Edit Event Details"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
+                                            {canEditThisEvent && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openEditModal(ev) }}
+                                                    className="text-slate-400 hover:text-teal-800 p-1 transition-colors rounded-lg hover:bg-slate-100"
+                                                    title="Edit Event Details"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </div>
 
                                         <h3 className="text-lg font-bold text-slate-900 mb-2">{ev.title}</h3>

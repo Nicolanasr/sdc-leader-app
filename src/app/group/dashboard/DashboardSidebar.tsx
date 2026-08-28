@@ -43,7 +43,16 @@ const navLink = (href: string, label: string, icon: React.ReactNode, active: boo
 
 export default function DashboardSidebar({ groupName, currentRole, onClose, onLogout }: Props) {
   const pathname = usePathname()
-  const isGroupAdmin = GROUP_ADMIN_ROLES.includes(currentRole)
+
+  // Role permissions per view
+  const canAccessLeaders = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+  const canAccessTroops = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+  const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessAttendance = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessEvents = true
+  const canAccessFinances = ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessInventory = ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessPantry = ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'configurator'].includes(currentRole)
 
   return (
     <div className="flex flex-col h-full">
@@ -64,19 +73,35 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
       <nav className="p-4 space-y-1 flex-1">
         {navLink('/group/dashboard', 'Dashboard Overview', <Landmark className="h-4 w-4" />, pathname === '/group/dashboard', onClose)}
 
-        {isGroupAdmin && (
-          <>
-            {navLink('/group/dashboard/leaders', 'Leaders & Council', <Users className="h-4 w-4" />, pathname === '/group/dashboard/leaders', onClose)}
-            {navLink('/group/dashboard/troops', 'Units / Troops', <Layers className="h-4 w-4" />, pathname === '/group/dashboard/troops', onClose)}
-          </>
+        {canAccessLeaders && (
+          navLink('/group/dashboard/leaders', 'Leaders & Council', <Users className="h-4 w-4" />, pathname === '/group/dashboard/leaders', onClose)
         )}
 
-        {navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)}
-        {navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)}
-        {navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)}
-        {navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)}
-        {navLink('/group/dashboard/inventory', 'Equipment & Gear', <Package className="h-4 w-4" />, pathname.startsWith('/group/dashboard/inventory'), onClose)}
-        {['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'configurator'].includes(currentRole) && (
+        {canAccessTroops && (
+          navLink('/group/dashboard/troops', 'Units / Troops', <Layers className="h-4 w-4" />, pathname === '/group/dashboard/troops', onClose)
+        )}
+
+        {canAccessMembers && (
+          navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)
+        )}
+
+        {canAccessAttendance && (
+          navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)
+        )}
+
+        {canAccessEvents && (
+          navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)
+        )}
+
+        {canAccessFinances && (
+          navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)
+        )}
+
+        {canAccessInventory && (
+          navLink('/group/dashboard/inventory', 'Equipment & Gear', <Package className="h-4 w-4" />, pathname.startsWith('/group/dashboard/inventory'), onClose)
+        )}
+
+        {canAccessPantry && (
           navLink('/group/dashboard/pantry', 'Provisions & Pantry', <UtensilsCrossed className="h-4 w-4" />, pathname.startsWith('/group/dashboard/pantry'), onClose)
         )}
       </nav>

@@ -17,8 +17,15 @@ export default async function TroopsPage() {
   const groupId = user.app_metadata?.group_id
   const role = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
 
-  if (!groupId) {
-    redirect('/login?message=Unauthorized. No group association found.')
+  const allowedRoles = [
+    'chef_groupe',
+    'assistant_chef_groupe',
+    'amin_serr_group',
+    'configurator',
+  ]
+
+  if (!groupId || !allowedRoles.includes(role)) {
+    redirect('/group/dashboard?message=Unauthorized. Group Leader and Secretary access only.')
   }
 
   // 2. Fetch Group details

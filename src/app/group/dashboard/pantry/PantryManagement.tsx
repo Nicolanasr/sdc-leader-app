@@ -485,8 +485,8 @@ export default function PantryManagement({
                 {statusMessage && (
                     <div
                         className={`p-3.5 rounded-2xl text-xs font-bold flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 ${statusMessage.type === 'success'
-                                ? 'bg-teal-900 text-white'
-                                : 'bg-rose-600 text-white'
+                            ? 'bg-teal-900 text-white'
+                            : 'bg-rose-600 text-white'
                             }`}
                     >
                         <span>{statusMessage.text}</span>
@@ -531,8 +531,8 @@ export default function PantryManagement({
                     <button
                         onClick={() => setActiveView('inventory')}
                         className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeView === 'inventory'
-                                ? 'bg-teal-800 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-teal-800 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                             }`}
                     >
                         <Package className="h-3.5 w-3.5" />
@@ -543,8 +543,8 @@ export default function PantryManagement({
                     <button
                         onClick={() => setActiveView('requests')}
                         className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeView === 'requests'
-                                ? 'bg-teal-800 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-teal-800 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                             }`}
                     >
                         <Send className="h-3.5 w-3.5" />
@@ -563,17 +563,6 @@ export default function PantryManagement({
                     <>
                         {/* ── METRICS & SUMMARY BAR (With Expiry Tile) ── */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                            <div
-                                onClick={() => {
-                                    setFilterLowStockOnly(false)
-                                    setFilterExpiringSoonOnly(false)
-                                    setSelectedCategory('all')
-                                }}
-                                className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-0.5 cursor-pointer hover:border-slate-300 transition-all"
-                            >
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Items</span>
-                                <span className="text-xl font-black text-slate-900">{pantryList.length}</span>
-                            </div>
 
                             {/* Low Stock Filter Tile */}
                             <div
@@ -582,10 +571,10 @@ export default function PantryManagement({
                                     setFilterExpiringSoonOnly(false)
                                 }}
                                 className={`p-3.5 rounded-2xl border shadow-2xs space-y-0.5 cursor-pointer transition-all ${lowStockCount > 0
-                                        ? filterLowStockOnly
-                                            ? 'bg-rose-800 text-white border-rose-800'
-                                            : 'bg-rose-50 text-rose-900 border-rose-200 hover:bg-rose-100/70'
-                                        : 'bg-white text-slate-900 border-slate-200'
+                                    ? filterLowStockOnly
+                                        ? 'bg-rose-800 text-white border-rose-800'
+                                        : 'bg-rose-50 text-rose-900 border-rose-200 hover:bg-rose-100/70'
+                                    : 'bg-white text-slate-900 border-slate-200'
                                     }`}
                             >
                                 <div className="flex items-center justify-between">
@@ -604,10 +593,10 @@ export default function PantryManagement({
                                     setFilterLowStockOnly(false)
                                 }}
                                 className={`p-3.5 rounded-2xl border shadow-2xs space-y-0.5 cursor-pointer transition-all ${expiringSoonCount > 0
-                                        ? filterExpiringSoonOnly
-                                            ? 'bg-amber-800 text-white border-amber-800'
-                                            : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100/70'
-                                        : 'bg-white text-slate-900 border-slate-200'
+                                    ? filterExpiringSoonOnly
+                                        ? 'bg-amber-800 text-white border-amber-800'
+                                        : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100/70'
+                                    : 'bg-white text-slate-900 border-slate-200'
                                     }`}
                             >
                                 <div className="flex items-center justify-between">
@@ -617,13 +606,6 @@ export default function PantryManagement({
                                     {expiringSoonCount > 0 && <Clock className="h-3.5 w-3.5" />}
                                 </div>
                                 <span className="text-xl font-black">{expiringSoonCount} items</span>
-                            </div>
-
-                            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-0.5">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Lead Manager</span>
-                                <span className="text-xs font-black text-teal-900 truncate block">
-                                    {isProvisionsLeader ? 'Authorized Leader' : 'Quartermaster / Food Lead'}
-                                </span>
                             </div>
                         </div>
 
@@ -650,8 +632,8 @@ export default function PantryManagement({
                                         setFilterExpiringSoonOnly(false)
                                     }}
                                     className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${selectedCategory === 'all' && !filterLowStockOnly && !filterExpiringSoonOnly
-                                            ? 'bg-slate-900 text-white shadow-2xs'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        ? 'bg-slate-900 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     All ({pantryList.length})
@@ -665,8 +647,8 @@ export default function PantryManagement({
                                         setFilterLowStockOnly(false)
                                     }}
                                     className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 ${filterExpiringSoonOnly
-                                            ? 'bg-amber-800 text-white shadow-2xs'
-                                            : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
+                                        ? 'bg-amber-800 text-white shadow-2xs'
+                                        : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
                                         }`}
                                 >
                                     <Clock className="h-3 w-3" />
@@ -691,8 +673,8 @@ export default function PantryManagement({
                                                 setFilterExpiringSoonOnly(false)
                                             }}
                                             className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${isSel
-                                                    ? 'bg-teal-800 text-white shadow-2xs'
-                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                ? 'bg-teal-800 text-white shadow-2xs'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                                 }`}
                                         >
                                             <span>{cat.label}</span>
@@ -760,10 +742,10 @@ export default function PantryManagement({
                                                     {item.expiry_date && (
                                                         <span
                                                             className={`text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${isExpired
-                                                                    ? 'bg-rose-100 text-rose-900 border border-rose-200'
-                                                                    : isExpiring
-                                                                        ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                                                                        : 'bg-slate-100 text-slate-600'
+                                                                ? 'bg-rose-100 text-rose-900 border border-rose-200'
+                                                                : isExpiring
+                                                                    ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                                                    : 'bg-slate-100 text-slate-600'
                                                                 }`}
                                                         >
                                                             <Clock className="h-2.5 w-2.5" />
@@ -865,16 +847,14 @@ export default function PantryManagement({
                                 <button
                                     type="button"
                                     onClick={() => setRequestStatusFilter('all')}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                                        requestStatusFilter === 'all'
-                                            ? 'bg-teal-800 text-white shadow-2xs'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${requestStatusFilter === 'all'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
                                 >
                                     <span>All Requests</span>
-                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                        requestStatusFilter === 'all' ? 'bg-teal-900 text-teal-200' : 'bg-slate-200 text-slate-700'
-                                    }`}>
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${requestStatusFilter === 'all' ? 'bg-teal-900 text-teal-200' : 'bg-slate-200 text-slate-700'
+                                        }`}>
                                         {requestsList.length}
                                     </span>
                                 </button>
@@ -882,16 +862,14 @@ export default function PantryManagement({
                                 <button
                                     type="button"
                                     onClick={() => setRequestStatusFilter('pending')}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                                        requestStatusFilter === 'pending'
-                                            ? 'bg-amber-600 text-white shadow-2xs'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${requestStatusFilter === 'pending'
+                                        ? 'bg-amber-600 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
                                 >
                                     <span>Pending Approval</span>
-                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                        requestStatusFilter === 'pending' ? 'bg-amber-700 text-amber-100' : 'bg-slate-200 text-slate-700'
-                                    }`}>
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${requestStatusFilter === 'pending' ? 'bg-amber-700 text-amber-100' : 'bg-slate-200 text-slate-700'
+                                        }`}>
                                         {pendingRequestsCount}
                                     </span>
                                 </button>
@@ -899,16 +877,14 @@ export default function PantryManagement({
                                 <button
                                     type="button"
                                     onClick={() => setRequestStatusFilter('approved')}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                                        requestStatusFilter === 'approved'
-                                            ? 'bg-emerald-700 text-white shadow-2xs'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${requestStatusFilter === 'approved'
+                                        ? 'bg-emerald-700 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
                                 >
                                     <span>Approved / Transferred</span>
-                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                        requestStatusFilter === 'approved' ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-200 text-slate-700'
-                                    }`}>
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${requestStatusFilter === 'approved' ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-200 text-slate-700'
+                                        }`}>
                                         {requestsList.length - pendingRequestsCount}
                                     </span>
                                 </button>
@@ -1010,13 +986,12 @@ export default function PantryManagement({
                                                                         {req.quantity} {req.unit}
                                                                     </span>
                                                                     <span
-                                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                                                                            isApproved
-                                                                                ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                                                                                : isRejected
+                                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-md ${isApproved
+                                                                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                                                                            : isRejected
                                                                                 ? 'bg-rose-100 text-rose-900 border border-rose-200'
                                                                                 : 'bg-amber-100 text-amber-900 border border-amber-200'
-                                                                        }`}
+                                                                            }`}
                                                                     >
                                                                         {isApproved ? '✓ Transferred' : isRejected ? '❌ Declined' : '⏳ Awaiting Transfer'}
                                                                     </span>

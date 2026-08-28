@@ -18,9 +18,16 @@ export default async function MembersPage() {
   const userRole = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
   const userTroopId = user.app_metadata?.troop_id || null
 
-  if (!groupId) {
-    redirect('/login?message=Unauthorized. No group association found.')
+  const allowedRoles = [
+    'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
+    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator',
+  ]
+
+  if (!groupId || !allowedRoles.includes(userRole)) {
+    redirect('/group/dashboard?message=Unauthorized. Youth Roster access only.')
   }
+
+  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a'
 
   // 2. Fetch Group Name
   const { data: groupData } = await supabase
@@ -31,8 +38,8 @@ export default async function MembersPage() {
 
   const groupName = groupData?.name || 'Scout Group'
 
-  // 3. Fetch all active troops under this group with section type maps
-  const { data: troopsData } = await supabase
+  // 3. Fetch active troops under this group (scoped for troop leaders)
+  let troopsQuery = supabase
     .from('troops')
     .select(`
       id,
@@ -42,6 +49,12 @@ export default async function MembersPage() {
     .eq('group_id', groupId)
     .eq('is_deleted', false)
     .order('name', { ascending: true })
+
+  if (isTroopLeader && userTroopId) {
+    troopsQuery = troopsQuery.eq('id', userTroopId)
+  }
+
+  const { data: troopsData } = await troopsQuery
 
   // Parse troops mapping to shape
   const troopsList = (troopsData || []).map((t: any) => ({
@@ -63,8 +76,8 @@ export default async function MembersPage() {
     patrolsData = patrols || []
   }
 
-  // 5. Fetch all members in this group
-  const { data: membersData } = await supabase
+  // 5. Fetch members (scoped for troop leaders)
+  let membersQuery = supabase
     .from('members')
     .select(`
       *,
@@ -74,6 +87,12 @@ export default async function MembersPage() {
     .eq('group_id', groupId)
     .eq('is_deleted', false)
     .order('first_name', { ascending: true })
+
+  if (isTroopLeader && userTroopId) {
+    membersQuery = membersQuery.eq('troop_id', userTroopId)
+  }
+
+  const { data: membersData } = await membersQuery
 
   // 6. Fetch promotion history logs for all members
   const memberIdsList = (membersData || []).map((m) => m.id)

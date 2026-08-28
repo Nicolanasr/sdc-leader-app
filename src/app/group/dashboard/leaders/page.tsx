@@ -17,17 +17,11 @@ export default async function LeadersDirectoryPage() {
     'chef_groupe',
     'assistant_chef_groupe',
     'amin_serr_group',
-    'amin_sandou2_group',
-    'amin_tejhizet_group',
-    'mas2oul_toswir',
-    'mas2oul_mounet',
-    'ka2ed_idare',
-    'ka2ed_fer2a',
-    'mouse3ed_ka2ed_fer2a',
+    'configurator',
   ]
 
   if (!user || !role || !groupId || !allowedRoles.includes(role)) {
-    redirect('/login?message=Unauthorized. Group Leader access only.')
+    redirect('/group/dashboard?message=Unauthorized. Group Leader and Secretary access only.')
   }
 
   // 2. Fetch Group Name

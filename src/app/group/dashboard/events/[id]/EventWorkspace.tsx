@@ -633,14 +633,22 @@ export default function EventWorkspace({
     const isGroupLeader = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
     const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
     const isGroupPantryOwner = ['amin_mounet_group', 'mas2oul_mounet'].includes(currentRole)
-    const isQuartermaster = currentRole === 'amin_tejhizet_group' || isGroupLeader || isGroupAdmin
+    const isGroupQuartermaster = currentRole === 'amin_tejhizet_group' || isGroupLeader
+
     const userAssignedRoles = (eventItem.event_staff || [])
         .filter((s) => s.profile_id === userProfileId)
         .map((s) => s.event_role)
 
-    const isCampLeader = userAssignedRoles.includes('ka2ed_mouskhayyam') || isGroupLeader
+    const isEventLeader = userAssignedRoles.includes('ka2ed_mouskhayyam')
+    const canEditEvent = isGroupLeader || isEventLeader
+    const isCampLeader = canEditEvent
+
     const isCampSecretary = userAssignedRoles.includes('amin_serr_mouskhayyam') || isCampLeader || isGroupAdmin
     const isCampTreasurer = userAssignedRoles.includes('amin_sandou2_mouskhayyam') || isCampLeader || isGroupAdmin
+    const isEventQuartermaster = userAssignedRoles.includes('amin_tejhizet')
+    const isQuartermaster = isGroupQuartermaster || isEventQuartermaster
+    const canAccessEquipment = isQuartermaster || isEventLeader
+
     const isEventProvisionsMaster = userAssignedRoles.includes('mas2oul_matbakh') || userAssignedRoles.includes('mas2oul_mounet') || userAssignedRoles.includes('amin_mounet')
     const canAccessProvisions = isCampLeader || isEventProvisionsMaster || isGroupPantryOwner
     const canManageProvisions = canAccessProvisions
@@ -659,7 +667,9 @@ export default function EventWorkspace({
             tabs.push({ key: 'treasury', label: 'Camp Treasury & Expenses', icon: '💰' })
         }
 
-        tabs.push({ key: 'equipment', label: 'Equipment & Logistics', icon: '⛺' })
+        if (canAccessEquipment) {
+            tabs.push({ key: 'equipment', label: 'Equipment & Logistics', icon: '⛺' })
+        }
 
         if (canAccessProvisions) {
             tabs.push({ key: 'provisions', label: 'Provisions & Meals', icon: '🍞' })
@@ -667,7 +677,7 @@ export default function EventWorkspace({
 
         tabs.push({ key: 'documents', label: 'Documents Repository', icon: '📁' })
         return tabs
-    }, [isCampLeader, isCampSecretary, isCampTreasurer, canAccessProvisions])
+    }, [isCampLeader, isCampSecretary, isCampTreasurer, canAccessEquipment, canAccessProvisions])
 
     const [activeTab, setActiveTab] = useState<'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'>(availableTabs[0]?.key || 'hierarchy')
 
@@ -1904,7 +1914,7 @@ export default function EventWorkspace({
                         <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase tracking-wider">
                             {eventItem.event_type}
                         </span>
-                        {(isCampLeader || isGroupAdmin || isCampSecretary) && (
+                        {canEditEvent && (
                             <button
                                 onClick={openEditEventDetailsModal}
                                 className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded text-xs transition-colors"
@@ -1926,7 +1936,7 @@ export default function EventWorkspace({
             </div>
 
             {/* Role Access Notice */}
-            {!isCampLeader && userAssignedRoles.length > 0 && (
+            {!canEditEvent && userAssignedRoles.length > 0 && (
                 <div className="bg-teal-50 border border-teal-200 text-teal-900 text-xs px-4 py-2.5 rounded-xl font-medium flex items-center gap-2">
                     <ShieldAlert className="h-4 w-4 shrink-0 text-teal-700" />
                     <span>
@@ -1962,7 +1972,7 @@ export default function EventWorkspace({
                             </h3>
                             <p className="text-xs text-slate-500">Official leaders assigned to perform camp/event management duties.</p>
                         </div>
-                        {isCampLeader && (
+                        {canEditEvent && (
                             <button
                                 onClick={openEditHierarchyModal}
                                 className="inline-flex items-center gap-1.5 bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition-colors shrink-0"
@@ -1981,7 +1991,7 @@ export default function EventWorkspace({
                                 <div key={r.key} className={`rounded-xl p-4 flex flex-col justify-between border ${assigned ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/50 border-slate-150 opacity-75'}`}>
                                     <div className="flex justify-between items-start gap-2">
                                         <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider">{label}</span>
-                                        {isCampLeader && (
+                                        {canEditEvent && (
                                             <button
                                                 onClick={() => {
                                                     setSingleSelectedProfileId(assigned?.profile_id || '')
@@ -2619,7 +2629,7 @@ export default function EventWorkspace({
             )}
 
             {/* ── TAB 5: EQUIPMENT & LOGISTICS WORKSPACE ───────────────────────── */}
-            {activeTab === 'equipment' && (
+            {activeTab === 'equipment' && canAccessEquipment && (
                 <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-5">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">

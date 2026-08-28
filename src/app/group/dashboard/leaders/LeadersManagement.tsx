@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import DashboardShell from '../DashboardShell'
-import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2 } from 'lucide-react'
+import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2, Key, Copy, Check, Sparkles } from 'lucide-react'
 
 interface LeaderRole {
   roleId?: string
@@ -75,7 +75,8 @@ export default function LeadersManagement({
 
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [leaders, setLeaders] = useState<Leader[]>(initialLeaders)
-  const canManage = currentRole === 'chef_groupe' || currentRole === 'amin_serr_group'
+  const canManage = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+  const canResetPassword = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'configurator'].includes(currentRole)
 
   // Onboarding states
   const [showOnboardModal, setShowOnboardModal] = useState(false)
@@ -89,12 +90,61 @@ export default function LeadersManagement({
   const [troopId, setTroopId] = useState('')
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; pass: string } | null>(null)
 
+  // Password reset states
+  const [resettingLeader, setResettingLeader] = useState<Leader | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [requirePasswordChange, setRequirePasswordChange] = useState(true)
+  const [resetSuccessData, setResetSuccessData] = useState<{ email: string; pass: string } | null>(null)
+  const [copiedPass, setCopiedPass] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
   const showStatus = (text: string, type: 'success' | 'error') => {
     setStatusMessage({ text, type })
     setTimeout(() => setStatusMessage(null), 7000)
+  }
+
+  const handleGeneratePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$'
+    let pass = ''
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setNewPassword(pass)
+  }
+
+  const handleSavePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resettingLeader) return
+    if (newPassword.length < 6) {
+      return showStatus('Password must be at least 6 characters.', 'error')
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/group/reset-leader-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: resettingLeader.id,
+          newPassword,
+          requirePasswordChange,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        showStatus(data.error || 'Failed to reset password', 'error')
+      } else {
+        setResetSuccessData({ email: resettingLeader.email, pass: newPassword })
+        showStatus(`Password successfully updated for ${resettingLeader.fullName}!`, 'success')
+      }
+    } catch (err: any) {
+      showStatus(err.message || 'Error occurred while resetting password', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Toggle checks helpers
@@ -398,24 +448,40 @@ export default function LeadersManagement({
                               )}
                             </div>
                           ))}
-                          {canManage && (
-                            <div className="flex gap-2 pt-2">
+                          <div className="flex gap-2 pt-2 items-center">
+                            {canResetPassword && (
                               <button
-                                onClick={() => openEditModal(leader)}
-                                className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
-                                title="Edit Leader"
+                                onClick={() => {
+                                  setResettingLeader(leader)
+                                  setNewPassword('')
+                                  setResetSuccessData(null)
+                                  setCopiedPass(false)
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors flex items-center gap-1"
+                                title="Reset Leader Password"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Key className="h-4 w-4" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteLeader(leader)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                title="Delete Leader"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          )}
+                            )}
+                            {canManage && (
+                              <>
+                                <button
+                                  onClick={() => openEditModal(leader)}
+                                  className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                                  title="Edit Leader"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteLeader(leader)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="Delete Leader"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -423,6 +489,122 @@ export default function LeadersManagement({
                 </div>
               </div>
             </div>
+
+            {/* Reset Password Modal */}
+            {resettingLeader && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center">
+                        <Key className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">Reset Leader Password</h3>
+                        <p className="text-xs text-slate-500">{resettingLeader.fullName} ({resettingLeader.email})</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setResettingLeader(null)
+                        setResetSuccessData(null)
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {resetSuccessData ? (
+                    <div className="space-y-4 pt-1">
+                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                        <p className="text-xs font-bold text-emerald-900">✓ Password Reset Successfully!</p>
+                        <p className="text-xs text-emerald-800">Share these temporary credentials with the leader:</p>
+                        <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs font-mono space-y-1">
+                          <div><strong>Email:</strong> {resetSuccessData.email}</div>
+                          <div><strong>New Password:</strong> {resetSuccessData.pass}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`Email: ${resetSuccessData.email}\nPassword: ${resetSuccessData.pass}`)
+                            setCopiedPass(true)
+                            setTimeout(() => setCopiedPass(false), 3000)
+                          }}
+                          className="flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          {copiedPass ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          <span>{copiedPass ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResettingLeader(null)
+                            setResetSuccessData(null)
+                          }}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSavePasswordReset} className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-xs font-bold text-slate-700">New Password</label>
+                          <button
+                            type="button"
+                            onClick={handleGeneratePassword}
+                            className="text-[11px] font-bold text-teal-700 hover:text-teal-800 inline-flex items-center gap-1 hover:underline"
+                          >
+                            <Sparkles className="h-3 w-3" /> Auto-generate
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          placeholder="At least 6 characters"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={requirePasswordChange}
+                          onChange={(e) => setRequirePasswordChange(e.target.checked)}
+                          className="rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                        />
+                        <span>Require password change upon next login</span>
+                      </label>
+
+                      <div className="pt-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setResettingLeader(null)}
+                          className="w-1/2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading || newPassword.length < 6}
+                          className="w-1/2 bg-amber-700 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition-colors disabled:bg-slate-300"
+                        >
+                          {loading ? 'Updating…' : 'Update Password'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Edit Leader Modal */}
             {editingLeader && (

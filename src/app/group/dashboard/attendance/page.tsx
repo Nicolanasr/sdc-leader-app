@@ -14,11 +14,11 @@ export default async function AttendancePage() {
 
   const allowedRoles = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
-    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a',
+    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator',
   ]
 
   if (!groupId || !allowedRoles.includes(userRole)) {
-    redirect('/login?message=Unauthorized.')
+    redirect('/group/dashboard?message=Unauthorized. Attendance access only.')
   }
 
   const { data: groupData } = await supabase.from('groups').select('name').eq('id', groupId).single()
@@ -26,13 +26,19 @@ export default async function AttendancePage() {
 
   const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a'
 
-  // Troops + patrols
-  const { data: troopsData } = await supabase
+  // Troops + patrols (scoped for troop leaders)
+  let troopsQuery = supabase
     .from('troops')
     .select('id, name, section_types:section_type_id (name)')
     .eq('group_id', groupId)
     .eq('is_deleted', false)
     .order('name', { ascending: true })
+
+  if (isTroopLeader && userTroopId) {
+    troopsQuery = troopsQuery.eq('id', userTroopId)
+  }
+
+  const { data: troopsData } = await troopsQuery
 
   const troopsList = (troopsData || []).map((t: any) => ({
     id: t.id, name: t.name, sectionName: t.section_types?.name || '',
@@ -69,13 +75,19 @@ export default async function AttendancePage() {
     roleName: p.user_roles?.[0]?.roles?.name || 'Leader',
   }))
 
-  // Events (sessions)
-  const { data: eventsData } = await supabase
+  // Events (sessions) - scoped for troop leaders
+  let eventsQuery = supabase
     .from('events')
     .select('id, title, event_type, start_time, scope, troop_id, group_id')
     .eq('group_id', groupId).eq('is_deleted', false)
     .in('event_type', ['weekly_meeting', 'leadership_meeting'])
     .order('start_time', { ascending: false }).limit(100)
+
+  if (isTroopLeader && userTroopId) {
+    eventsQuery = eventsQuery.eq('troop_id', userTroopId)
+  }
+
+  const { data: eventsData } = await eventsQuery
 
   const eventIdsList = (eventsData || []).map((e: any) => e.id)
   let sessionsData: any[] = []
