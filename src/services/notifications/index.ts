@@ -11,6 +11,7 @@ import { inAppProvider } from './providers/inAppProvider'
 import { emailProvider } from './providers/emailProvider'
 import { whatsappProvider } from './providers/whatsappProvider'
 import { smsProvider } from './providers/smsProvider'
+import { telegramProvider } from './providers/telegramProvider'
 
 // Provider Registry
 const providers: Record<NotificationChannel, NotificationProvider> = {
@@ -18,6 +19,7 @@ const providers: Record<NotificationChannel, NotificationProvider> = {
   email: emailProvider,
   whatsapp: whatsappProvider,
   sms: smsProvider,
+  telegram: telegramProvider,
 }
 
 /**
@@ -66,7 +68,7 @@ export async function sendNotification(
   // Default channels if not explicitly overridden
   const activeChannels: NotificationChannel[] = payload.channels && payload.channels.length > 0
     ? payload.channels
-    : ['in_app', 'email', 'whatsapp']
+    : ['in_app', 'email', 'whatsapp', 'telegram']
 
   const channelPromises = activeChannels.map(async (channel): Promise<ChannelResult> => {
     const provider = providers[channel]

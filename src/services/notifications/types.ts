@@ -1,4 +1,4 @@
-export type NotificationChannel = 'in_app' | 'email' | 'whatsapp' | 'sms'
+export type NotificationChannel = 'in_app' | 'email' | 'whatsapp' | 'sms' | 'telegram'
 
 export type NotificationCategory =
   | 'events'
