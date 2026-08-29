@@ -36,10 +36,18 @@ export default async function LibraryPage() {
 
   const userName = userProfile?.full_name || user.email || 'Leader'
 
-  // 4. Permissions: Tiered access
+  // 4. Fetch actual Troops in Group
+  const { data: troopsData } = await supabase
+    .from('troops')
+    .select('id, name, unit_type')
+    .eq('group_id', groupId)
+    .eq('is_deleted', false)
+    .order('name', { ascending: true })
+
+  // 5. Permissions: Tiered access
   const canManage = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
 
-  // 5. Fetch all archive items for this group
+  // 6. Fetch all archive items for this group
   const adminDb = createAdminClient()
   const { data: archiveItems, error } = await adminDb
     .from('group_archive_items')
@@ -60,6 +68,7 @@ export default async function LibraryPage() {
       userName={userName}
       userId={user.id}
       canManage={canManage}
+      troops={troopsData || []}
       initialItems={archiveItems || []}
     />
   )

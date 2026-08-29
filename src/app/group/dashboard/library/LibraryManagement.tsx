@@ -52,6 +52,12 @@ export interface ArchiveItem {
   created_at: string
 }
 
+interface Troop {
+  id: string
+  name: string
+  unit_type?: string
+}
+
 interface Props {
   groupId: string
   groupName: string
@@ -59,6 +65,7 @@ interface Props {
   userName: string
   userId: string
   canManage: boolean
+  troops: Troop[]
   initialItems: ArchiveItem[]
 }
 
@@ -74,25 +81,25 @@ const CATEGORIES = [
   { id: 'admin_archives', label: 'Archives', icon: FolderArchive },
 ]
 
-const BRANCH_SCOPES = [
-  { id: 'all', label: 'All Branches' },
-  { id: 'meute', label: '🐺 Meute' },
-  { id: 'troupe', label: '⚜️ Troupe' },
-  { id: 'poste', label: '🏹 Poste' },
-  { id: 'clan', label: '🏕️ Clan' },
-]
-
 export default function LibraryManagement({
   groupName,
   currentRole,
   userName,
   canManage,
+  troops = [],
   initialItems,
 }: Props) {
   const [itemsList, setItemsList] = useState<ArchiveItem[]>(initialItems)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedBranch, setSelectedBranch] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+
+  const branchOptions = useMemo(() => {
+    return [
+      { id: 'all', label: 'All Units (عام للفوج)' },
+      ...troops.map((t) => ({ id: t.name, label: t.name })),
+    ]
+  }, [troops])
 
   // Upload modal states
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -367,9 +374,9 @@ export default function LibraryManagement({
               />
             </div>
 
-            {/* Branch Pills */}
+            {/* Branch Pills from actual troops */}
             <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {BRANCH_SCOPES.map((b) => (
+              {branchOptions.map((b) => (
                 <button
                   key={b.id}
                   type="button"
@@ -891,7 +898,7 @@ export default function LibraryManagement({
                       onChange={(e) => setFormBranch(e.target.value)}
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-bold text-slate-700 focus:outline-none focus:border-teal-700"
                     >
-                      {BRANCH_SCOPES.map((b) => (
+                      {branchOptions.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.label}
                         </option>
