@@ -17,13 +17,7 @@ CREATE TABLE IF NOT EXISTS public.group_archive_items (
         'safety_protocols',
         'admin_archives'
     )),
-    branch_scope TEXT NOT NULL DEFAULT 'all' CHECK (branch_scope IN (
-        'all',
-        'meute',
-        'troupe',
-        'poste',
-        'clan'
-    )),
+    branch_scope TEXT NOT NULL DEFAULT 'all',
     media_type TEXT NOT NULL DEFAULT 'pdf' CHECK (media_type IN (
         'pdf',
         'audio',

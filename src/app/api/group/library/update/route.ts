@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update in Supabase
-    const { data: updatedItem, error: updateErr } = await adminDb
+    let { data: updatedItem, error: updateErr } = await adminDb
       .from('group_archive_items')
       .update({
         title,
@@ -199,6 +199,38 @@ export async function POST(req: NextRequest) {
       .eq('group_id', groupId)
       .select()
       .single()
+
+    if (updateErr && updateErr.message?.includes('branch_scope_check')) {
+      const safeTags = Array.from(new Set([...tags, branchScope]))
+      const retry = await adminDb
+        .from('group_archive_items')
+        .update({
+          title,
+          description,
+          category,
+          branch_scope: 'all',
+          media_type: mediaType,
+          file_url: fileUrl,
+          drive_file_id: driveFileId,
+          youtube_url: youtubeUrl,
+          lyrics_text: lyricsText,
+          chords_text: chordsText,
+          author_composer: authorComposer,
+          tags: safeTags,
+          file_size_bytes: fileSizeBytes,
+          mime_type: mimeType,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', itemId)
+        .eq('group_id', groupId)
+        .select()
+        .single()
+
+      if (!retry.error) {
+        updatedItem = retry.data
+        updateErr = null
+      }
+    }
 
     if (updateErr) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 })

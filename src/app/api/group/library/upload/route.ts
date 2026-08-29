@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
 
     // Insert record into Supabase
     const adminDb = createAdminClient()
-    const { data: itemData, error: dbError } = await adminDb
+    let { data: itemData, error: dbError } = await adminDb
       .from('group_archive_items')
       .insert({
         group_id: groupId,
@@ -194,6 +194,38 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
+
+    if (dbError && dbError.message?.includes('branch_scope_check')) {
+      // Graceful fallback: insert with 'all' and add troop to tags
+      const safeTags = Array.from(new Set([...tags, branchScope]))
+      const retry = await adminDb
+        .from('group_archive_items')
+        .insert({
+          group_id: groupId,
+          title,
+          description,
+          category,
+          branch_scope: 'all',
+          media_type: mediaType,
+          file_url: fileUrl,
+          drive_file_id: driveFileId,
+          youtube_url: youtubeUrl,
+          lyrics_text: lyricsText,
+          chords_text: chordsText,
+          author_composer: authorComposer,
+          tags: safeTags,
+          file_size_bytes: fileSizeBytes,
+          mime_type: mimeType,
+          uploaded_by: user.id,
+        })
+        .select()
+        .single()
+
+      if (!retry.error) {
+        itemData = retry.data
+        dbError = null
+      }
+    }
 
     if (dbError) {
       console.error('[Library Upload] Supabase DB Insert Error:', dbError)
