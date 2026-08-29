@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -45,6 +45,7 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
   const pathname = usePathname()
 
   // Role permissions per view
+  const canAccessBroadcast = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
   const canAccessLeaders = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
   const canAccessTroops = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
   const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
@@ -75,6 +76,10 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
 
         {canAccessLeaders && (
           navLink('/group/dashboard/leaders', 'Leaders & Council', <Users className="h-4 w-4" />, pathname === '/group/dashboard/leaders', onClose)
+        )}
+
+        {canAccessBroadcast && (
+          navLink('/group/dashboard/broadcast', 'WhatsApp Broadcast', <Megaphone className="h-4 w-4" />, pathname.startsWith('/group/dashboard/broadcast'), onClose)
         )}
 
         {canAccessTroops && (
