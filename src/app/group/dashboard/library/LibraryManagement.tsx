@@ -28,6 +28,7 @@ import {
   Check,
   Volume2,
   VolumeX,
+  Pencil,
 } from 'lucide-react'
 
 export interface ArchiveItem {
@@ -115,6 +116,9 @@ export default function LibraryManagement({
   const [formTags, setFormTags] = useState('')
   const [formFile, setFormFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Edit modal states
+  const [editingItem, setEditingItem] = useState<ArchiveItem | null>(null)
 
   // Status message
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
@@ -270,6 +274,67 @@ export default function LibraryManagement({
     } finally {
       setIsSubmitting(false)
       setTimeout(() => setStatusMessage(null), 5000)
+    }
+  }
+
+  // Handle Open Edit Modal
+  const handleOpenEditModal = (item: ArchiveItem) => {
+    setEditingItem(item)
+    setFormTitle(item.title || '')
+    setFormDescription(item.description || '')
+    setFormCategory(item.category || 'books_manuals')
+    setFormBranch(item.branch_scope || 'all')
+    setFormAuthor(item.author_composer || '')
+    setFormYoutubeUrl(item.youtube_url || '')
+    setFormLyrics(item.lyrics_text || '')
+    setFormChords(item.chords_text || '')
+    setFormTags((item.tags || []).join(', '))
+    setFormFile(null)
+  }
+
+  // Handle Edit Submit
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingItem || !formTitle.trim()) return
+
+    setIsSubmitting(true)
+    try {
+      const fd = new FormData()
+      fd.append('itemId', editingItem.id)
+      fd.append('title', formTitle)
+      fd.append('description', formDescription)
+      fd.append('category', formCategory)
+      fd.append('branchScope', formBranch)
+      fd.append('authorComposer', formAuthor)
+      fd.append('groupName', groupName)
+      fd.append('tags', formTags)
+
+      if (formYoutubeUrl) fd.append('youtubeUrl', formYoutubeUrl)
+      if (formLyrics) fd.append('lyricsText', formLyrics)
+      if (formChords) fd.append('chordsText', formChords)
+      if (formFile) fd.append('file', formFile)
+
+      const res = await fetch('/api/group/library/update', {
+        method: 'POST',
+        body: fd,
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to update resource.')
+      }
+
+      setItemsList((prev) =>
+        prev.map((i) => (i.id === editingItem.id ? { ...i, ...data.item } : i))
+      )
+      setStatusMessage({ text: 'Resource updated successfully!', type: 'success' })
+      setEditingItem(null)
+    } catch (err: any) {
+      console.error('[Library Edit Error]:', err)
+      setStatusMessage({ text: err?.message || 'Error updating resource.', type: 'error' })
+    } finally {
+      setIsSubmitting(false)
+      setTimeout(() => setStatusMessage(null), 4000)
     }
   }
 
@@ -577,16 +642,26 @@ export default function LibraryManagement({
                       )}
                     </div>
 
-                    {/* Delete for managers */}
+                    {/* Edit & Delete for managers */}
                     {canManage && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteItem(item.id, item.title)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
-                        title="Delete item"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(item)}
+                          className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                          title="Edit resource"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteItem(item.id, item.title)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete item"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1016,6 +1091,209 @@ export default function LibraryManagement({
                       <>
                         <Upload className="h-3.5 w-3.5" />
                         <span>Save Resource</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── EDIT RESOURCE MODAL ── */}
+        {editingItem && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
+                    <Pencil className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900">Edit Resource</h3>
+                    <p className="text-[11px] text-slate-500">Update metadata, lyrics or replace file</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-3.5">
+                {/* Title & Author */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-bold text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Author / Composer
+                    </label>
+                    <input
+                      type="text"
+                      value={formAuthor}
+                      onChange={(e) => setFormAuthor(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Category & Branch Scope */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-bold text-slate-700 focus:outline-none focus:border-teal-700"
+                    >
+                      {CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Branch Scope *
+                    </label>
+                    <select
+                      value={formBranch}
+                      onChange={(e) => setFormBranch(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-bold text-slate-700 focus:outline-none focus:border-teal-700"
+                    >
+                      {branchOptions.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Replace File (Optional) */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Replace File (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.mp3,.m4a,.wav,.docx,.doc,.png,.jpg,.jpeg,.svg"
+                    onChange={(e) => setFormFile(e.target.files?.[0] || null)}
+                    className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 border border-slate-200 rounded-xl p-1"
+                  />
+                  {editingItem.file_url && (
+                    <p className="text-[10px] text-teal-700 font-medium mt-1">
+                      Current file attached on Google Drive. Uploading a new file will replace it.
+                    </p>
+                  )}
+                </div>
+
+                {/* YouTube URL */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    YouTube Video URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={formYoutubeUrl}
+                    onChange={(e) => setFormYoutubeUrl(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                  />
+                </div>
+
+                {/* Lyrics & Chords */}
+                {(formCategory === 'songs_chansonnier' || editingItem.lyrics_text) && (
+                  <div className="space-y-2.5 pt-1 border-t border-slate-100">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Song Lyrics
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formLyrics}
+                        onChange={(e) => setFormLyrics(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-teal-700"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Guitar Chords
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formChords}
+                        onChange={(e) => setFormChords(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-teal-700"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Description & Tags */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Description</label>
+                  <textarea
+                    rows={2}
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Tags (comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={formTags}
+                    onChange={(e) => setFormTags(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 border-t border-slate-100 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="flex-1 py-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {isSubmitting ? (
+                      <span>Updating...</span>
+                    ) : (
+                      <>
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span>Update Resource</span>
                       </>
                     )}
                   </button>
