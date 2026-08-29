@@ -425,7 +425,7 @@ export default function LibraryManagement({
           )}
         </div>
 
-        {/* ── SEARCH & BRANCH SCOPE BAR ── */}
+        {/* ── SEARCH & FILTER BAR ── */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
             {/* Search Input */}
@@ -440,22 +440,19 @@ export default function LibraryManagement({
               />
             </div>
 
-            {/* Branch Pills from actual troops */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {branchOptions.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => setSelectedBranch(b.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
-                    selectedBranch === b.id
-                      ? 'bg-teal-800 text-white shadow-2xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                  }`}
-                >
-                  {b.label}
-                </button>
-              ))}
+            {/* Troop / Unit Dropdown Selector */}
+            <div className="sm:w-56 shrink-0">
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 focus:outline-none focus:border-teal-700"
+              >
+                {branchOptions.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
