@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -97,6 +97,8 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
         {canAccessEvents && (
           navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)
         )}
+
+        {navLink('/group/dashboard/library', 'Library & Archive', <BookOpen className="h-4 w-4" />, pathname.startsWith('/group/dashboard/library'), onClose)}
 
         {canAccessFinances && (
           navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)
