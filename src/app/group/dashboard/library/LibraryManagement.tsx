@@ -16,19 +16,16 @@ import {
   Play,
   Pause,
   ExternalLink,
-  Download,
   Trash2,
   Plus,
   X,
   FileText,
   Video,
-  Image as ImageIcon,
   Headphones,
   CheckCircle2,
   AlertCircle,
   Copy,
   Check,
-  Sparkles,
   Volume2,
   VolumeX,
 } from 'lucide-react'
@@ -66,23 +63,23 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Resources (الكل)', icon: FolderArchive, color: 'text-slate-700 bg-slate-100' },
-  { id: 'books_manuals', label: 'Scout Books & Handbooks', ar: 'الكتب والمناهج', icon: BookOpen, color: 'text-teal-900 bg-teal-50 border-teal-200' },
-  { id: 'training_materials', label: 'Training & Tech Sheets', ar: 'المواد التدريبية والفنية', icon: GraduationCap, color: 'text-indigo-900 bg-indigo-50 border-indigo-200' },
-  { id: 'songs_chansonnier', label: 'Songbook & Chants', ar: 'الأناشيد والصيحات', icon: Music, color: 'text-amber-900 bg-amber-50 border-amber-200' },
-  { id: 'ceremonials_prayers', label: 'Ceremonials & Prayers', ar: 'الطقوس والصلوات', icon: Scroll, color: 'text-purple-900 bg-purple-50 border-purple-200' },
-  { id: 'brand_assets', label: 'Brand Assets & Logos', ar: 'الشعارات والهوية', icon: Palette, color: 'text-rose-900 bg-rose-50 border-rose-200' },
-  { id: 'maps_blueprints', label: 'Camp Blueprints & Maps', ar: 'الخرائط ومخططات المخيم', icon: MapPin, color: 'text-emerald-900 bg-emerald-50 border-emerald-200' },
-  { id: 'safety_protocols', label: 'Safety & Medical Guides', ar: 'إرشادات السلامة والطبابة', icon: ShieldAlert, color: 'text-red-900 bg-red-50 border-red-200' },
-  { id: 'admin_archives', label: 'Admin Archives', ar: 'الأرشيف الإداري', icon: FolderArchive, color: 'text-cyan-900 bg-cyan-50 border-cyan-200' },
+  { id: 'all', label: 'All', icon: FolderArchive },
+  { id: 'books_manuals', label: 'Books', icon: BookOpen },
+  { id: 'training_materials', label: 'Training', icon: GraduationCap },
+  { id: 'songs_chansonnier', label: 'Songbook', icon: Music },
+  { id: 'ceremonials_prayers', label: 'Ceremonials', icon: Scroll },
+  { id: 'brand_assets', label: 'Logos', icon: Palette },
+  { id: 'maps_blueprints', label: 'Blueprints', icon: MapPin },
+  { id: 'safety_protocols', label: 'Safety', icon: ShieldAlert },
+  { id: 'admin_archives', label: 'Archives', icon: FolderArchive },
 ]
 
 const BRANCH_SCOPES = [
-  { id: 'all', label: 'All Branches (عام للفوج)' },
-  { id: 'meute', label: '🐺 Meute (Louveteaux / الجراميز)' },
-  { id: 'troupe', label: '⚜️ Troupe (Éclaireurs / الكشافة)' },
-  { id: 'poste', label: '🏹 Poste (Pionniers / الجوالة)' },
-  { id: 'clan', label: '🏕️ Clan (Routiers / الرواد)' },
+  { id: 'all', label: 'All Branches' },
+  { id: 'meute', label: '🐺 Meute' },
+  { id: 'troupe', label: '⚜️ Troupe' },
+  { id: 'poste', label: '🏹 Poste' },
+  { id: 'clan', label: '🏕️ Clan' },
 ]
 
 export default function LibraryManagement({
@@ -145,17 +142,6 @@ export default function LibraryManagement({
       return true
     })
   }, [itemsList, selectedCategory, selectedBranch, searchQuery])
-
-  // Stats
-  const stats = useMemo(() => {
-    return {
-      total: itemsList.length,
-      books: itemsList.filter((i) => i.category === 'books_manuals').length,
-      training: itemsList.filter((i) => i.category === 'training_materials').length,
-      songs: itemsList.filter((i) => i.category === 'songs_chansonnier').length,
-      blueprints: itemsList.filter((i) => i.category === 'maps_blueprints').length,
-    }
-  }, [itemsList])
 
   // Handle Audio Playback
   const handleTogglePlaySong = (song: ArchiveItem) => {
@@ -259,7 +245,7 @@ export default function LibraryManagement({
       }
 
       setItemsList((prev) => [data.item, ...prev])
-      setStatusMessage({ text: 'Resource successfully added to the Library!', type: 'success' })
+      setStatusMessage({ text: 'Resource added to library!', type: 'success' })
       setIsUploadModalOpen(false)
 
       // Reset form
@@ -276,13 +262,13 @@ export default function LibraryManagement({
       setStatusMessage({ text: err?.message || 'Error uploading file.', type: 'error' })
     } finally {
       setIsSubmitting(false)
-      setTimeout(() => setStatusMessage(null), 6000)
+      setTimeout(() => setStatusMessage(null), 5000)
     }
   }
 
   // Handle Delete
   const handleDeleteItem = async (itemId: string, itemTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${itemTitle}" from the archive?`)) {
+    if (!confirm(`Are you sure you want to delete "${itemTitle}"?`)) {
       return
     }
 
@@ -296,17 +282,17 @@ export default function LibraryManagement({
       if (!res.ok) throw new Error('Failed to delete item.')
 
       setItemsList((prev) => prev.filter((i) => i.id !== itemId))
-      setStatusMessage({ text: `"${itemTitle}" was deleted from archive.`, type: 'success' })
+      setStatusMessage({ text: `"${itemTitle}" was deleted.`, type: 'success' })
     } catch (err: any) {
       setStatusMessage({ text: err.message || 'Error deleting item.', type: 'error' })
     } finally {
-      setTimeout(() => setStatusMessage(null), 5000)
+      setTimeout(() => setStatusMessage(null), 4000)
     }
   }
 
   return (
     <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
-      <div className="max-w-7xl mx-auto space-y-6 pb-24">
+      <div className="w-full pb-24 space-y-4">
         {/* Hidden Audio Element */}
         <audio
           ref={audioRef}
@@ -315,99 +301,74 @@ export default function LibraryManagement({
           onLoadedMetadata={handleAudioTimeUpdate}
         />
 
-        {/* ── HERO BANNER ── */}
-        <div className="bg-gradient-to-r from-teal-950 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                  <BookOpen className="h-3.5 w-3.5" />
-                  <span>Bibliothèque & Archives du Groupe (المكتبة والأرشيف)</span>
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-teal-900 text-teal-200">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Google Drive Cloud Synced</span>
-                </span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                Scout Library, Media & Songbook
-              </h1>
-              <p className="text-sm text-teal-100/90 leading-relaxed">
-                Centralized knowledge repository for scout handbooks, leader training sheets, audio songs with lyrics & chords, ceremonial scripts, brand assets, and camp blueprints.
-              </p>
-            </div>
-
-            {canManage && (
-              <button
-                type="button"
-                onClick={() => setIsUploadModalOpen(true)}
-                className="self-start md:self-auto px-5 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-teal-950 font-black text-xs sm:text-sm shadow-lg transition-all flex items-center gap-2 shrink-0"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Resource / Song (إضافة ملف أو أنشودة)</span>
-              </button>
-            )}
-          </div>
-
-          {/* Quick Category Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-6 mt-6 border-t border-teal-800/80">
-            <div className="bg-teal-900/50 backdrop-blur-xs p-3 rounded-2xl border border-teal-700/50">
-              <span className="text-[10px] uppercase font-extrabold text-teal-300 block">Total Resources</span>
-              <span className="text-xl font-black text-white">{stats.total}</span>
-            </div>
-            <div className="bg-teal-900/50 backdrop-blur-xs p-3 rounded-2xl border border-teal-700/50">
-              <span className="text-[10px] uppercase font-extrabold text-teal-300 block">Books & Handbooks</span>
-              <span className="text-xl font-black text-white">{stats.books}</span>
-            </div>
-            <div className="bg-teal-900/50 backdrop-blur-xs p-3 rounded-2xl border border-teal-700/50">
-              <span className="text-[10px] uppercase font-extrabold text-teal-300 block">Songbook & Chants</span>
-              <span className="text-xl font-black text-amber-300">{stats.songs}</span>
-            </div>
-            <div className="bg-teal-900/50 backdrop-blur-xs p-3 rounded-2xl border border-teal-700/50">
-              <span className="text-[10px] uppercase font-extrabold text-teal-300 block">Training & Tech</span>
-              <span className="text-xl font-black text-white">{stats.training}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── STATUS ALERT ── */}
+        {/* ── STATUS TOAST ── */}
         {statusMessage && (
           <div
-            className={`p-4 rounded-2xl flex items-center gap-3 border text-sm font-bold shadow-xs animate-in fade-in slide-in-from-top-2 duration-200 ${
-              statusMessage.type === 'success'
-                ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                : 'bg-rose-50 text-rose-900 border-rose-200'
+            className={`p-3.5 rounded-2xl text-xs font-bold flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 ${
+              statusMessage.type === 'success' ? 'bg-teal-900 text-white' : 'bg-rose-600 text-white'
             }`}
           >
-            {statusMessage.type === 'success' ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
-            )}
-            <span>{statusMessage.text}</span>
+            <div className="flex items-center gap-2">
+              {statusMessage.type === 'success' ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+              ) : (
+                <AlertCircle className="h-4 w-4 shrink-0" />
+              )}
+              <span>{statusMessage.text}</span>
+            </div>
+            <button onClick={() => setStatusMessage(null)} className="opacity-70 hover:opacity-100">
+              ✕
+            </button>
           </div>
         )}
 
-        {/* ── SEARCH & BRANCH FILTER BAR ── */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
-          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-            {/* Search */}
+        {/* ── TOP HEADER (Clean, Consistent White Card) ── */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Library & Archive</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                  {itemsList.length}
+                </span>
+              </h1>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Scout books, training materials, songs & blueprints
+              </p>
+            </div>
+          </div>
+
+          {canManage && (
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Resource / Song</span>
+            </button>
+          )}
+        </div>
+
+        {/* ── SEARCH & BRANCH SCOPE BAR ── */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+            {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search archive by title, description, lyrics, author, or tags..."
+                placeholder="Search resources, songs, lyrics, author..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
               />
             </div>
 
-            {/* Branch Scope Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            {/* Branch Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
               {BRANCH_SCOPES.map((b) => (
                 <button
                   key={b.id}
@@ -415,7 +376,7 @@ export default function LibraryManagement({
                   onClick={() => setSelectedBranch(b.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
                     selectedBranch === b.id
-                      ? 'bg-teal-900 text-white shadow-xs'
+                      ? 'bg-teal-800 text-white shadow-2xs'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                   }`}
                 >
@@ -425,8 +386,8 @@ export default function LibraryManagement({
             </div>
           </div>
 
-          {/* Category Tabs Carousel/Grid */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-t border-slate-100 pt-3">
+          {/* Category Horizontal Segmented Scroll */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-none border-t border-slate-100">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon
               const count =
@@ -439,17 +400,17 @@ export default function LibraryManagement({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 active:scale-95 border ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 active:scale-95 ${
                     selectedCategory === cat.id
-                      ? 'bg-teal-900 text-white border-teal-900 shadow-md ring-2 ring-teal-600/30'
-                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
                   }`}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
                   <span>{cat.label}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-extrabold ${
-                      selectedCategory === cat.id ? 'bg-teal-800 text-teal-100' : 'bg-slate-100 text-slate-500'
+                    className={`px-1 py-0.2 rounded text-[10px] font-bold ${
+                      selectedCategory === cat.id ? 'bg-slate-700 text-slate-200' : 'bg-slate-200/70 text-slate-500'
                     }`}
                   >
                     {count}
@@ -460,58 +421,56 @@ export default function LibraryManagement({
           </div>
         </div>
 
-        {/* ── RESOURCES GRID ── */}
+        {/* ── RESOURCES LIST / GRID (Mobile Native Feel) ── */}
         {filteredItems.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3 shadow-xs">
-            <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <BookOpen className="h-6 w-6" />
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-2 shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <BookOpen className="h-5 w-5" />
             </div>
-            <h3 className="font-black text-slate-800 text-base">No resources found</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              No files or songs match the selected filters. Try choosing a different category or clearing search terms.
+            <h3 className="font-bold text-slate-800 text-sm">No resources found</h3>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              Try switching category or clearing search terms.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredItems.map((item) => {
-              const catObj = CATEGORIES.find((c) => c.id === item.category) || CATEGORIES[1]
               const isSong = item.category === 'songs_chansonnier'
               const isThisPlaying = playingSong?.id === item.id && isPlaying
 
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-4 flex flex-col justify-between gap-3 group"
+                  className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-sm transition-all p-3.5 flex flex-col justify-between gap-3 active:scale-[0.99]"
                 >
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {/* Header Badges */}
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${catObj.color}`}>
-                        <catObj.icon className="h-3 w-3" />
-                        <span className="truncate max-w-[120px]">{catObj.label.split('(')[0]}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-lg bg-teal-50 text-teal-900 border border-teal-200/60 truncate">
+                        {item.category.replace('_', ' ')}
                       </span>
 
                       <div className="flex items-center gap-1">
                         {item.branch_scope !== 'all' && (
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
                             {item.branch_scope}
                           </span>
                         )}
 
                         {item.media_type === 'audio' && (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 flex items-center gap-0.5">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 flex items-center gap-0.5">
                             <Headphones className="h-2.5 w-2.5" />
                             <span>MP3</span>
                           </span>
                         )}
                         {item.media_type === 'youtube' && (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-red-100 text-red-900 flex items-center gap-0.5">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-900 flex items-center gap-0.5">
                             <Video className="h-2.5 w-2.5" />
                             <span>YouTube</span>
                           </span>
                         )}
                         {item.media_type === 'pdf' && (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-900 flex items-center gap-0.5">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 flex items-center gap-0.5">
                             <FileText className="h-2.5 w-2.5" />
                             <span>PDF</span>
                           </span>
@@ -521,19 +480,19 @@ export default function LibraryManagement({
 
                     {/* Title & Author */}
                     <div>
-                      <h3 className="font-black text-slate-900 text-sm leading-snug group-hover:text-teal-900 transition-colors line-clamp-2">
+                      <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">
                         {item.title}
                       </h3>
                       {item.author_composer && (
-                        <p className="text-[11px] font-semibold text-slate-500 mt-0.5 truncate">
+                        <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">
                           par {item.author_composer}
                         </p>
                       )}
                     </div>
 
-                    {/* Description / Lyrics preview */}
+                    {/* Description preview */}
                     {item.description && (
-                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                         {item.description}
                       </p>
                     )}
@@ -544,7 +503,7 @@ export default function LibraryManagement({
                         {item.tags.slice(0, 3).map((tag, idx) => (
                           <span
                             key={idx}
-                            className="text-[9px] font-bold bg-slate-50 text-slate-500 px-1.5 py-0.2 rounded border border-slate-100"
+                            className="text-[9px] font-semibold bg-slate-50 text-slate-500 px-1.5 py-0.2 rounded border border-slate-100"
                           >
                             #{tag}
                           </span>
@@ -553,57 +512,57 @@ export default function LibraryManagement({
                     )}
                   </div>
 
-                  {/* Footer Actions */}
+                  {/* Actions */}
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      {/* Audio Play Button for Songs */}
+                      {/* Audio Play Button */}
                       {item.file_url && item.media_type === 'audio' && (
                         <button
                           type="button"
                           onClick={() => handleTogglePlaySong(item)}
-                          className={`p-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 ${
                             isThisPlaying
-                              ? 'bg-amber-500 text-teal-950 shadow-xs'
+                              ? 'bg-amber-500 text-teal-950 shadow-2xs'
                               : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
                           }`}
                         >
-                          {isThisPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                          {isThisPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
                           <span>{isThisPlaying ? 'Pause' : 'Play'}</span>
                         </button>
                       )}
 
-                      {/* View Lyrics / Chords for songs */}
+                      {/* Lyrics Button */}
                       {isSong && (item.lyrics_text || item.chords_text) && (
                         <button
                           type="button"
                           onClick={() => setViewingSong(item)}
-                          className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-teal-50 text-[11px] font-bold text-slate-700 hover:text-teal-900 transition-colors flex items-center gap-1 shrink-0"
+                          className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-teal-50 text-xs font-bold text-slate-700 hover:text-teal-900 transition-colors flex items-center gap-1 shrink-0"
                         >
                           <Scroll className="h-3 w-3" />
                           <span>Lyrics</span>
                         </button>
                       )}
 
-                      {/* YouTube Video Link */}
+                      {/* YouTube Link */}
                       {item.youtube_url && (
                         <a
                           href={item.youtube_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-800 hover:bg-red-100 text-[11px] font-bold transition-colors flex items-center gap-1 shrink-0"
+                          className="px-2.5 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-800 hover:bg-red-100 text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
                         >
                           <Video className="h-3 w-3" />
                           <span>Watch</span>
                         </a>
                       )}
 
-                      {/* File Download / View Link */}
+                      {/* Open File Link */}
                       {item.file_url && item.media_type !== 'audio' && (
                         <a
                           href={item.file_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-2.5 py-1.5 rounded-xl border border-teal-200 bg-teal-50 text-teal-900 hover:bg-teal-100 text-[11px] font-bold transition-colors flex items-center gap-1 truncate"
+                          className="px-2.5 py-1.5 rounded-xl border border-teal-200 bg-teal-50 text-teal-900 hover:bg-teal-100 text-xs font-bold transition-colors flex items-center gap-1 truncate"
                         >
                           <ExternalLink className="h-3 w-3 shrink-0" />
                           <span className="truncate">Open File</span>
@@ -611,13 +570,13 @@ export default function LibraryManagement({
                       )}
                     </div>
 
-                    {/* Delete button for managers */}
+                    {/* Delete for managers */}
                     {canManage && (
                       <button
                         type="button"
                         onClick={() => handleDeleteItem(item.id, item.title)}
                         className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
-                        title="Delete from archive"
+                        title="Delete item"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -629,50 +588,50 @@ export default function LibraryManagement({
           </div>
         )}
 
-        {/* ── FLOATING AUDIO PLAYER BAR ── */}
+        {/* ── FLOATING MOBILE AUDIO PLAYER BAR ── */}
         {playingSong && (
-          <div className="fixed bottom-4 left-4 right-4 max-w-3xl mx-auto z-40 bg-teal-950/95 backdrop-blur-md text-white rounded-3xl p-3.5 sm:p-4 shadow-2xl border border-teal-700/60 animate-in slide-in-from-bottom-4 duration-200 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
+          <div className="fixed bottom-3 left-3 right-3 max-w-2xl mx-auto z-40 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-2xl border border-slate-700 animate-in slide-in-from-bottom-3 duration-150 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
               <button
                 type="button"
                 onClick={() => handleTogglePlaySong(playingSong)}
-                className="w-10 h-10 rounded-2xl bg-amber-400 text-teal-950 flex items-center justify-center font-black shadow-md hover:bg-amber-300 transition-all shrink-0 active:scale-95"
+                className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-sm hover:bg-amber-300 transition-all shrink-0 active:scale-95"
               >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
               </button>
 
               <div className="min-w-0">
-                <h4 className="font-black text-xs sm:text-sm text-white truncate">
+                <h4 className="font-bold text-xs text-white truncate">
                   {playingSong.title}
                 </h4>
-                <p className="text-[10px] text-teal-300 truncate">
-                  {playingSong.author_composer ? `par ${playingSong.author_composer}` : 'Scout Song'}
+                <p className="text-[10px] text-slate-400 truncate">
+                  {playingSong.author_composer || 'Scout Song'}
                 </p>
               </div>
             </div>
 
-            {/* Seeker Bar */}
+            {/* Seeker */}
             <div className="hidden sm:flex flex-1 items-center gap-2 max-w-xs px-2">
-              <span className="text-[10px] text-teal-300 font-mono">{formatTime(currentTime)}</span>
+              <span className="text-[10px] text-slate-400 font-mono">{formatTime(currentTime)}</span>
               <input
                 type="range"
                 min="0"
                 max={duration || 100}
                 value={currentTime}
                 onChange={handleSeek}
-                className="w-full accent-amber-400 h-1 bg-teal-800 rounded-lg cursor-pointer"
+                className="w-full accent-amber-400 h-1 bg-slate-700 rounded-lg cursor-pointer"
               />
-              <span className="text-[10px] text-teal-300 font-mono">{formatTime(duration)}</span>
+              <span className="text-[10px] text-slate-400 font-mono">{formatTime(duration)}</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {(playingSong.lyrics_text || playingSong.chords_text) && (
                 <button
                   type="button"
                   onClick={() => setViewingSong(playingSong)}
-                  className="px-2.5 py-1 rounded-xl bg-teal-800 hover:bg-teal-700 text-xs font-bold text-teal-100 transition-colors flex items-center gap-1 shrink-0"
+                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-colors flex items-center gap-1 shrink-0"
                 >
-                  <Scroll className="h-3.5 w-3.5" />
+                  <Scroll className="h-3 w-3" />
                   <span className="hidden sm:inline">Lyrics</span>
                 </button>
               )}
@@ -685,7 +644,7 @@ export default function LibraryManagement({
                     setIsMuted(!isMuted)
                   }
                 }}
-                className="p-1.5 text-teal-300 hover:text-white transition-colors"
+                className="p-1 text-slate-400 hover:text-white transition-colors"
               >
                 {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
               </button>
@@ -697,7 +656,7 @@ export default function LibraryManagement({
                   setPlayingSong(null)
                   setIsPlaying(false)
                 }}
-                className="p-1.5 text-teal-400 hover:text-white transition-colors"
+                className="p-1 text-slate-400 hover:text-white transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -705,22 +664,22 @@ export default function LibraryManagement({
           </div>
         )}
 
-        {/* ── SONG LYRICS & CHORDS DRAWER MODAL ── */}
+        {/* ── SONG LYRICS MODAL ── */}
         {viewingSong && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-2xl w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col justify-between">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-3 max-h-[85vh] flex flex-col justify-between">
               <div>
-                <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2.5">
                   <div>
-                    <span className="text-[10px] font-black uppercase text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
-                      Chansonnier Scout (دفتر الأناشيد)
+                    <span className="text-[10px] font-bold uppercase text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                      Song Lyrics
                     </span>
-                    <h3 className="text-lg font-black text-slate-900 mt-1">
+                    <h3 className="text-base font-bold text-slate-900 mt-1">
                       {viewingSong.title}
                     </h3>
                     {viewingSong.author_composer && (
-                      <p className="text-xs text-slate-500 font-semibold">
-                        Auteur / Compositeur: {viewingSong.author_composer}
+                      <p className="text-xs text-slate-500">
+                        {viewingSong.author_composer}
                       </p>
                     )}
                   </div>
@@ -728,14 +687,14 @@ export default function LibraryManagement({
                   <button
                     type="button"
                     onClick={() => setViewingSong(null)}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded-lg"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                {/* Lyrics / Chords Tabs */}
-                <div className="flex items-center justify-between pt-3">
+                {/* Tabs */}
+                <div className="flex items-center justify-between pt-2.5">
                   <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
                     <button
                       type="button"
@@ -744,7 +703,7 @@ export default function LibraryManagement({
                         lyricsTab === 'lyrics' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
                       }`}
                     >
-                      Paroles (Lyrics)
+                      Lyrics
                     </button>
                     {viewingSong.chords_text && (
                       <button
@@ -754,7 +713,7 @@ export default function LibraryManagement({
                           lyricsTab === 'chords' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
                         }`}
                       >
-                        Accords (Guitar Chords)
+                        Chords
                       </button>
                     )}
                   </div>
@@ -775,30 +734,30 @@ export default function LibraryManagement({
                   </button>
                 </div>
 
-                {/* Content Box */}
-                <div className="mt-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/80 max-h-96 overflow-y-auto font-mono text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+                {/* Text Box */}
+                <div className="mt-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200 max-h-72 overflow-y-auto font-mono text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">
                   {lyricsTab === 'lyrics'
-                    ? viewingSong.lyrics_text || 'No lyrics text provided for this song.'
-                    : viewingSong.chords_text || 'No guitar chords provided.'}
+                    ? viewingSong.lyrics_text || 'No lyrics text available.'
+                    : viewingSong.chords_text || 'No guitar chords available.'}
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                 {viewingSong.file_url && (
                   <button
                     type="button"
                     onClick={() => handleTogglePlaySong(viewingSong)}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-teal-950 font-black text-xs transition-colors flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-teal-950 font-bold text-xs transition-colors flex items-center gap-1.5"
                   >
                     <Play className="h-3.5 w-3.5" />
-                    <span>Play Audio Track</span>
+                    <span>Play Song</span>
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={() => setViewingSong(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
                 >
                   Close
                 </button>
@@ -807,83 +766,83 @@ export default function LibraryManagement({
           </div>
         )}
 
-        {/* ── UPLOAD RESOURCE MODAL ── */}
+        {/* ── UPLOAD MODAL ── */}
         {isUploadModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-900 flex items-center justify-center font-black">
-                    <Upload className="h-5 w-5" />
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
+                    <Upload className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="font-black text-base text-slate-900">Add Resource / Song to Archive</h3>
-                    <p className="text-xs text-slate-500">Stored on Google Drive with instant leader streaming</p>
+                    <h3 className="font-bold text-sm text-slate-900">Add Resource / Song</h3>
+                    <p className="text-[11px] text-slate-500">Google Drive synced repository</p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleUploadSubmit} className="space-y-4">
-                {/* Upload Mode Selector */}
-                <div className="grid grid-cols-3 gap-2">
+              <form onSubmit={handleUploadSubmit} className="space-y-3.5">
+                {/* Mode Selector */}
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setUploadType('file')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                       uploadType === 'file'
-                        ? 'bg-teal-900 text-white border-teal-900 shadow-2xs'
+                        ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    <span>Upload File</span>
+                    <span>File</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setUploadType('youtube')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                       uploadType === 'youtube'
-                        ? 'bg-teal-900 text-white border-teal-900 shadow-2xs'
+                        ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                   >
                     <Video className="h-3.5 w-3.5" />
-                    <span>YouTube Link</span>
+                    <span>YouTube</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setUploadType('text')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                       uploadType === 'text'
-                        ? 'bg-teal-900 text-white border-teal-900 shadow-2xs'
+                        ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                   >
                     <Scroll className="h-3.5 w-3.5" />
-                    <span>Lyrics & Text</span>
+                    <span>Lyrics</span>
                   </button>
                 </div>
 
                 {/* Title & Author */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Resource Title (العنوان) *
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Title *
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Livre de l'Éclaireur, Chant du Soir"
+                      placeholder="e.g. Livre de l'Éclaireur"
                       value={formTitle}
                       onChange={(e) => setFormTitle(e.target.value)}
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-bold text-slate-900"
@@ -891,12 +850,12 @@ export default function LibraryManagement({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Author / Composer (المؤلف / الملحن)
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Author / Composer
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Père Sevin, Baden-Powell, Maîtrise"
+                      placeholder="e.g. Père Sevin, Baden-Powell"
                       value={formAuthor}
                       onChange={(e) => setFormAuthor(e.target.value)}
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
@@ -905,10 +864,10 @@ export default function LibraryManagement({
                 </div>
 
                 {/* Category & Branch Scope */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Category (التصنيف) *
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Category *
                     </label>
                     <select
                       value={formCategory}
@@ -924,8 +883,8 @@ export default function LibraryManagement({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Branch Scope (الفئة المستهدفة) *
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Branch Scope *
                     </label>
                     <select
                       value={formBranch}
@@ -941,27 +900,27 @@ export default function LibraryManagement({
                   </div>
                 </div>
 
-                {/* File Dropzone (If file upload mode) */}
+                {/* File Dropzone */}
                 {uploadType === 'file' && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Select File (PDF, MP3 Audio, Word DOCX, Image) *
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      File (PDF, MP3, DOCX, Image) *
                     </label>
                     <input
                       type="file"
                       required
                       accept=".pdf,.mp3,.m4a,.wav,.docx,.doc,.png,.jpg,.jpeg,.svg"
                       onChange={(e) => setFormFile(e.target.files?.[0] || null)}
-                      className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 border border-slate-200 rounded-xl p-1"
+                      className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 border border-slate-200 rounded-xl p-1"
                     />
                   </div>
                 )}
 
-                {/* YouTube URL (If youtube mode) */}
+                {/* YouTube URL */}
                 {uploadType === 'youtube' && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      YouTube Video URL (رابط يوتيوب) *
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      YouTube Video URL *
                     </label>
                     <input
                       type="url"
@@ -974,32 +933,32 @@ export default function LibraryManagement({
                   </div>
                 )}
 
-                {/* Lyrics & Chords (For songs or text mode) */}
+                {/* Lyrics & Chords */}
                 {(formCategory === 'songs_chansonnier' || uploadType === 'text') && (
-                  <div className="space-y-3 pt-1 border-t border-slate-100">
+                  <div className="space-y-2.5 pt-1 border-t border-slate-100">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Song Lyrics / Text (كلمات الأنشودة)
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Song Lyrics
                       </label>
                       <textarea
-                        rows={4}
-                        placeholder="Paste song lyrics, verses, and chorus here..."
+                        rows={3}
+                        placeholder="Paste song verses and chorus..."
                         value={formLyrics}
                         onChange={(e) => setFormLyrics(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-teal-700"
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-teal-700"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Guitar Chords / Notation (كوردات الغيتار - اختياري)
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Guitar Chords (Optional)
                       </label>
                       <textarea
                         rows={2}
-                        placeholder="e.g. [Am] [C] [G] [Em]..."
+                        placeholder="e.g. [Am] [C] [G]..."
                         value={formChords}
                         onChange={(e) => setFormChords(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-teal-700"
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-teal-700"
                       />
                     </div>
                   </div>
@@ -1007,49 +966,49 @@ export default function LibraryManagement({
 
                 {/* Description & Tags */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Description</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Description</label>
                   <textarea
                     rows={2}
-                    placeholder="Brief summary or context..."
+                    placeholder="Short description..."
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Tags (كلمات دلالية - مفصولة بفواصل)
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Tags (comma separated)
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. promesse, veillée, noeuds, secourisme"
+                    placeholder="promesse, veillée, noeuds"
                     value={formTags}
                     onChange={(e) => setFormTags(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
                   />
                 </div>
 
-                {/* Buttons */}
-                <div className="pt-3 border-t border-slate-100 flex gap-2">
+                {/* Actions */}
+                <div className="pt-2 border-t border-slate-100 flex gap-2">
                   <button
                     type="button"
                     onClick={() => setIsUploadModalOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100 transition-colors"
+                    className="flex-1 py-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-2.5 rounded-xl bg-teal-900 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
                   >
                     {isSubmitting ? (
-                      <span>Uploading to Google Drive...</span>
+                      <span>Saving to Drive...</span>
                     ) : (
                       <>
-                        <Upload className="h-4 w-4" />
-                        <span>Save to Library</span>
+                        <Upload className="h-3.5 w-3.5" />
+                        <span>Save Resource</span>
                       </>
                     )}
                   </button>
