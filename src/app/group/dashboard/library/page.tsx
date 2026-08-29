@@ -36,19 +36,35 @@ export default async function LibraryPage() {
 
   const userName = userProfile?.full_name || user.email || 'Leader'
 
-  // 4. Fetch actual Troops in Group
-  const { data: troopsData } = await supabase
+  const adminDb = createAdminClient()
+
+  // 4. Fetch actual Troops in Group from troops table
+  const { data: troopsData, error: troopsErr } = await adminDb
     .from('troops')
-    .select('id, name, unit_type')
+    .select(`
+      id,
+      name,
+      section_type_id,
+      section_types:section_type_id (name)
+    `)
     .eq('group_id', groupId)
     .eq('is_deleted', false)
     .order('name', { ascending: true })
+
+  if (troopsErr) {
+    console.error('[LibraryPage] Error fetching troops:', troopsErr)
+  }
+
+  const troopsList = (troopsData || []).map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    sectionName: t.section_types?.name || '',
+  }))
 
   // 5. Permissions: Tiered access
   const canManage = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
 
   // 6. Fetch all archive items for this group
-  const adminDb = createAdminClient()
   const { data: archiveItems, error } = await adminDb
     .from('group_archive_items')
     .select('*, profiles:uploaded_by(full_name)')
@@ -68,7 +84,7 @@ export default async function LibraryPage() {
       userName={userName}
       userId={user.id}
       canManage={canManage}
-      troops={troopsData || []}
+      troops={troopsList}
       initialItems={archiveItems || []}
     />
   )

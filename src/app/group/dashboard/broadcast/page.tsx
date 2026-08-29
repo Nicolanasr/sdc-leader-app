@@ -41,16 +41,22 @@ export default async function BroadcastPage() {
 
   const userName = userProfile?.full_name || user.email || 'Leader'
 
+  const adminDb = createAdminClient()
+
   // 4. Fetch Troops in Group
-  const { data: troopsData } = await supabase
+  const { data: troopsData } = await adminDb
     .from('troops')
-    .select('id, name, unit_type')
+    .select(`
+      id,
+      name,
+      section_type_id,
+      section_types:section_type_id (name)
+    `)
     .eq('group_id', groupId)
     .eq('is_deleted', false)
     .order('name', { ascending: true })
 
   // 5. Fetch all Leaders in Group with Roles and Troops using Admin Client
-  const adminDb = createAdminClient()
   const { data: profilesData, error: profErr } = await adminDb
     .from('profiles')
     .select(`
