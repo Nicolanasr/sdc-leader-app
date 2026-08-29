@@ -29,6 +29,7 @@ import {
   Volume2,
   VolumeX,
   Pencil,
+  Link2,
 } from 'lucide-react'
 
 export interface ArchiveItem {
@@ -104,7 +105,7 @@ export default function LibraryManagement({
 
   // Upload modal states
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-  const [uploadType, setUploadType] = useState<'file' | 'youtube' | 'text'>('file')
+  const [uploadType, setUploadType] = useState<'file' | 'url'>('file')
   const [formTitle, setFormTitle] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formCategory, setFormCategory] = useState('books_manuals')
@@ -234,7 +235,7 @@ export default function LibraryManagement({
       fd.append('groupName', groupName)
       fd.append('tags', formTags)
 
-      if (uploadType === 'youtube' && formYoutubeUrl) {
+      if (uploadType === 'url' && formYoutubeUrl) {
         fd.append('youtubeUrl', formYoutubeUrl)
       }
 
@@ -873,45 +874,32 @@ export default function LibraryManagement({
               </div>
 
               <form onSubmit={handleUploadSubmit} className="space-y-3.5">
-                {/* Mode Selector */}
-                <div className="grid grid-cols-3 gap-1.5">
+                {/* Mode Selector (2 Options: File Upload vs URL Link) */}
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setUploadType('file')}
-                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       uploadType === 'file'
                         ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    <span>File</span>
+                    <span>File Upload</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setUploadType('youtube')}
-                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                      uploadType === 'youtube'
+                    onClick={() => setUploadType('url')}
+                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      uploadType === 'url'
                         ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                   >
-                    <Video className="h-3.5 w-3.5" />
-                    <span>YouTube</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setUploadType('text')}
-                    className={`py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                      uploadType === 'text'
-                        ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
-                        : 'bg-slate-50 text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    <Scroll className="h-3.5 w-3.5" />
-                    <span>Lyrics</span>
+                    <Link2 className="h-3.5 w-3.5" />
+                    <span>URL Link</span>
                   </button>
                 </div>
 
@@ -998,16 +986,16 @@ export default function LibraryManagement({
                   </div>
                 )}
 
-                {/* YouTube URL */}
-                {uploadType === 'youtube' && (
+                {/* URL Link Input */}
+                {uploadType === 'url' && (
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      YouTube Video URL *
+                      Resource URL Link (YouTube, Drive, Web Link) *
                     </label>
                     <input
                       type="url"
                       required
-                      placeholder="https://www.youtube.com/watch?v=..."
+                      placeholder="https://www.youtube.com/watch?v=... or https://..."
                       value={formYoutubeUrl}
                       onChange={(e) => setFormYoutubeUrl(e.target.value)}
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
@@ -1015,8 +1003,8 @@ export default function LibraryManagement({
                   </div>
                 )}
 
-                {/* Lyrics & Chords */}
-                {(formCategory === 'songs_chansonnier' || uploadType === 'text') && (
+                {/* Lyrics & Chords (Optional for songs) */}
+                {formCategory === 'songs_chansonnier' && (
                   <div className="space-y-2.5 pt-1 border-t border-slate-100">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
