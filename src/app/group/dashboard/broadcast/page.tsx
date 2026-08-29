@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { redirect } from 'next/navigation'
 import BroadcastManagement from './BroadcastManagement'
 
@@ -45,41 +46,60 @@ export default async function BroadcastPage() {
     .from('troops')
     .select('id, name, unit_type')
     .eq('group_id', groupId)
+    .eq('is_deleted', false)
     .order('name', { ascending: true })
 
-  // 5. Fetch all Leaders in Group with Roles and Troops
-  const { data: userRolesData } = await supabase
-    .from('user_roles')
-    .select('id, profile_id, roles(name, display_name), troops(id, name, unit_type), profiles(id, full_name, email, phone_number, whatsapp_number, rank)')
-    .eq('group_id', groupId)
+  // 5. Fetch all Leaders in Group with Roles and Troops using Admin Client
+  const adminDb = createAdminClient()
+  const { data: profilesData, error: profErr } = await adminDb
+    .from('profiles')
+    .select(`
+      id,
+      full_name,
+      email,
+      phone_number,
+      whatsapp_number,
+      rank,
+      user_roles!inner (
+        id,
+        group_id,
+        roles:role_id (id, name),
+        troops:troop_id (id, name)
+      )
+    `)
+    .eq('user_roles.group_id', groupId)
+    .eq('is_deleted', false)
 
-  // Consolidate leaders by unique profile ID with their multiple roles
+  if (profErr) {
+    console.error('[BroadcastPage] Error fetching leader profiles:', profErr)
+  }
+
+  // Consolidate leaders by unique profile ID
   const leadersMap = new Map<string, any>()
-  for (const ur of userRolesData || []) {
-    const p = ur.profiles as any
-    if (!p) continue
-
-    if (!leadersMap.has(p.id)) {
-      leadersMap.set(p.id, {
-        id: p.id,
-        fullName: p.full_name || 'Leader',
-        email: p.email,
-        phoneNumber: p.phone_number,
-        whatsappNumber: p.whatsapp_number,
-        rank: p.rank,
+  for (const prof of profilesData || []) {
+    if (!leadersMap.has(prof.id)) {
+      leadersMap.set(prof.id, {
+        id: prof.id,
+        fullName: prof.full_name || 'Leader',
+        email: prof.email || '',
+        phoneNumber: prof.phone_number || null,
+        whatsappNumber: prof.whatsapp_number || null,
+        rank: prof.rank || null,
         roles: [],
         troops: [],
       })
     }
 
-    const leaderObj = leadersMap.get(p.id)
-    if (ur.roles) {
-      const rName = (ur.roles as any).display_name || (ur.roles as any).name
-      if (!leaderObj.roles.includes(rName)) leaderObj.roles.push(rName)
-    }
-    if (ur.troops) {
-      const tName = (ur.troops as any).name
-      if (!leaderObj.troops.includes(tName)) leaderObj.troops.push(tName)
+    const leaderObj = leadersMap.get(prof.id)
+    for (const ur of (prof.user_roles || [])) {
+      const rName = (ur as any).roles?.name
+      if (rName && !leaderObj.roles.includes(rName)) {
+        leaderObj.roles.push(rName)
+      }
+      const tName = (ur as any).troops?.name
+      if (tName && !leaderObj.troops.includes(tName)) {
+        leaderObj.troops.push(tName)
+      }
     }
   }
 
