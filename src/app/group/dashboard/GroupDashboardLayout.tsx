@@ -112,7 +112,17 @@ export default function GroupDashboardLayout({
             <div className="space-y-2.5">
                 <div className="bg-white p-3 sm:p-4 border border-slate-200/90 rounded-2xl shadow-2xs">
                     <h3 className="text-xs font-bold text-slate-900 mb-2 uppercase tracking-wide">Quick Operations</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Link
+                            href="/group/dashboard/planner"
+                            className="flex items-center p-2.5 bg-slate-50 border border-slate-200/80 hover:border-teal-600 rounded-xl transition-all group"
+                        >
+                            <div>
+                                <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-teal-800">📋 Session Planner (Canevas)</h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Prepare weekly meeting schedules, activities & gear</p>
+                            </div>
+                        </Link>
+
                         <Link
                             href="/group/dashboard/leaders"
                             className="flex items-center p-2.5 bg-slate-50 border border-slate-200/80 hover:border-teal-600 rounded-xl transition-all group"

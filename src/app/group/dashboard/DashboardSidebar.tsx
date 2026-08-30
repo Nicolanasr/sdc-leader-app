@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award, Clock } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -96,6 +96,10 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
 
         {canAccessAttendance && (
           navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)
+        )}
+
+        {canAccessAttendance && (
+          navLink('/group/dashboard/planner', 'Session Planner (Canevas)', <Clock className="h-4 w-4" />, pathname.startsWith('/group/dashboard/planner'), onClose)
         )}
 
         {canAccessEvents && (

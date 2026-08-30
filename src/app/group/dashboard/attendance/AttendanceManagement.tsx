@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import {
     Menu, Plus, Calendar, ChevronLeft, AlertTriangle, ClipboardList, Users, Loader2
@@ -594,13 +595,21 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                                         </p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleSaveSheet}
-                                    disabled={loading}
-                                    className="shrink-0 bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs shadow-2xs transition-all disabled:opacity-50"
-                                >
-                                    {loading ? 'Saving…' : 'Save Sheet'}
-                                </button>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <Link
+                                        href="/group/dashboard/planner"
+                                        className="bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-2.5 py-1.5 rounded-xl text-xs border border-amber-200 transition-all flex items-center gap-1 shadow-2xs"
+                                    >
+                                        <span>📋 Canevas</span>
+                                    </Link>
+                                    <button
+                                        onClick={handleSaveSheet}
+                                        disabled={loading}
+                                        className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs shadow-2xs transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Saving…' : 'Save Sheet'}
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Old session warning */}
