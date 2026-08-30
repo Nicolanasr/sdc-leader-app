@@ -1591,35 +1591,35 @@ export default function InventoryManagement({
                 )}
 
                 {/* ── NATIVE MOBILE-FIRST HEADER & SEGMENTED CONTROLS ── */}
-                <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
-                    {/* Row 1: App Title & Subtitle */}
-                    <div className="flex items-center justify-between gap-3">
+                <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+                    {/* Row 1: App Title & Subtitle + Desktop Actions */}
+                    <div className="flex items-center justify-between gap-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
-                                <Package className="h-5 w-5" />
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+                                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                             </div>
                             <div className="min-w-0">
-                                <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight truncate">
+                                <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
                                     {isFullManager ? 'Equipment & Gear' : 'Activity Gear'}
                                 </h1>
-                                <p className="text-[11px] text-slate-500 truncate">
+                                <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                                     {isFullManager
-                                        ? 'Quartermaster Depot & Group Logistics'
-                                        : 'Manage activity loans and borrow equipment'}
+                                        ? 'Quartermaster Depot & Logistics'
+                                        : 'Manage activity loans and borrow gear'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Desktop Action Buttons (Hidden on Mobile, Rendered in Mobile Pill Row Below) */}
-                        <div className="hidden sm:flex items-center gap-2 shrink-0">
+                        {/* Desktop Action Buttons */}
+                        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
                             {isFullManager && (
                                 <button
                                     onClick={handleStartAudit}
-                                    className="bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-900 font-bold px-3 py-2 rounded-xl text-xs border border-purple-200 transition-all flex items-center gap-1.5 shadow-2xs"
+                                    className="bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-900 font-bold px-2.5 py-1.5 rounded-xl text-xs border border-purple-200 transition-all flex items-center gap-1 shadow-2xs"
                                     title="Perform Stock Count (Jard)"
                                 >
-                                    <ClipboardCheck className="h-4 w-4 text-purple-700" />
-                                    <span>Stock Count (*Jard*)</span>
+                                    <ClipboardCheck className="h-3.5 w-3.5 text-purple-700" />
+                                    <span>Jard Count</span>
                                 </button>
                             )}
 
@@ -1628,9 +1628,9 @@ export default function InventoryManagement({
                                     setCartItems([])
                                     setIsCheckoutModalOpen(true)
                                 }}
-                                className="bg-teal-700 hover:bg-teal-600 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1.5"
+                                className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1"
                             >
-                                <Send className="h-4 w-4" />
+                                <Send className="h-3.5 w-3.5" />
                                 <span>Request Gear</span>
                             </button>
 
@@ -1650,25 +1650,25 @@ export default function InventoryManagement({
                                         setFormDescription('')
                                         setIsAddEditModalOpen(true)
                                     }}
-                                    className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1.5"
+                                    className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1"
                                 >
-                                    <Plus className="h-4 w-4" />
-                                    <span>Add Item</span>
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span>New Item</span>
                                 </button>
                             )}
                         </div>
                     </div>
 
                     {/* Row 2 (Mobile Only): Touch-Friendly Action Pill Strip */}
-                    <div className="grid grid-cols-3 gap-2 sm:hidden pt-0.5">
+                    <div className="grid grid-cols-3 gap-1.5 sm:hidden pt-0.5">
                         <button
                             onClick={() => {
                                 setCartItems([])
                                 setIsCheckoutModalOpen(true)
                             }}
-                            className="col-span-1 bg-teal-700 active:bg-teal-800 text-white font-black py-2 px-2 rounded-xl text-[11px] transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95"
+                            className="col-span-1 bg-teal-800 active:bg-teal-900 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95"
                         >
-                            <Send className="h-3.5 w-3.5" />
+                            <Send className="h-3 w-3" />
                             <span>Request</span>
                         </button>
 
@@ -1676,9 +1676,9 @@ export default function InventoryManagement({
                             <>
                                 <button
                                     onClick={handleStartAudit}
-                                    className="bg-purple-50 active:bg-purple-100 text-purple-900 font-black py-2 px-2 rounded-xl text-[11px] border border-purple-200 transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95"
+                                    className="bg-purple-50 active:bg-purple-100 text-purple-900 font-bold py-1.5 px-2 rounded-xl text-[11px] border border-purple-200 transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95"
                                 >
-                                    <ClipboardCheck className="h-3.5 w-3.5 text-purple-700" />
+                                    <ClipboardCheck className="h-3 w-3 text-purple-700" />
                                     <span>Jard Count</span>
                                 </button>
 
@@ -1697,9 +1697,9 @@ export default function InventoryManagement({
                                         setFormDescription('')
                                         setIsAddEditModalOpen(true)
                                     }}
-                                    className="bg-slate-900 active:bg-slate-800 text-white font-black py-2 px-2 rounded-xl text-[11px] transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95"
+                                    className="bg-slate-900 active:bg-slate-800 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95"
                                 >
-                                    <Plus className="h-3.5 w-3.5" />
+                                    <Plus className="h-3 w-3" />
                                     <span>New Item</span>
                                 </button>
                             </>
@@ -1707,12 +1707,12 @@ export default function InventoryManagement({
                     </div>
 
                     {/* Row 3: iOS Native Segmented Tab Control */}
-                    <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70">
+                    <div className="bg-slate-100/90 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/70">
                         {isFullManager && (
                             <button
                                 onClick={() => setActiveTab('catalog')}
-                                className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === 'catalog'
-                                        ? 'bg-teal-800 text-white shadow-xs'
+                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'catalog'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
                             >
@@ -1723,8 +1723,8 @@ export default function InventoryManagement({
 
                         <button
                             onClick={() => setActiveTab('checkouts')}
-                            className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === 'checkouts'
-                                    ? 'bg-teal-800 text-white shadow-xs'
+                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'checkouts'
+                                    ? 'bg-teal-800 text-white shadow-2xs'
                                     : 'text-slate-600 hover:text-slate-900'
                                 }`}
                         >
@@ -1732,12 +1732,12 @@ export default function InventoryManagement({
                             <span>{isFullManager ? 'Loans' : 'My Loans'}</span>
                             <span className="opacity-70 font-normal">({checkouts.length})</span>
                             {pendingCheckoutsCount > 0 && isFullManager && (
-                                <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
+                                <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
                                     {pendingCheckoutsCount}
                                 </span>
                             )}
                             {returnPendingCount > 0 && isFullManager && (
-                                <span className="bg-purple-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
+                                <span className="bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
                                     {returnPendingCount}
                                 </span>
                             )}
@@ -1746,8 +1746,8 @@ export default function InventoryManagement({
                         {isFullManager && (
                             <button
                                 onClick={() => setActiveTab('writeoffs')}
-                                className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === 'writeoffs'
-                                        ? 'bg-teal-800 text-white shadow-xs'
+                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'writeoffs'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
                             >
@@ -1759,15 +1759,15 @@ export default function InventoryManagement({
                         {isGroupLeader && (
                             <button
                                 onClick={() => setActiveTab('approvals')}
-                                className={`py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 shrink-0 ${activeTab === 'approvals'
-                                        ? 'bg-teal-800 text-white shadow-xs'
+                                className={`py-1.5 px-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 shrink-0 ${activeTab === 'approvals'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
                             >
                                 <ShieldAlert className="h-3.5 w-3.5" />
                                 <span>Approvals</span>
                                 {pendingApprovalsCount > 0 && (
-                                    <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse ml-0.5">
+                                    <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full animate-pulse ml-0.5">
                                         {pendingApprovalsCount}
                                     </span>
                                 )}
@@ -1777,46 +1777,46 @@ export default function InventoryManagement({
 
                     {/* Search & Filter Bar (Quartermaster Catalog Tab Only) */}
                     {activeTab === 'catalog' && isFullManager && (
-                        <div className="space-y-2 pt-1 border-t border-slate-100">
-                            <div className="flex items-center gap-2">
+                        <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                            <div className="flex items-center gap-1.5">
                                 <div className="relative flex-1">
-                                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
                                     <input
                                         type="text"
                                         placeholder="Search gear by name, category, depot…"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
+                                        className="w-full pl-7 pr-3 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
                                     />
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                                            className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600"
                                         >
-                                            <X className="h-3.5 w-3.5" />
+                                            <X className="h-3 w-3" />
                                         </button>
                                     )}
                                 </div>
 
                                 <button
                                     onClick={() => setIsFilterSheetOpen(true)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shrink-0 ${activeFiltersCount > 0
-                                            ? 'bg-teal-700 text-white border-teal-800 shadow-2xs'
+                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 shrink-0 ${activeFiltersCount > 0
+                                            ? 'bg-teal-800 text-white border-teal-900 shadow-2xs'
                                             : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                                         }`}
                                 >
-                                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                                    <SlidersHorizontal className="h-3 w-3" />
                                     <span>Filters {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}</span>
                                 </button>
                             </div>
 
                             {/* Active Filter Tags */}
                             {(selectedCategories.length > 0 || selectedLocations.length > 0 || selectedConditions.length > 0 || searchQuery) && (
-                                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                    <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Active:</span>
+                                <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                    <span className="text-[9px] font-black uppercase text-slate-400 mr-0.5">Active:</span>
 
                                     {searchQuery && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800">
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800">
                                             &quot;{searchQuery}&quot;
                                             <button onClick={() => setSearchQuery('')}><X className="h-2.5 w-2.5 text-slate-400 hover:text-rose-600" /></button>
                                         </span>
@@ -1825,7 +1825,7 @@ export default function InventoryManagement({
                                     {selectedCategories.map((cId) => {
                                         const meta = getCategoryMeta(cId)
                                         return (
-                                            <span key={cId} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${meta.color}`}>
+                                            <span key={cId} className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-bold border ${meta.color}`}>
                                                 {meta.label}
                                                 <button onClick={() => setSelectedCategories(selectedCategories.filter((id) => id !== cId))}>
                                                     <X className="h-2.5 w-2.5 opacity-60 hover:opacity-100" />
@@ -1837,7 +1837,7 @@ export default function InventoryManagement({
                                     {selectedLocations.map((lId) => {
                                         const loc = locationOptions.find((o) => o.id === lId)
                                         return (
-                                            <span key={lId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                                            <span key={lId} className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
                                                 {loc?.label.split(' ')[0] || lId}
                                                 <button onClick={() => setSelectedLocations(selectedLocations.filter((id) => id !== lId))}>
                                                     <X className="h-2.5 w-2.5 text-slate-400 hover:text-rose-600" />
@@ -1849,7 +1849,7 @@ export default function InventoryManagement({
                                     {selectedConditions.map((cId) => {
                                         const cond = CONDITIONS.find((c) => c.id === cId)
                                         return (
-                                            <span key={cId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                                            <span key={cId} className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
                                                 {cond?.label.split(' ')[0] || cId}
                                                 <button onClick={() => setSelectedConditions(selectedConditions.filter((id) => id !== cId))}>
                                                     <X className="h-2.5 w-2.5 text-slate-400 hover:text-rose-600" />
@@ -1865,9 +1865,9 @@ export default function InventoryManagement({
                                             setSelectedLocations([])
                                             setSelectedConditions([])
                                         }}
-                                        className="text-[10px] font-bold text-rose-600 hover:underline ml-1"
+                                        className="text-[10px] font-bold text-teal-800 hover:underline ml-1"
                                     >
-                                        Clear
+                                        Clear all
                                     </button>
                                 </div>
                             )}
@@ -1876,13 +1876,13 @@ export default function InventoryManagement({
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-            TAB 1: NATIVE MOBILE CATALOG CARDS (WITH CONDITION BREAKDOWNS)
+            TAB 1: EQUIPMENT CATALOG (MINIMALIST COMPACT CARDS)
         ═══════════════════════════════════════════════════════════════════════ */}
                 {activeTab === 'catalog' && isFullManager && (
                     <div className="space-y-2">
                         {filteredInventory.length === 0 ? (
-                            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-400 space-y-2 shadow-xs">
-                                <Package className="h-8 w-8 mx-auto opacity-30" />
+                            <div className="bg-white rounded-2xl border border-slate-200/90 p-8 text-center text-slate-400 space-y-1.5 shadow-2xs">
+                                <Package className="h-7 w-7 mx-auto opacity-30" />
                                 <p className="font-bold text-slate-600 text-xs">No equipment matches the selected filters.</p>
                                 {activeFiltersCount > 0 && (
                                     <button
@@ -1892,7 +1892,7 @@ export default function InventoryManagement({
                                             setSelectedLocations([])
                                             setSelectedConditions([])
                                         }}
-                                        className="text-xs font-bold text-teal-700 hover:underline"
+                                        className="text-xs font-bold text-teal-800 hover:underline"
                                     >
                                         Reset all filters
                                     </button>
@@ -1908,23 +1908,23 @@ export default function InventoryManagement({
                                 return (
                                     <div
                                         key={item.id}
-                                        className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs space-y-2.5 transition-all hover:border-slate-300"
+                                        className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs space-y-2 transition-all hover:border-slate-300"
                                     >
                                         {/* Top Row: Full Name + Availability Pill */}
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="space-y-1 min-w-0 flex-1">
-                                                <h3 className="font-black text-slate-900 text-sm leading-snug break-words">
+                                                <h3 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug break-words">
                                                     {item.name}
                                                 </h3>
 
                                                 {/* Category & Condition Breakdown Row */}
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${catMeta.color}`}>
+                                                <div className="flex items-center gap-1 flex-wrap">
+                                                    <span className={`px-1.5 py-0.2 rounded-md text-[9px] sm:text-[10px] font-bold border ${catMeta.color}`}>
                                                         {catMeta.label}
                                                     </span>
                                                     {renderConditionBreakdownBadges(item)}
                                                     {pendingWriteoffQty > 0 && (
-                                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-300">
+                                                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-300">
                                                             ⚠️ Voiding ({pendingWriteoffQty})
                                                         </span>
                                                     )}
@@ -1934,22 +1934,22 @@ export default function InventoryManagement({
                                             {/* Stock Pill: Usable Available vs Total */}
                                             <div className="shrink-0 text-right">
                                                 <span
-                                                    className={`inline-block px-2.5 py-1 rounded-xl text-xs font-black border ${isAvailable
+                                                    className={`inline-block px-2 py-0.5 rounded-lg text-[11px] font-black border ${isAvailable
                                                             ? 'bg-teal-50 text-teal-900 border-teal-200'
                                                             : 'bg-rose-50 text-rose-800 border-rose-200'
                                                         }`}
                                                 >
-                                                    {item.quantity_available} <span className="font-normal text-[10px] text-slate-400">/ {item.quantity_total}</span>
+                                                    {item.quantity_available} <span className="font-normal text-[9px] text-slate-400">/ {item.quantity_total}</span>
                                                 </span>
-                                                <span className="block text-[9px] text-slate-400 mt-0.5 font-bold">
-                                                    {isAvailable ? `${item.quantity_available} ready to lend` : '0 usable in depot'}
+                                                <span className="block text-[8px] sm:text-[9px] text-slate-400 mt-0.5 font-bold">
+                                                    {isAvailable ? `${item.quantity_available} ready` : '0 usable'}
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Bottom Row: Location & Actions */}
-                                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/80 text-[11px] text-slate-500">
-                                            <div className="flex items-center gap-1.5 truncate">
+                                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-100 text-[10px] sm:text-[11px] text-slate-500">
+                                            <div className="flex items-center gap-1 truncate">
                                                 <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
                                                 <span className="truncate">{item.location_stored || 'Main Depot'}</span>
                                                 <span>•</span>
@@ -1981,7 +1981,7 @@ export default function InventoryManagement({
                                                         setFormDescription(item.description || '')
                                                         setIsAddEditModalOpen(true)
                                                     }}
-                                                    className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 active:scale-95"
+                                                    className="p-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 active:scale-95"
                                                     title="Edit Equipment & Quantities"
                                                 >
                                                     <Edit3 className="h-3.5 w-3.5" />
@@ -1997,7 +1997,7 @@ export default function InventoryManagement({
                                                         setWriteoffNotes('')
                                                         setIsWriteoffModalOpen(true)
                                                     }}
-                                                    className="p-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 active:scale-95"
+                                                    className="p-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 active:scale-95"
                                                     title="Decommission Damaged"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
@@ -2010,8 +2010,8 @@ export default function InventoryManagement({
                                                         setIsCheckoutModalOpen(true)
                                                     }}
                                                     disabled={!isAvailable}
-                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1 active:scale-95 ${isAvailable
-                                                            ? 'bg-teal-700 hover:bg-teal-600 text-white'
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs flex items-center gap-1 active:scale-95 ${isAvailable
+                                                            ? 'bg-teal-800 hover:bg-teal-700 text-white'
                                                             : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                                         }`}
                                                 >
@@ -2028,23 +2028,23 @@ export default function InventoryManagement({
                 )}
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-            TAB 2: GROUPED LENDING & CHECKOUTS (WITH CONFIRMATION MODALS)
+            TAB 2: GROUPED LENDING & CHECKOUTS (STREAMLINED MINIMALIST CARDS)
         ═══════════════════════════════════════════════════════════════════════ */}
                 {activeTab === 'checkouts' && (
                     <div className="space-y-3">
                         {/* Status Filter Chips */}
-                        <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        <div className="bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center gap-1 overflow-x-auto no-scrollbar">
                             <button
                                 onClick={() => setCheckoutFilterStatus('all')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${checkoutFilterStatus === 'all' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${checkoutFilterStatus === 'all' ? 'bg-slate-800 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                             >
-                                All Loans ({checkouts.length})
+                                All ({checkouts.length})
                             </button>
                             <button
                                 onClick={() => setCheckoutFilterStatus('requested')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'requested'
-                                        ? 'bg-amber-600 text-white shadow-xs'
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'requested'
+                                        ? 'bg-amber-600 text-white shadow-2xs'
                                         : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
                                     }`}
                             >
@@ -2053,8 +2053,8 @@ export default function InventoryManagement({
                             </button>
                             <button
                                 onClick={() => setCheckoutFilterStatus('handed_out')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'handed_out'
-                                        ? 'bg-teal-700 text-white shadow-xs'
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'handed_out'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200'
                                     }`}
                             >
@@ -2063,18 +2063,18 @@ export default function InventoryManagement({
                             </button>
                             <button
                                 onClick={() => setCheckoutFilterStatus('return_pending')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'return_pending'
-                                        ? 'bg-purple-700 text-white shadow-xs'
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'return_pending'
+                                        ? 'bg-purple-700 text-white shadow-2xs'
                                         : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200'
                                     }`}
                             >
                                 <RefreshCw className="h-3 w-3" />
-                                <span>Awaiting Check-in ({returnPendingCount})</span>
+                                <span>Awaiting ({returnPendingCount})</span>
                             </button>
                             <button
                                 onClick={() => setCheckoutFilterStatus('returned')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'returned'
-                                        ? 'bg-emerald-600 text-white shadow-xs'
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 ${checkoutFilterStatus === 'returned'
+                                        ? 'bg-emerald-600 text-white shadow-2xs'
                                         : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
                                     }`}
                             >
@@ -2085,12 +2085,12 @@ export default function InventoryManagement({
 
                         {/* Grouped Folders List */}
                         {groupedCheckouts.length === 0 ? (
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-12 text-center text-slate-400 space-y-2">
-                                <Layers className="h-8 w-8 mx-auto opacity-30" />
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-8 text-center text-slate-400 space-y-1.5">
+                                <Layers className="h-7 w-7 mx-auto opacity-30" />
                                 <p className="font-bold text-slate-600 text-xs">No equipment loans found in this status.</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2.5">
                                 {groupedCheckouts.map((group) => {
                                     const isExpanded = expandedGroupIds[group.key] ?? true
                                     const isEvent = group.type === 'event'
@@ -2103,17 +2103,17 @@ export default function InventoryManagement({
                                     return (
                                         <div
                                             key={group.key}
-                                            className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden transition-all"
+                                            className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all"
                                         >
                                             {/* Group Header Card */}
-                                            <div className="p-3.5 sm:p-4 flex flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+                                            <div className="p-3 sm:p-3.5 flex flex-row sm:items-center justify-between gap-2 border-b border-slate-100">
                                                 <button
                                                     type="button"
                                                     onClick={() => toggleGroupExpand(group.key)}
-                                                    className="flex items-center gap-3 min-w-0 flex-1 text-left"
+                                                    className="flex items-center gap-2.5 min-w-0 flex-1 text-left"
                                                 >
                                                     <div
-                                                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${isEvent
+                                                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${isEvent
                                                                 ? 'bg-purple-50 text-purple-800 border-purple-200'
                                                                 : isTroop
                                                                     ? 'bg-teal-50 text-teal-800 border-teal-200'
@@ -2124,18 +2124,18 @@ export default function InventoryManagement({
                                                     </div>
 
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="font-black text-slate-900 text-sm truncate">{group.title}</span>
-                                                            <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="font-bold text-slate-900 text-xs sm:text-sm truncate">{group.title}</span>
+                                                            <span className="bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded-md text-[10px] font-bold">
                                                                 {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
                                                             </span>
                                                         </div>
-                                                        <p className="text-[11px] text-slate-500 truncate">{group.subtitle}</p>
+                                                        <p className="text-[10px] text-slate-400 truncate">{group.subtitle}</p>
                                                     </div>
                                                 </button>
 
                                                 {/* Batch Action Buttons on Header */}
-                                                <div className="flex items-center gap-2 flex-wrap shrink-0 justify-end">
+                                                <div className="flex items-center gap-1.5 shrink-0 justify-end">
                                                     {/* Quartermaster: Approve All Pending with Confirmation */}
                                                     {group.requestedCount > 0 && isFullManager && (
                                                         <button
@@ -2150,9 +2150,9 @@ export default function InventoryManagement({
                                                                     onConfirm: () => handleApproveAllPending(group.items, group.key),
                                                                 })
                                                             }}
-                                                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
+                                                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-1 rounded-lg text-[10px] sm:text-xs shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
                                                         >
-                                                            {isApprovingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                                            {isApprovingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                                                             <span>Approve All ({group.requestedCount})</span>
                                                         </button>
                                                     )}
@@ -2171,9 +2171,9 @@ export default function InventoryManagement({
                                                                     onConfirm: () => handleMarkAllForReturn(group.items, group.key),
                                                                 })
                                                             }}
-                                                            className="bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-2.5 py-1.5 rounded-xl text-xs border border-purple-200 transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
+                                                            className="bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-2 py-1 rounded-lg text-[10px] sm:text-xs border border-purple-200 transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
                                                         >
-                                                            {isReturningAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                                                            {isReturningAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                                                             <span>Return All ({group.inUseCount})</span>
                                                         </button>
                                                     )}
@@ -2192,9 +2192,9 @@ export default function InventoryManagement({
                                                                     onConfirm: () => handleCheckInAllReturned(group.items, group.key),
                                                                 })
                                                             }}
-                                                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
+                                                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-1 rounded-lg text-[10px] sm:text-xs shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
                                                         >
-                                                            {isCheckingInAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                                                            {isCheckingInAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
                                                             <span>Check-In All ({group.returnPendingCount})</span>
                                                         </button>
                                                     )}
@@ -2203,10 +2203,10 @@ export default function InventoryManagement({
                                                     <button
                                                         type="button"
                                                         onClick={() => toggleGroupExpand(group.key)}
-                                                        className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                        className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
                                                     >
                                                         <ChevronDown
-                                                            className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                                                            className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
                                                                 }`}
                                                         />
                                                     </button>
@@ -2215,7 +2215,7 @@ export default function InventoryManagement({
 
                                             {/* Group Body */}
                                             {isExpanded && (
-                                                <div className="divide-y divide-slate-100 bg-slate-50/50">
+                                                <div className="divide-y divide-slate-100 bg-slate-50/40">
                                                     {group.items.map((checkout) => {
                                                         const itemName = getItemName(checkout.item_id)
                                                         const requesterName = getLeaderName(checkout.checked_out_to)
@@ -2229,77 +2229,77 @@ export default function InventoryManagement({
                                                         return (
                                                             <div
                                                                 key={checkout.id}
-                                                                className="p-3.5 sm:p-4 bg-white hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                                                className="p-3 bg-white hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                                                             >
-                                                                <div className="space-y-1 min-w-0 flex-1">
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                                                                <div className="space-y-0.5 min-w-0 flex-1">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <span className="font-bold text-slate-900 text-xs truncate">
                                                                             {itemName}
                                                                         </span>
-                                                                        <span className="bg-teal-100 text-teal-900 px-2 py-0.5 rounded-md text-[11px] font-black">
+                                                                        <span className="bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.2 rounded text-[10px] font-bold">
                                                                             Qty: {checkout.quantity}
                                                                         </span>
 
                                                                         {checkout.status === 'requested' && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                                                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                                                                 ⏳ Pending Approval
                                                                             </span>
                                                                         )}
                                                                         {checkout.status === 'handed_out' && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                                                                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
                                                                                 📦 In Use
                                                                             </span>
                                                                         )}
                                                                         {checkout.status === 'return_pending' && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200 animate-pulse">
-                                                                                🔄 Returned • Awaiting QM Check-in
+                                                                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-purple-50 text-purple-800 border border-purple-200 animate-pulse">
+                                                                                🔄 Returned • Check-in
                                                                             </span>
                                                                         )}
                                                                         {checkout.status === 'returned' && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                                                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                                                                 ✓ Returned ({checkout.returned_condition || 'Good'})
                                                                             </span>
                                                                         )}
                                                                         {checkout.status === 'rejected' && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                                                                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
                                                                                 ✕ Declined
                                                                             </span>
                                                                         )}
                                                                         {isOverdue && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white animate-pulse">
+                                                                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-600 text-white animate-pulse">
                                                                                 ⚠️ Overdue
                                                                             </span>
                                                                         )}
                                                                     </div>
 
-                                                                    <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
-                                                                        <span>Requester: <strong className="text-slate-700">{requesterName}</strong></span>
+                                                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
+                                                                        <span>By: <strong className="text-slate-600">{requesterName}</strong></span>
                                                                         <span>•</span>
-                                                                        <span>Dates: {checkout.checkout_date} → {checkout.return_date || 'Ongoing'}</span>
+                                                                        <span>{checkout.checkout_date} → {checkout.return_date || 'Ongoing'}</span>
                                                                     </div>
 
                                                                     {checkout.notes && (
-                                                                        <p className="text-[11px] text-slate-400 italic">Note: {checkout.notes}</p>
+                                                                        <p className="text-[10px] text-slate-400 italic">Note: {checkout.notes}</p>
                                                                     )}
                                                                 </div>
 
                                                                 {/* Actions */}
-                                                                <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                                                                <div className="flex items-center gap-1.5 shrink-0 justify-end pt-1 sm:pt-0">
                                                                     {/* Quartermaster Approve Single */}
                                                                     {checkout.status === 'requested' && isFullManager && (
                                                                         <>
                                                                             <button
                                                                                 disabled={Boolean(batchActionLoadingId)}
                                                                                 onClick={() => handleApproveHandout(checkout)}
-                                                                                className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
+                                                                                className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
                                                                             >
-                                                                                {isItemLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                                                                {isItemLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                                                                                 <span>Approve</span>
                                                                             </button>
                                                                             <button
                                                                                 disabled={Boolean(batchActionLoadingId)}
                                                                                 onClick={() => handleDeclineCheckout(checkout)}
-                                                                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1.5 rounded-xl text-xs border border-rose-200 transition-colors disabled:opacity-50 active:scale-95"
+                                                                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded-lg text-[11px] border border-rose-200 transition-colors disabled:opacity-50 active:scale-95"
                                                                             >
                                                                                 Decline
                                                                             </button>
@@ -2311,10 +2311,10 @@ export default function InventoryManagement({
                                                                         <button
                                                                             disabled={Boolean(batchActionLoadingId)}
                                                                             onClick={() => handleMarkReturnPending(checkout)}
-                                                                            className="bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-3 py-1.5 rounded-xl text-xs border border-purple-200 transition-colors flex items-center gap-1 shadow-2xs disabled:opacity-50 active:scale-95"
+                                                                            className="bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-2.5 py-1 rounded-lg text-[11px] border border-purple-200 transition-colors flex items-center gap-1 shadow-2xs disabled:opacity-50 active:scale-95"
                                                                         >
-                                                                            {isItemLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                                                                            <span>Mark for Return</span>
+                                                                            {isItemLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                                                            <span>Mark Return</span>
                                                                         </button>
                                                                     )}
 
@@ -2332,9 +2332,9 @@ export default function InventoryManagement({
                                                                                 })
                                                                                 setReturnInspectionNotes('')
                                                                             }}
-                                                                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
+                                                                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] shadow-2xs transition-colors flex items-center gap-1 disabled:opacity-50 active:scale-95"
                                                                         >
-                                                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                                                            <CheckCircle2 className="h-3 w-3" />
                                                                             <span>Inspect & Check-In</span>
                                                                         </button>
                                                                     )}
@@ -3134,31 +3134,36 @@ export default function InventoryManagement({
                 {/* ═══════════════════════════════════════════════════════════════════════
             BOTTOM SHEET 2: MULTI-ITEM LENDING REQUEST FORM (MOBILE OPTIMIZED)
         ═══════════════════════════════════════════════════════════════════════ */}
+                {/* ═══════════════════════════════════════════════════════════════════════
+            BOTTOM SHEET 1: MULTI-ITEM CHECKOUT & LENDING REQUEST MODAL
+        ═══════════════════════════════════════════════════════════════════════ */}
                 {isCheckoutModalOpen && (
                     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-                        <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
-                            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-1 sm:hidden shrink-0" />
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-3.5 sm:p-5 shadow-2xl border border-slate-200 space-y-2.5 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
+                            <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-1 sm:hidden shrink-0" />
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                 <div className="flex items-center gap-2">
-                                    <ShoppingCart className="h-5 w-5 text-teal-700" />
+                                    <div className="p-1.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200">
+                                        <ShoppingCart className="h-4 w-4" />
+                                    </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">
+                                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
                                             {isQuartermaster ? 'Equipment Handout' : 'Equipment Lending Request (*Talab I3ara*)'}
                                         </h3>
-                                        <p className="text-[11px] text-slate-500">Pick items to build your loan basket</p>
+                                        <p className="text-[10px] text-slate-400">Pick items to build your loan basket</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsCheckoutModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                                    <X className="h-5 w-5" />
+                                <button onClick={() => setIsCheckoutModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                                    <X className="h-4 w-4" />
                                 </button>
                             </div>
 
                             {/* 1. Selected Items Basket (Sticky View) */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-2.5 space-y-1.5">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-1.5">
-                                        <ShoppingCart className="h-3.5 w-3.5 text-teal-700" />
-                                        <span className="text-xs font-bold text-slate-900">
+                                        <ShoppingCart className="h-3 w-3 text-teal-700" />
+                                        <span className="text-[11px] font-bold text-slate-900">
                                             Loan Basket ({cartItems.reduce((sum, ci) => sum + ci.quantity, 0)} items)
                                         </span>
                                     </div>
@@ -3174,47 +3179,47 @@ export default function InventoryManagement({
                                 </div>
 
                                 {cartItems.length === 0 ? (
-                                    <p className="text-center text-[11px] text-slate-400 py-1.5">
+                                    <p className="text-center text-[10px] text-slate-400 py-1">
                                         Tap &quot;+ Add&quot; on any gear below to add to your loan basket.
                                     </p>
                                 ) : (
-                                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                                    <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
                                         {cartItems.map((ci) => (
                                             <div
                                                 key={ci.item.id}
-                                                className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2 text-xs"
+                                                className="bg-white p-1.5 px-2 rounded-lg border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2 text-xs"
                                             >
                                                 <div className="min-w-0 flex-1">
-                                                    <span className="font-bold text-slate-900 block truncate">{ci.item.name}</span>
-                                                    <span className="text-[10px] text-teal-700 font-semibold">
+                                                    <span className="font-bold text-slate-900 text-xs block truncate">{ci.item.name}</span>
+                                                    <span className="text-[9px] text-teal-700 font-semibold">
                                                         {ci.item.quantity_available} usable in depot
                                                     </span>
                                                 </div>
 
-                                                {/* Large Stepper Buttons for Mobile */}
-                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                {/* Stepper Buttons */}
+                                                <div className="flex items-center gap-1 shrink-0">
                                                     <button
                                                         type="button"
                                                         onClick={() => handleUpdateCartQty(ci.item.id, ci.quantity - 1)}
-                                                        className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center font-bold text-slate-700 text-sm"
+                                                        className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center font-bold text-slate-700 text-xs"
                                                     >
                                                         -
                                                     </button>
-                                                    <span className="w-6 text-center font-black text-teal-900">{ci.quantity}</span>
+                                                    <span className="w-5 text-center font-black text-teal-900 text-xs">{ci.quantity}</span>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleUpdateCartQty(ci.item.id, ci.quantity + 1)}
                                                         disabled={ci.quantity >= ci.item.quantity_available}
-                                                        className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 active:scale-95 flex items-center justify-center font-bold text-slate-700 text-sm"
+                                                        className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 active:scale-95 flex items-center justify-center font-bold text-slate-700 text-xs"
                                                     >
                                                         +
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveFromCart(ci.item.id)}
-                                                        className="p-1 text-slate-400 hover:text-rose-600 ml-1"
+                                                        className="p-1 text-slate-400 hover:text-rose-600 ml-0.5"
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        <Trash2 className="h-3 w-3" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -3224,23 +3229,23 @@ export default function InventoryManagement({
                             </div>
 
                             {/* 2. Available Gear Search & Filter */}
-                            <div className="space-y-2 pt-1 border-t border-slate-100">
-                                <span className="text-xs font-bold text-slate-800 block">Available Group Inventory</span>
+                            <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                                <span className="text-[11px] font-bold text-slate-800 block">Available Group Inventory</span>
                                 <div className="relative">
-                                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
                                     <input
                                         type="text"
                                         placeholder="Search available tents, stoves, ropes…"
                                         value={checkoutItemSearch}
                                         onChange={(e) => setCheckoutItemSearch(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
+                                        className="w-full pl-7 pr-3 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
                                     />
                                     {checkoutItemSearch && (
                                         <button
                                             onClick={() => setCheckoutItemSearch('')}
-                                            className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                                            className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600"
                                         >
-                                            <X className="h-3.5 w-3.5" />
+                                            <X className="h-3 w-3" />
                                         </button>
                                     )}
                                 </div>
@@ -3250,7 +3255,7 @@ export default function InventoryManagement({
                                     <button
                                         type="button"
                                         onClick={() => setCheckoutCategoryFilter('all')}
-                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${checkoutCategoryFilter === 'all'
+                                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all shrink-0 ${checkoutCategoryFilter === 'all'
                                                 ? 'bg-slate-800 text-white shadow-2xs'
                                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                             }`}
@@ -3262,8 +3267,8 @@ export default function InventoryManagement({
                                             key={c.id}
                                             type="button"
                                             onClick={() => setCheckoutCategoryFilter(c.id)}
-                                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${checkoutCategoryFilter === c.id
-                                                    ? 'bg-teal-700 text-white shadow-2xs'
+                                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all shrink-0 ${checkoutCategoryFilter === c.id
+                                                    ? 'bg-teal-800 text-white shadow-2xs'
                                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                                 }`}
                                         >
@@ -3273,9 +3278,9 @@ export default function InventoryManagement({
                                 </div>
 
                                 {/* Item Cards List */}
-                                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                                <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
                                     {filteredCheckoutModalItems.length === 0 ? (
-                                        <p className="text-center text-slate-400 text-xs py-4">No available equipment matches search.</p>
+                                        <p className="text-center text-slate-400 text-xs py-3">No available equipment matches search.</p>
                                     ) : (
                                         filteredCheckoutModalItems.map((item) => {
                                             const cartEntry = cartItems.find((ci) => ci.item.id === item.id)
@@ -3284,37 +3289,37 @@ export default function InventoryManagement({
                                             return (
                                                 <div
                                                     key={item.id}
-                                                    className="p-2.5 bg-slate-50 hover:bg-slate-100/90 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 text-xs transition-colors"
+                                                    className="p-2 bg-slate-50 hover:bg-slate-100/90 rounded-xl border border-slate-200/70 flex items-center justify-between gap-2 text-xs transition-colors"
                                                 >
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-1.5 truncate">
-                                                            <span className="font-bold text-slate-900 truncate">{item.name}</span>
-                                                            <span className={`px-1 py-0.2 rounded text-[9px] font-bold border ${catMeta.color} shrink-0`}>
+                                                        <div className="flex items-center gap-1 truncate">
+                                                            <span className="font-bold text-slate-900 text-xs truncate">{item.name}</span>
+                                                            <span className={`px-1 py-0.2 rounded text-[8px] sm:text-[9px] font-bold border ${catMeta.color} shrink-0`}>
                                                                 {catMeta.label.split(' ')[0]}
                                                             </span>
                                                         </div>
-                                                        <span className="text-[10px] text-teal-700 font-semibold block mt-0.5">
-                                                            {item.quantity_available} usable ready to lend
+                                                        <span className="text-[9px] text-teal-700 font-semibold block mt-0.2">
+                                                            {item.quantity_available} usable ready
                                                         </span>
                                                     </div>
 
                                                     {cartEntry ? (
-                                                        <div className="flex items-center gap-1 shrink-0 bg-teal-50 border border-teal-200 rounded-lg p-0.5">
+                                                        <div className="flex items-center gap-0.5 shrink-0 bg-teal-50 border border-teal-200 rounded-lg p-0.5">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleUpdateCartQty(item.id, cartEntry.quantity - 1)}
-                                                                className="w-6 h-6 rounded bg-white font-bold text-slate-700 text-xs shadow-2xs"
+                                                                className="w-5 h-5 rounded bg-white font-bold text-slate-700 text-xs shadow-2xs"
                                                             >
                                                                 -
                                                             </button>
-                                                            <span className="w-5 text-center font-bold text-teal-900 text-xs">
+                                                            <span className="w-4 text-center font-bold text-teal-900 text-xs">
                                                                 {cartEntry.quantity}
                                                             </span>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleUpdateCartQty(item.id, cartEntry.quantity + 1)}
                                                                 disabled={cartEntry.quantity >= item.quantity_available}
-                                                                className="w-6 h-6 rounded bg-white font-bold text-slate-700 text-xs shadow-2xs disabled:opacity-30"
+                                                                className="w-5 h-5 rounded bg-white font-bold text-slate-700 text-xs shadow-2xs disabled:opacity-30"
                                                             >
                                                                 +
                                                             </button>
@@ -3323,7 +3328,7 @@ export default function InventoryManagement({
                                                         <button
                                                             type="button"
                                                             onClick={() => handleAddToCart(item)}
-                                                            className="bg-teal-700 hover:bg-teal-600 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-2xs transition-all flex items-center gap-1 shrink-0"
+                                                            className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-2 py-1 rounded-lg text-[10px] sm:text-xs shadow-2xs transition-all flex items-center gap-0.5 shrink-0"
                                                         >
                                                             <Plus className="h-3 w-3" />
                                                             <span>Add</span>
@@ -3337,16 +3342,16 @@ export default function InventoryManagement({
                             </div>
 
                             {/* 3. Scope & Dates Form */}
-                            <form onSubmit={handleBatchCheckout} className="space-y-3 pt-2 border-t border-slate-100">
+                            <form onSubmit={handleBatchCheckout} className="space-y-2.5 pt-1.5 border-t border-slate-100">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Activity Scope</label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Activity Scope</label>
+                                    <div className="grid grid-cols-2 gap-1.5">
                                         <button
                                             type="button"
                                             disabled={!canRequestForTroop}
                                             onClick={() => setCheckoutScope('troop')}
-                                            className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all border ${checkoutScope === 'troop'
-                                                    ? 'bg-teal-700 text-white border-teal-800 shadow-2xs'
+                                            className={`py-1 px-2.5 rounded-xl text-xs font-bold transition-all border ${checkoutScope === 'troop'
+                                                    ? 'bg-teal-800 text-white border-teal-900 shadow-2xs'
                                                     : canRequestForTroop
                                                         ? 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
                                                         : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
@@ -3357,8 +3362,8 @@ export default function InventoryManagement({
                                         <button
                                             type="button"
                                             onClick={() => setCheckoutScope('event')}
-                                            className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all border ${checkoutScope === 'event'
-                                                    ? 'bg-teal-700 text-white border-teal-800 shadow-2xs'
+                                            className={`py-1 px-2.5 rounded-xl text-xs font-bold transition-all border ${checkoutScope === 'event'
+                                                    ? 'bg-teal-800 text-white border-teal-900 shadow-2xs'
                                                     : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
                                                 }`}
                                         >
@@ -3366,7 +3371,7 @@ export default function InventoryManagement({
                                         </button>
                                     </div>
                                     {!canRequestForTroop && (
-                                        <p className="text-[10px] text-amber-700 mt-1">
+                                        <p className="text-[9px] text-amber-700 mt-0.5">
                                             ⚠️ You are not assigned to a troop unit. Only event lending is available.
                                         </p>
                                     )}
@@ -3374,10 +3379,10 @@ export default function InventoryManagement({
 
                                 {checkoutScope === 'troop' ? (
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Troop</label>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Assigned Troop</label>
                                         {isTroopLeader || userTroopId ? (
-                                            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                                                <span className="text-slate-500 font-medium">Locked to your Troop:</span>
+                                            <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                                                <span className="text-slate-500 font-medium">Locked to Troop:</span>
                                                 <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-200">
                                                     {getTroopName(userTroopId) || 'My Troop'}
                                                 </span>
@@ -3386,7 +3391,7 @@ export default function InventoryManagement({
                                             <select
                                                 value={checkoutTroopId}
                                                 onChange={(e) => setCheckoutTroopId(e.target.value)}
-                                                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
+                                                className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
                                             >
                                                 {troops.map((t) => (
                                                     <option key={t.id} value={t.id}>{t.name}</option>
@@ -3396,16 +3401,16 @@ export default function InventoryManagement({
                                     </div>
                                 ) : (
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Select Event / Camp</label>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Select Event / Camp</label>
                                         {permittedEvents.length === 0 ? (
-                                            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                                            <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
                                                 ⚠️ You are not assigned as an Event Leader or Quartermaster for any active event.
                                             </div>
                                         ) : (
                                             <select
                                                 value={checkoutEventId}
                                                 onChange={(e) => setCheckoutEventId(e.target.value)}
-                                                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
+                                                className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-bold bg-white"
                                             >
                                                 {permittedEvents.map((ev) => (
                                                     <option key={ev.id} value={ev.id}>
@@ -3417,37 +3422,37 @@ export default function InventoryManagement({
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Needed From</label>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Needed From</label>
                                         <input
                                             type="date"
                                             required
                                             value={checkoutDate}
                                             onChange={(e) => setCheckoutDate(e.target.value)}
-                                            className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                                            className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Expected Return</label>
+                                        <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Expected Return</label>
                                         <input
                                             type="date"
                                             required
                                             value={checkoutReturnDate}
                                             onChange={(e) => setCheckoutReturnDate(e.target.value)}
-                                            className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                                            className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Activity Purpose / Notes</label>
+                                    <label className="block text-[11px] font-bold text-slate-700 mb-0.5">Activity Purpose / Notes</label>
                                     <input
                                         type="text"
                                         placeholder="e.g. Pioneering project for patrol competition"
                                         value={checkoutNotes}
                                         onChange={(e) => setCheckoutNotes(e.target.value)}
-                                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
+                                        className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-teal-600 font-medium"
                                     />
                                 </div>
 
@@ -3459,12 +3464,12 @@ export default function InventoryManagement({
                                         (checkoutScope === 'event' && permittedEvents.length === 0) ||
                                         (checkoutScope === 'troop' && !canRequestForTroop)
                                     }
-                                    className="w-full py-2.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-95"
+                                    className="w-full py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-95"
                                 >
                                     {isSubmitting ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                     ) : (
-                                        <Send className="h-4 w-4" />
+                                        <Send className="h-3.5 w-3.5" />
                                     )}
                                     <span>
                                         {isQuartermaster
