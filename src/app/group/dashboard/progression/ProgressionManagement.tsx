@@ -19,6 +19,8 @@ import {
   User,
   Layers,
   Award,
+  ArrowLeft,
+  Filter,
 } from 'lucide-react'
 
 interface Troop {
@@ -111,30 +113,61 @@ export default function ProgressionManagement({
     return troops.find((t) => t.id === selectedTroopId) || troops[0] || null
   }, [troops, selectedTroopId])
 
-  // Classes available for this troop's section type and active track
-  const availableClasses = useMemo(() => {
+  // Classes available for this troop's section type (Rank Stages)
+  const rankClasses = useMemo(() => {
     if (!currentTroop) return []
     return classes.filter(
       (c) =>
         c.sectionTypeId === currentTroop.sectionTypeId &&
-        (c.classType || 'rank') === activeTrack
+        (c.classType || 'rank') === 'rank'
     )
-  }, [classes, currentTroop, activeTrack])
+  }, [classes, currentTroop])
 
-  // Selected Class ID
-  const [selectedClassId, setSelectedClassId] = useState<string>(availableClasses[0]?.id || '')
+  // Specialty Badges available for this troop's section type
+  const specialtyBadges = useMemo(() => {
+    if (!currentTroop) return []
+    return classes.filter(
+      (c) =>
+        c.sectionTypeId === currentTroop.sectionTypeId &&
+        c.classType === 'specialty'
+    )
+  }, [classes, currentTroop])
 
-  // Sync selectedClassId if troop changes and current class is not in availableClasses
+  // Selected Rank Class ID
+  const [selectedRankClassId, setSelectedRankClassId] = useState<string>(rankClasses[0]?.id || '')
+
+  // Selected Specialty Badge (for active badge inspection/awarding)
+  const [selectedBadgeId, setSelectedBadgeId] = useState<string | null>(null)
+
+  // Specialty Badge Search Filter
+  const [badgeSearchQuery, setBadgeSearchQuery] = useState('')
+
+  // Effective selected class (either current rank stage or active specialty badge)
   const effectiveClass = useMemo(() => {
-    if (availableClasses.length === 0) return null
-    const found = availableClasses.find((c) => c.id === selectedClassId)
-    return found || availableClasses[0]
-  }, [availableClasses, selectedClassId])
+    if (activeTrack === 'rank') {
+      const found = rankClasses.find((c) => c.id === selectedRankClassId)
+      return found || rankClasses[0] || null
+    } else {
+      if (!selectedBadgeId) return null
+      return specialtyBadges.find((b) => b.id === selectedBadgeId) || null
+    }
+  }, [activeTrack, rankClasses, selectedRankClassId, selectedBadgeId, specialtyBadges])
+
+  // Filtered Specialty Badges based on search query
+  const filteredSpecialtyBadges = useMemo(() => {
+    const q = badgeSearchQuery.toLowerCase().trim()
+    if (!q) return specialtyBadges
+    return specialtyBadges.filter((b) => {
+      const nameMatch = b.name.toLowerCase().includes(q)
+      const reqMatch = b.requirements.some((r) => r.title.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
+      return nameMatch || reqMatch
+    })
+  }, [specialtyBadges, badgeSearchQuery])
 
   // Category Filter
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
-  // Search Query
+  // Search Query for Scouts
   const [searchQuery, setSearchQuery] = useState('')
 
   // Records state (optimistic fast updates)
@@ -258,7 +291,6 @@ export default function ProgressionManagement({
       }
     } catch (err: any) {
       console.error('[Progression Toggle Error]:', err)
-      // Rollback optimistic update
       if (willBeCompleted) {
         setRecords((prev) => prev.filter((r) => !(r.memberId === memberId && r.requirementId === requirementId)))
       } else if (existingRecord) {
@@ -309,7 +341,6 @@ export default function ProgressionManagement({
         throw new Error(data.error || 'Failed to save evidence.')
       }
 
-      // Update record in state
       const updatedRec = data.record
       setRecords((prev) => {
         const filtered = prev.filter(
@@ -403,6 +434,7 @@ export default function ProgressionManagement({
                   onChange={(e) => {
                     setSelectedTroopId(e.target.value)
                     setSelectedCategory('all')
+                    setSelectedBadgeId(null)
                   }}
                   className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 focus:outline-none focus:border-teal-700"
                 >
@@ -433,6 +465,13 @@ export default function ProgressionManagement({
           >
             <GraduationCap className="h-4 w-4" />
             <span>Rank Stages (المراحل)</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                activeTrack === 'rank' ? 'bg-teal-700 text-teal-100' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {rankClasses.length}
+            </span>
           </button>
 
           <button
@@ -449,268 +488,299 @@ export default function ProgressionManagement({
           >
             <Sparkles className="h-4 w-4" />
             <span>Specialty Badges (الأوسمة)</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                activeTrack === 'specialty' ? 'bg-amber-700 text-amber-100' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {specialtyBadges.length}
+            </span>
           </button>
         </div>
 
-        {/* ── CLASS / STAGE TABS (Kouboul, Moubtada2, Daraja Thanya, Daraja Oula, Tohdiri Chara) ── */}
-        {availableClasses.length > 0 ? (
-          <div className="space-y-3">
-            {/* Horizontal Classes Bar */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {availableClasses.map((cls, idx) => {
-                const isSelected = effectiveClass?.id === cls.id
-                return (
-                  <button
-                    key={cls.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedClassId(cls.id)
-                      setSelectedCategory('all')
-                    }}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
-                      isSelected
-                        ? activeTrack === 'specialty' ? 'bg-amber-600 text-white shadow-xs scale-100' : 'bg-teal-800 text-white shadow-xs scale-100'
-                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="text-base leading-none">{cls.badgeIcon || (activeTrack === 'specialty' ? '🪢' : '⚜️')}</span>
-                    <span>{cls.name}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
-                        isSelected
-                          ? activeTrack === 'specialty' ? 'bg-amber-700 text-amber-100' : 'bg-teal-700 text-teal-100'
-                          : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {cls.requirements.length}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* ── SEARCH & CATEGORY BAR ── */}
-            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search scouts by name, patrol..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
-                />
-              </div>
-
-              {/* Category Pills */}
-              {classCategories.length > 0 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-none border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategory('all')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                      selectedCategory === 'all'
-                        ? 'bg-teal-800 text-white shadow-2xs'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    All Categories ({effectiveClass?.requirements.length || 0})
-                  </button>
-
-                  {classCategories.map((cat) => {
-                    const catReqs = (effectiveClass?.requirements || []).filter((r) => r.category === cat)
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ── MODE 1: RANK STAGES (Horizontal Stage Tabs Flow) ──   */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        {activeTrack === 'rank' && (
+          <>
+            {rankClasses.length > 0 ? (
+              <div className="space-y-3">
+                {/* Horizontal Rank Stages Tabs */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {rankClasses.map((cls) => {
+                    const isSelected = effectiveClass?.id === cls.id
                     return (
                       <button
-                        key={cat}
+                        key={cls.id}
                         type="button"
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                          selectedCategory === cat
-                            ? 'bg-teal-800 text-white shadow-2xs'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                        onClick={() => {
+                          setSelectedRankClassId(cls.id)
+                          setSelectedCategory('all')
+                        }}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-teal-800 text-white shadow-xs scale-100'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                         }`}
                       >
-                        <span>{cat}</span>
+                        <span className="text-base leading-none">{cls.badgeIcon || '⚜️'}</span>
+                        <span>{cls.name}</span>
                         <span
-                          className={`text-[9px] px-1 py-0.2 rounded font-bold ${
-                            selectedCategory === cat ? 'bg-teal-700 text-teal-100' : 'bg-slate-200 text-slate-600'
+                          className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                            isSelected ? 'bg-teal-700 text-teal-100' : 'bg-slate-100 text-slate-500'
                           }`}
                         >
-                          {catReqs.length}
+                          {cls.requirements.length}
                         </span>
                       </button>
                     )
                   })}
                 </div>
-              )}
-            </div>
 
-            {/* ── SCOUTS MATRIX / CARDS ── */}
-            {filteredMembers.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
-                <User className="h-8 w-8 mx-auto text-slate-300" />
-                <h4 className="font-bold text-sm text-slate-800">No active scouts found</h4>
-                <p className="text-xs text-slate-500">No scouts found matching your filter criteria in this troop.</p>
-              </div>
-            ) : filteredRequirements.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
-                <GraduationCap className="h-8 w-8 mx-auto text-slate-300" />
-                <h4 className="font-bold text-sm text-slate-800">No requirements in this category</h4>
-                <p className="text-xs text-slate-500">Configure requirements for this stage in the Configurator panel.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredMembers.map((scout) => {
-                  // Calculate completion percentage for this class
-                  const totalClassReqs = effectiveClass?.requirements.length || 0
-                  const completedClassReqs = (effectiveClass?.requirements || []).filter(
-                    (r) => !!recordMap[`${scout.id}_${r.id}`]
-                  ).length
-                  const percent = totalClassReqs > 0 ? Math.round((completedClassReqs / totalClassReqs) * 100) : 0
-                  const isFullyCompleted = totalClassReqs > 0 && completedClassReqs === totalClassReqs
+                {/* Search & Category Filter Bar */}
+                <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search scouts by name, patrol..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                    />
+                  </div>
 
-                  return (
-                    <div
-                      key={scout.id}
-                      className={`bg-white rounded-2xl border transition-all p-4 space-y-3 shadow-xs ${
-                        isFullyCompleted ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/10' : 'border-slate-200'
-                      }`}
-                    >
-                      {/* Scout Header */}
-                      <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 font-black text-sm flex items-center justify-center shrink-0">
-                            {scout.firstName.charAt(0)}
-                            {scout.lastName.charAt(0)}
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="font-bold text-sm text-slate-900 truncate">
-                              {scout.firstName} {scout.lastName}
-                            </h3>
-                            <p className="text-[11px] text-slate-500 font-medium truncate">
-                              {scout.patrolName} • {scout.currentRank}
-                            </p>
-                          </div>
-                        </div>
+                  {classCategories.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-none border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategory('all')}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                          selectedCategory === 'all'
+                            ? 'bg-teal-800 text-white shadow-2xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        All Categories ({effectiveClass?.requirements.length || 0})
+                      </button>
 
-                        {/* Progress Badge */}
-                        <div className="text-right shrink-0">
-                          <div
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-black ${
-                              isFullyCompleted
-                                ? 'bg-amber-500 text-slate-950'
-                                : 'bg-teal-50 text-teal-900 border border-teal-200'
+                      {classCategories.map((cat) => {
+                        const catReqs = (effectiveClass?.requirements || []).filter((r) => r.category === cat)
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                              selectedCategory === cat
+                                ? 'bg-teal-800 text-white shadow-2xs'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                             }`}
                           >
-                            <span>{completedClassReqs}/{totalClassReqs}</span>
-                            <span className="text-[10px] opacity-80">({percent}%)</span>
-                          </div>
-                          {isFullyCompleted && (
-                            <span className="block text-[9px] font-black text-amber-700 uppercase tracking-tight mt-0.5">
-                              ⭐ Ready for Rank
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Requirements Checklist */}
-                      <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5 scrollbar-thin">
-                        {filteredRequirements.map((req) => {
-                          const key = `${scout.id}_${req.id}`
-                          const record = recordMap[key]
-                          const isDone = !!record
-                          const hasEvidence = !!(record?.evidenceFileUrl || record?.notes)
-                          const isToggling = togglingReqKey === key
-
-                          return (
-                            <div
-                              key={req.id}
-                              className={`p-2 rounded-xl border transition-all flex items-start justify-between gap-2 ${
-                                isDone
-                                  ? 'bg-emerald-50/50 border-emerald-200 text-slate-900'
-                                  : 'bg-slate-50/70 border-slate-200 text-slate-600 hover:border-slate-300'
+                            <span>{cat}</span>
+                            <span
+                              className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                                selectedCategory === cat ? 'bg-teal-700 text-teal-100' : 'bg-slate-200 text-slate-600'
                               }`}
                             >
-                              <div className="flex items-start gap-2 min-w-0 flex-1">
-                                <button
-                                  type="button"
-                                  disabled={isToggling}
-                                  onClick={() => handleToggleRequirement(scout.id, req.id)}
-                                  className={`w-5 h-5 rounded-lg flex items-center justify-center font-bold transition-all shrink-0 mt-0.5 ${
-                                    isDone
-                                      ? 'bg-emerald-600 text-white shadow-2xs scale-105'
-                                      : 'border border-slate-300 bg-white hover:border-teal-600'
-                                  }`}
-                                >
-                                  {isDone && <Check className="h-3 w-3" />}
-                                </button>
-
-                                <div className="min-w-0">
-                                  <p
-                                    className={`text-xs leading-snug ${
-                                      isDone ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
-                                    }`}
-                                  >
-                                    {req.title}
-                                  </p>
-                                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                    <span className="text-[9px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-100">
-                                      {req.category}
-                                    </span>
-                                    {hasEvidence && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenEvidence(scout, req)}
-                                        className="inline-flex items-center gap-1 text-[9px] font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 px-1.5 py-0.2 rounded border border-teal-300 transition-colors"
-                                      >
-                                        <Paperclip className="h-2.5 w-2.5" />
-                                        <span>Proof Attached</span>
-                                      </button>
-                                    )}
-                                    {isDone && record?.validatorName && (
-                                      <span className="text-[9px] text-slate-400 truncate">
-                                        ✓ by {record.validatorName}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Evidence / Notes Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEvidence(scout, req)}
-                                className={`p-1.5 rounded-lg transition-colors shrink-0 ${
-                                  hasEvidence
-                                    ? 'bg-teal-800 text-white shadow-2xs'
-                                    : 'text-slate-400 hover:text-teal-800 hover:bg-teal-50'
-                                }`}
-                                title={hasEvidence ? 'View attached evidence & notes' : 'Attach photo evidence or notes'}
-                              >
-                                <Paperclip className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
+                              {catReqs.length}
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                  )}
+                </div>
+
+                {/* Scouts Cards Grid */}
+                <ScoutsProgressionGrid
+                  members={filteredMembers}
+                  requirements={filteredRequirements}
+                  effectiveClass={effectiveClass}
+                  recordMap={recordMap}
+                  togglingReqKey={togglingReqKey}
+                  onToggleRequirement={handleToggleRequirement}
+                  onOpenEvidence={handleOpenEvidence}
+                />
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center mx-auto">
+                  <GraduationCap className="h-6 w-6" />
+                </div>
+                <h3 className="font-bold text-base text-slate-900">No Rank Stages Configured Yet</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  The Configurator hasn&apos;t defined progression rank stages for this unit&apos;s section ({currentTroop?.sectionName || 'Section'}).
+                </p>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center mx-auto">
-              {activeTrack === 'rank' ? <GraduationCap className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
-            </div>
-            <h3 className="font-bold text-base text-slate-900">
-              {activeTrack === 'rank' ? 'No Rank Curriculum Configured Yet' : 'No Specialty Badges Configured Yet'}
-            </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
-              The Configurator hasn&apos;t defined {activeTrack === 'rank' ? 'progression rank classes' : 'specialty badges'} for this unit&apos;s section type ({currentTroop?.sectionName || 'Section'}).
-            </p>
-          </div>
+          </>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {/* ── MODE 2: SPECIALTY BADGES (Search-First Catalog & Award) ──   */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {activeTrack === 'specialty' && (
+          <>
+            {/* If a Badge is actively selected, show its Award Matrix */}
+            {selectedBadgeId && effectiveClass ? (
+              <div className="space-y-4 animate-in fade-in duration-150">
+                {/* Active Badge Header */}
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBadgeId(null)
+                        setSelectedCategory('all')
+                      }}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      <span>All Badges</span>
+                    </button>
+
+                    <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center shrink-0">
+                      {effectiveClass.badgeIcon || '🪢'}
+                    </div>
+
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                        <span>{effectiveClass.name}</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900">
+                          {effectiveClass.requirements.length} Tasks
+                        </span>
+                      </h2>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Award this specialty badge to scouts who complete all required skills
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="w-full sm:w-64">
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search scouts in unit..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-600 font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scouts Cards Grid for this Badge */}
+                <ScoutsProgressionGrid
+                  members={filteredMembers}
+                  requirements={effectiveClass.requirements}
+                  effectiveClass={effectiveClass}
+                  recordMap={recordMap}
+                  togglingReqKey={togglingReqKey}
+                  onToggleRequirement={handleToggleRequirement}
+                  onOpenEvidence={handleOpenEvidence}
+                  badgeMode
+                />
+              </div>
+            ) : (
+              /* Searchable Badge Catalog Grid */
+              <div className="space-y-4">
+                {/* Search Bar for Badges */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search specialty badges (e.g. Knotter, 3akkad, First Aid, المسعف, Chef, طبّاخ)..."
+                      value={badgeSearchQuery}
+                      onChange={(e) => setBadgeSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-amber-600 font-medium"
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 shrink-0 px-1">
+                    Showing {filteredSpecialtyBadges.length} of {specialtyBadges.length} badges
+                  </span>
+                </div>
+
+                {/* Badges Cards Grid */}
+                {filteredSpecialtyBadges.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mx-auto">
+                      <Sparkles className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-bold text-base text-slate-900">
+                      {specialtyBadges.length === 0
+                        ? 'No Specialty Badges Configured'
+                        : `No badges match "${badgeSearchQuery}"`}
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      {specialtyBadges.length === 0
+                        ? `The Configurator hasn't added specialty badges for ${currentTroop?.sectionName || 'this section'} yet.`
+                        : 'Try searching with a different name or keyword.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
+                    {filteredSpecialtyBadges.map((badge) => {
+                      // Calculate how many scouts in this troop have 100% earned this badge
+                      const totalBadgeReqs = badge.requirements.length
+                      const awardedCount = troopMembers.filter((m) => {
+                        if (totalBadgeReqs === 0) return false
+                        const completedCount = badge.requirements.filter((r) => !!recordMap[`${m.id}_${r.id}`]).length
+                        return completedCount === totalBadgeReqs
+                      }).length
+
+                      return (
+                        <div
+                          key={badge.id}
+                          onClick={() => {
+                            setSelectedBadgeId(badge.id)
+                            setSelectedCategory('all')
+                          }}
+                          className="bg-white rounded-2xl border border-slate-200 hover:border-amber-400 hover:ring-2 hover:ring-amber-400/20 p-4 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                              {badge.badgeIcon || '🪢'}
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-sm text-slate-900 truncate group-hover:text-amber-700 transition-colors">
+                                {badge.name}
+                              </h3>
+                              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                {badge.requirements.length} {badge.requirements.length === 1 ? 'task' : 'tasks'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                awardedCount > 0
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                  : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              ⭐ {awardedCount} {awardedCount === 1 ? 'Scout' : 'Scouts'} Awarded
+                            </span>
+
+                            <button
+                              type="button"
+                              className="text-xs font-bold text-amber-700 group-hover:text-amber-800 flex items-center gap-1"
+                            >
+                              <span>Award</span>
+                              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* ── EVIDENCE & NOTES MODAL ── */}
@@ -807,7 +877,7 @@ export default function ProgressionManagement({
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="e.g. Completed during Baskinta hike. Displayed great teamwork..."
+                    placeholder="e.g. Completed during Baskinta hike. Displayed great mastery..."
                     value={evidenceNotes}
                     onChange={(e) => setEvidenceNotes(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-medium focus:outline-none focus:border-teal-700"
@@ -844,5 +914,194 @@ export default function ProgressionManagement({
         )}
       </div>
     </DashboardShell>
+  )
+}
+
+// ── SUBCOMPONENT: SCOUTS PROGRESSION CHECKLIST MATRIX ──
+interface ScoutsGridProps {
+  members: Member[]
+  requirements: ProgressionRequirement[]
+  effectiveClass: ProgressionClass | null
+  recordMap: Record<string, ProgressionRecord>
+  togglingReqKey: string | null
+  onToggleRequirement: (memberId: string, requirementId: string) => void
+  onOpenEvidence: (member: Member, requirement: ProgressionRequirement) => void
+  badgeMode?: boolean
+}
+
+function ScoutsProgressionGrid({
+  members,
+  requirements,
+  effectiveClass,
+  recordMap,
+  togglingReqKey,
+  onToggleRequirement,
+  onOpenEvidence,
+  badgeMode = false,
+}: ScoutsGridProps) {
+  if (members.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
+        <User className="h-8 w-8 mx-auto text-slate-300" />
+        <h4 className="font-bold text-sm text-slate-800">No active scouts found</h4>
+        <p className="text-xs text-slate-500">No scouts found matching your filter criteria in this unit.</p>
+      </div>
+    )
+  }
+
+  if (requirements.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
+        <GraduationCap className="h-8 w-8 mx-auto text-slate-300" />
+        <h4 className="font-bold text-sm text-slate-800">No requirements in this category</h4>
+        <p className="text-xs text-slate-500">Configure requirements in the Configurator panel.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {members.map((scout) => {
+        const totalClassReqs = requirements.length
+        const completedClassReqs = requirements.filter(
+          (r) => !!recordMap[`${scout.id}_${r.id}`]
+        ).length
+        const percent = totalClassReqs > 0 ? Math.round((completedClassReqs / totalClassReqs) * 100) : 0
+        const isFullyCompleted = totalClassReqs > 0 && completedClassReqs === totalClassReqs
+
+        return (
+          <div
+            key={scout.id}
+            className={`bg-white rounded-2xl border transition-all p-4 space-y-3 shadow-xs ${
+              isFullyCompleted
+                ? badgeMode
+                  ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/15'
+                  : 'border-emerald-400 ring-2 ring-emerald-400/20 bg-emerald-50/10'
+                : 'border-slate-200'
+            }`}
+          >
+            {/* Scout Header */}
+            <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 font-black text-sm flex items-center justify-center shrink-0">
+                  {scout.firstName.charAt(0)}
+                  {scout.lastName.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-slate-900 truncate">
+                    {scout.firstName} {scout.lastName}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium truncate">
+                    {scout.patrolName} • {scout.currentRank}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Badge */}
+              <div className="text-right shrink-0">
+                <div
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-black ${
+                    isFullyCompleted
+                      ? badgeMode
+                        ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                        : 'bg-emerald-600 text-white shadow-2xs'
+                      : 'bg-teal-50 text-teal-900 border border-teal-200'
+                  }`}
+                >
+                  <span>{completedClassReqs}/{totalClassReqs}</span>
+                  <span className="text-[10px] opacity-85">({percent}%)</span>
+                </div>
+                {isFullyCompleted && (
+                  <span className={`block text-[9px] font-black uppercase tracking-tight mt-0.5 ${badgeMode ? 'text-amber-800' : 'text-emerald-700'}`}>
+                    ⭐ {badgeMode ? 'Badge Earned!' : 'Ready for Rank'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Requirements Checklist */}
+            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5 scrollbar-thin">
+              {requirements.map((req) => {
+                const key = `${scout.id}_${req.id}`
+                const record = recordMap[key]
+                const isDone = !!record
+                const hasEvidence = !!(record?.evidenceFileUrl || record?.notes)
+                const isToggling = togglingReqKey === key
+
+                return (
+                  <div
+                    key={req.id}
+                    className={`p-2 rounded-xl border transition-all flex items-start justify-between gap-2 ${
+                      isDone
+                        ? 'bg-emerald-50/60 border-emerald-200 text-slate-900'
+                        : 'bg-slate-50/70 border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        disabled={isToggling}
+                        onClick={() => onToggleRequirement(scout.id, req.id)}
+                        className={`w-5 h-5 rounded-lg flex items-center justify-center font-bold transition-all shrink-0 mt-0.5 ${
+                          isDone
+                            ? 'bg-emerald-600 text-white shadow-2xs scale-105'
+                            : 'border border-slate-300 bg-white hover:border-teal-600'
+                        }`}
+                      >
+                        {isDone && <Check className="h-3 w-3" />}
+                      </button>
+
+                      <div className="min-w-0">
+                        <p
+                          className={`text-xs leading-snug ${
+                            isDone ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
+                          }`}
+                        >
+                          {req.title}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-[9px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-100">
+                            {req.category}
+                          </span>
+                          {hasEvidence && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenEvidence(scout, req)}
+                              className="inline-flex items-center gap-1 text-[9px] font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 px-1.5 py-0.2 rounded border border-teal-300 transition-colors"
+                            >
+                              <Paperclip className="h-2.5 w-2.5" />
+                              <span>Proof Attached</span>
+                            </button>
+                          )}
+                          {isDone && record?.validatorName && (
+                            <span className="text-[9px] text-slate-400 truncate">
+                              ✓ by {record.validatorName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Evidence / Notes Button */}
+                    <button
+                      type="button"
+                      onClick={() => onOpenEvidence(scout, req)}
+                      className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                        hasEvidence
+                          ? 'bg-teal-800 text-white shadow-2xs'
+                          : 'text-slate-400 hover:text-teal-800 hover:bg-teal-50'
+                      }`}
+                      title={hasEvidence ? 'View attached evidence & notes' : 'Attach photo evidence or notes'}
+                    >
+                      <Paperclip className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
