@@ -7,6 +7,7 @@ import {
   Edit2,
   Trash2,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Layers,
   BookOpen,
@@ -14,6 +15,10 @@ import {
   AlertCircle,
   X,
   Smile,
+  Copy,
+  Search,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react'
 
 interface SectionType {
@@ -48,19 +53,23 @@ interface Props {
 
 const BADGE_ICONS = [
   '⚜️', '🪢', '🚑', '🧭', '⛺', '🍳', '🏊‍♂️', '🎨', '🌲', '🔥', '🏹', '🧗',
-  '🐺', '🌟', '🎖️', '👑', '🏅', '🏆', '⚓', '🌿', '🪵', '🔦', '📷', '🛠️', '🎵'
+  '🐺', '🌟', '🎖️', '👑', '🏅', '🏆', '⚓', '🌿', '🪵', '🔦', '📷', '🛠️', '🎵',
+  '🗺️', '🥋', '🤿', '🎯', '📻', '⛵', '🧑‍💻', '🚲', '⚽', '🏃‍♂️', '🩺', '🌍'
 ]
 
 const SPECIALTY_BADGE_PRESETS = [
-  { name: 'العقّاد (Al 3akkad)', icon: '🪢' },
-  { name: 'المسعف (Al Mosa3ef)', icon: '🚑' },
-  { name: 'الدليل (Al Dalil)', icon: '🧭' },
-  { name: 'المخيّم (Al Mokhayyem)', icon: '⛺' },
-  { name: 'الطبّاخ (Al Tabakh)', icon: '🍳' },
-  { name: 'السبّاح (Al Sabeeh)', icon: '🏊‍♂️' },
-  { name: 'رجل النار (Al Naar)', icon: '🔥' },
-  { name: 'حارس الغابة (Al Ghaba)', icon: '🌲' },
-  { name: 'الفنّان (Al Fannan)', icon: '🎨' },
+  { name: 'العقّاد (Al 3akkad - Knotter)', icon: '🪢' },
+  { name: 'المسعف (Al Mosa3ef - First Aid)', icon: '🚑' },
+  { name: 'الدليل (Al Dalil - Navigator)', icon: '🧭' },
+  { name: 'المخيّم (Al Mokhayyem - Camper)', icon: '⛺' },
+  { name: 'الطبّاخ (Al Tabakh - Camp Chef)', icon: '🍳' },
+  { name: 'السبّاح (Al Sabeeh - Swimmer)', icon: '🏊‍♂️' },
+  { name: 'رجل النار (Al Naar - Firecraft)', icon: '🔥' },
+  { name: 'حارس الغابة (Al Ghaba - Forestry)', icon: '🌲' },
+  { name: 'الفنّان (Al Fannan - Artist)', icon: '🎨' },
+  { name: 'المنشد (Al Mounched - Song Leader)', icon: '🎵' },
+  { name: 'الرائد (Al Raed - Pioneer)', icon: '🪵' },
+  { name: 'المصور (Al Mosawwer - Photographer)', icon: '📷' },
 ]
 
 export default function ProgressionConfigurator({ sections }: Props) {
@@ -70,6 +79,10 @@ export default function ProgressionConfigurator({ sections }: Props) {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+
+  // 40+ Requirements Navigation & Filtering
+  const [reqSearchQuery, setReqSearchQuery] = useState('')
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
 
   // Class Modal State
   const [isClassModalOpen, setIsClassModalOpen] = useState(false)
@@ -86,6 +99,12 @@ export default function ProgressionConfigurator({ sections }: Props) {
   const [reqTitleInput, setReqTitleInput] = useState('')
   const [reqDescInput, setReqDescInput] = useState('')
   const [reqSortInput, setReqSortInput] = useState(0)
+
+  // Clone / Duplicate Modal State
+  const [isCloneModalOpen, setIsCloneModalOpen] = useState(false)
+  const [cloneTargetSectionId, setCloneTargetSectionId] = useState('')
+  const [cloneNewClassName, setCloneNewClassName] = useState('')
+  const [isCloning, setIsCloning] = useState(false)
 
   const showStatus = (text: string, type: 'success' | 'error') => {
     setStatusMessage({ text, type })
@@ -143,20 +162,46 @@ export default function ProgressionConfigurator({ sections }: Props) {
     return Array.from(cats)
   }, [classes])
 
-  // Group current class requirements by category
+  // Filter and group current class requirements (optimized for 40+ items)
   const requirementsByCategory = useMemo(() => {
     if (!currentClass || !currentClass.progression_requirements) return {}
     const grouped: Record<string, ProgressionRequirement[]> = {}
+    const q = reqSearchQuery.toLowerCase().trim()
+
     currentClass.progression_requirements
       .slice()
       .sort((a, b) => a.sort_order - b.sort_order)
+      .filter((r) => {
+        if (!q) return true
+        return (
+          r.title.toLowerCase().includes(q) ||
+          r.category.toLowerCase().includes(q) ||
+          (r.description && r.description.toLowerCase().includes(q))
+        )
+      })
       .forEach((r) => {
         const cat = r.category || 'General'
         if (!grouped[cat]) grouped[cat] = []
         grouped[cat].push(r)
       })
     return grouped
-  }, [currentClass])
+  }, [currentClass, reqSearchQuery])
+
+  // Toggle Category Collapsed state
+  const toggleCategoryCollapse = (cat: string) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [cat]: !prev[cat],
+    }))
+  }
+
+  const handleToggleAllCategories = (collapse: boolean) => {
+    const next: Record<string, boolean> = {}
+    Object.keys(requirementsByCategory).forEach((cat) => {
+      next[cat] = collapse
+    })
+    setCollapsedCategories(next)
+  }
 
   // ── Class Form Handlers ──
   const handleOpenAddClass = (typeOverride?: 'rank' | 'specialty') => {
@@ -192,7 +237,7 @@ export default function ProgressionConfigurator({ sections }: Props) {
           body: JSON.stringify({
             id: editingClass.id,
             name: classNameInput.trim(),
-            badge_icon: classIconInput,
+            badge_icon: classIconInput.trim() || '⚜️',
             class_type: classTypeInput,
             sort_order: classSortInput,
           }),
@@ -208,7 +253,7 @@ export default function ProgressionConfigurator({ sections }: Props) {
           body: JSON.stringify({
             section_type_id: selectedSectionId,
             name: classNameInput.trim(),
-            badge_icon: classIconInput,
+            badge_icon: classIconInput.trim() || '⚜️',
             class_type: classTypeInput,
             sort_order: classSortInput,
           }),
@@ -228,14 +273,17 @@ export default function ProgressionConfigurator({ sections }: Props) {
   }
 
   const handleDeleteClass = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete class "${name}" and all its requirements?`)) return
+    if (!confirm(`Are you sure you want to delete "${name}" and all its requirements? This action cannot be undone.`)) {
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch(`/api/configurator/progression/classes?id=${id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete class')
-      showStatus(`Class "${name}" deleted.`, 'success')
+      showStatus(`Deleted "${name}" successfully.`, 'success')
       fetchClasses(selectedSectionId)
     } catch (err: any) {
       showStatus(err.message || 'Error deleting class.', 'error')
@@ -244,14 +292,53 @@ export default function ProgressionConfigurator({ sections }: Props) {
     }
   }
 
+  // ── Clone / Duplicate Class Handler ──
+  const handleOpenCloneModal = (cls: ProgressionClass) => {
+    const otherSections = sections.filter((s) => s.id !== selectedSectionId)
+    setCloneTargetSectionId(otherSections[0]?.id || '')
+    setCloneNewClassName(cls.name)
+    setIsCloneModalOpen(true)
+  }
+
+  const handleExecuteClone = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!currentClass || !cloneTargetSectionId) return
+
+    setIsCloning(true)
+    try {
+      const res = await fetch('/api/configurator/progression/classes/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_class_id: currentClass.id,
+          target_section_type_id: cloneTargetSectionId,
+          new_class_name: cloneNewClassName.trim() || currentClass.name,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to clone stage.')
+      }
+
+      showStatus(data.message || 'Stage and requirements duplicated successfully!', 'success')
+      setIsCloneModalOpen(false)
+    } catch (err: any) {
+      console.error('[Clone Error]:', err)
+      showStatus(err.message || 'Error cloning stage.', 'error')
+    } finally {
+      setIsCloning(false)
+    }
+  }
+
   // ── Requirement Form Handlers ──
   const handleOpenAddReq = (prefillCategory?: string) => {
-    if (!currentClass) return
     setEditingReq(null)
-    setReqCategoryInput(prefillCategory || existingCategories[0] || 'Scouting')
+    setReqCategoryInput(prefillCategory || '')
     setReqTitleInput('')
     setReqDescInput('')
-    setReqSortInput((currentClass.progression_requirements?.length || 0) + 1)
+    const count = currentClass?.progression_requirements?.length || 0
+    setReqSortInput(count)
     setIsReqModalOpen(true)
   }
 
@@ -330,8 +417,10 @@ export default function ProgressionConfigurator({ sections }: Props) {
     }
   }
 
+  const totalCurrentReqs = currentClass?.progression_requirements?.length || 0
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Toast Alert */}
       {statusMessage && (
         <div
@@ -367,7 +456,7 @@ export default function ProgressionConfigurator({ sections }: Props) {
               </span>
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              Configure ranks, stages, categories & requirements bound to section types
+              Configure ranks, specialty badges, categories & requirements bound to section types
             </p>
           </div>
         </div>
@@ -517,7 +606,7 @@ export default function ProgressionConfigurator({ sections }: Props) {
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-lg shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-xl shrink-0">
                         {cls.badge_icon || '⚜️'}
                       </div>
                       <div className="min-w-0">
@@ -525,12 +614,20 @@ export default function ProgressionConfigurator({ sections }: Props) {
                           {cls.name}
                         </h4>
                         <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                          Stage {idx + 1} • {reqCount} {reqCount === 1 ? 'requirement' : 'requirements'}
+                          {reqCount} {reqCount === 1 ? 'requirement' : 'requirements'}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCloneModal(cls)}
+                        className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                        title="Duplicate stage to another section"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleOpenEditClass(cls)}
@@ -560,41 +657,87 @@ export default function ProgressionConfigurator({ sections }: Props) {
           )}
         </div>
 
-        {/* Right Column: Selected Class Requirements & Categories */}
+        {/* Right Column: Selected Class Requirements & Categories (Optimized for 40+ requirements) */}
         <div className="lg:col-span-8 space-y-4">
           {currentClass ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-5">
+              {/* Class Header & Action Buttons */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-3xl flex items-center justify-center shrink-0">
                     {currentClass.badge_icon || '⚜️'}
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                       <span>{currentClass.name}</span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                        {currentClass.progression_requirements?.length || 0} Total Requirements
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-100">
+                        {totalCurrentReqs} {totalCurrentReqs === 1 ? 'Requirement' : 'Requirements'}
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500 font-medium">
-                      Configure category tests for this rank (e.g. Sports, Scouting, Religion)
+                      Manage tests across categories (Sports, Scouting, First Aid, Religion...)
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenAddReq()}
-                  className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add Requirement</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCloneModal(currentClass)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 shrink-0"
+                    title="Clone this entire stage to another section"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Duplicate Stage</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAddReq()}
+                    className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Requirement</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Requirement Groups by Category */}
-              {Object.keys(requirementsByCategory).length === 0 ? (
-                <div className="py-10 text-center space-y-3">
+              {/* 40+ Requirements Navigation Bar: Fast Search + Expand/Collapse All */}
+              {totalCurrentReqs > 0 && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={`Search among ${totalCurrentReqs} requirements by keyword, category...`}
+                      value={reqSearchQuery}
+                      onChange={(e) => setReqSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-teal-700"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAllCategories(false)}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      Expand All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAllCategories(true)}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      Collapse All
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Requirement Groups by Category (Accordion for 40+ scaling) */}
+              {totalCurrentReqs === 0 ? (
+                <div className="py-12 text-center space-y-3">
                   <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center mx-auto">
                     <BookOpen className="h-6 w-6" />
                   </div>
@@ -610,71 +753,101 @@ export default function ProgressionConfigurator({ sections }: Props) {
                     + Add First Requirement
                   </button>
                 </div>
+              ) : Object.keys(requirementsByCategory).length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs font-bold">
+                  No requirements match &quot;{reqSearchQuery}&quot;
+                </div>
               ) : (
-                <div className="space-y-5">
-                  {Object.entries(requirementsByCategory).map(([category, reqs]) => (
-                    <div key={category} className="space-y-2">
-                      <div className="flex items-center justify-between bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/80">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-teal-600"></span>
-                          <h4 className="font-black text-xs text-slate-800 uppercase tracking-wide">
-                            {category}
-                          </h4>
-                          <span className="text-[10px] font-bold bg-white text-slate-600 px-1.5 py-0.2 rounded border border-slate-200">
-                            {reqs.length}
-                          </span>
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+                  {Object.entries(requirementsByCategory).map(([category, reqs]) => {
+                    const isCollapsed = !!collapsedCategories[category]
+
+                    return (
+                      <div key={category} className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
+                        <div
+                          onClick={() => toggleCategoryCollapse(category)}
+                          className="flex items-center justify-between cursor-pointer select-none"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-teal-600"></span>
+                            <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">
+                              {category}
+                            </h4>
+                            <span className="text-[10px] font-bold bg-teal-100 text-teal-900 px-2 py-0.2 rounded-full">
+                              {reqs.length} {reqs.length === 1 ? 'task' : 'tasks'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAddReq(category)}
+                              className="text-[11px] font-bold text-teal-800 hover:text-teal-900 flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs"
+                            >
+                              <Plus className="h-3 w-3" />
+                              <span>Add Task</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleCategoryCollapse(category)}
+                              className="p-1 text-slate-400 hover:text-slate-600"
+                            >
+                              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAddReq(category)}
-                          className="text-[11px] font-bold text-teal-800 hover:text-teal-900 flex items-center gap-1"
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span>Add to {category}</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        {reqs.map((req) => (
-                          <div
-                            key={req.id}
-                            className="bg-white p-3 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors flex items-start justify-between gap-3"
-                          >
-                            <div className="space-y-1 min-w-0">
-                              <p className="font-bold text-xs text-slate-900 leading-snug">
-                                {req.title}
-                              </p>
-                              {req.description && (
-                                <p className="text-[11px] text-slate-500 font-medium line-clamp-2 leading-relaxed">
-                                  {req.description}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditReq(req)}
-                                className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
-                                title="Edit requirement"
+                        {!isCollapsed && (
+                          <div className="space-y-1.5 pt-1">
+                            {reqs.map((req, idx) => (
+                              <div
+                                key={req.id}
+                                className="bg-white p-3 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors flex items-start justify-between gap-3 shadow-2xs"
                               >
-                                <Edit2 className="h-3 w-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteReq(req.id, req.title)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                title="Delete requirement"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
+                                <div className="space-y-0.5 min-w-0 flex-1">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-[10px] font-mono font-bold text-slate-400 mt-0.5">
+                                      #{idx + 1}
+                                    </span>
+                                    <div>
+                                      <p className="font-bold text-xs text-slate-900 leading-snug">
+                                        {req.title}
+                                      </p>
+                                      {req.description && (
+                                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                                          {req.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditReq(req)}
+                                    className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                                    title="Edit requirement"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteReq(req.id, req.title)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                    title="Delete requirement"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -687,17 +860,23 @@ export default function ProgressionConfigurator({ sections }: Props) {
         </div>
       </div>
 
-      {/* ── MODAL: ADD / EDIT CLASS ── */}
+      {/* ── MODAL: ADD / EDIT CLASS (With Custom Emoji Support) ── */}
       {isClassModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
+          <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
-                  {classIconInput}
+                <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center text-xl font-bold">
+                  {classIconInput || '⚜️'}
                 </div>
                 <h3 className="font-bold text-sm text-slate-900">
-                  {editingClass ? 'Edit Progression Stage' : 'New Progression Stage'}
+                  {editingClass
+                    ? classTypeInput === 'rank'
+                      ? 'Edit Rank Stage'
+                      : 'Edit Specialty Badge'
+                    : classTypeInput === 'rank'
+                    ? 'New Rank Stage'
+                    : 'New Specialty Badge'}
                 </h3>
               </div>
               <button onClick={() => setIsClassModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
@@ -778,30 +957,53 @@ export default function ProgressionConfigurator({ sections }: Props) {
                 <input
                   type="text"
                   required
-                  placeholder={classTypeInput === 'rank' ? 'e.g. Kouboul, Moubtada2...' : 'e.g. العقّاد (Al 3akkad)...'}
+                  placeholder={classTypeInput === 'rank' ? 'e.g. Kouboul, Moubtada2, Daraja Thanya...' : 'e.g. العقّاد (Al 3akkad)...'}
                   value={classNameInput}
                   onChange={(e) => setClassNameInput(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-900 focus:outline-none focus:border-teal-700"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Badge Icon / Emoji
+              {/* ── CUSTOM EMOJI INPUT & PRESETS ── */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-700">
+                  Custom Emoji / Badge Icon *
                 </label>
-                <div className="flex items-center gap-1.5 flex-wrap p-2 bg-slate-50 rounded-xl border border-slate-200">
-                  {BADGE_ICONS.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setClassIconInput(icon)}
-                      className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all ${
-                        classIconInput === icon ? 'bg-teal-800 text-white shadow-xs scale-110' : 'hover:bg-slate-200'
-                      }`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
+                
+                {/* Custom input box */}
+                <div className="flex items-center gap-2">
+                  <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                    {classIconInput || '⚜️'}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Type or paste any custom emoji (e.g. 🪢, 🧗, 🎯, 🌲)..."
+                    value={classIconInput}
+                    onChange={(e) => setClassIconInput(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold focus:outline-none focus:border-teal-700"
+                  />
+                </div>
+
+                {/* Preset Suggestions */}
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 block mb-1">
+                    Or pick from suggested icons:
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap p-2 bg-slate-50 rounded-xl border border-slate-200 max-h-32 overflow-y-auto">
+                    {BADGE_ICONS.map((icon) => (
+                      <button
+                        key={icon}
+                        type="button"
+                        onClick={() => setClassIconInput(icon)}
+                        className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all ${
+                          classIconInput === icon ? 'bg-teal-800 text-white shadow-xs scale-110' : 'hover:bg-slate-200'
+                        }`}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -838,21 +1040,99 @@ export default function ProgressionConfigurator({ sections }: Props) {
         </div>
       )}
 
+      {/* ── MODAL: DUPLICATE / CLONE STAGE TO ANOTHER SECTION ── */}
+      {isCloneModalOpen && currentClass && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center text-xl font-bold">
+                  <Copy className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Duplicate Stage</h3>
+                  <p className="text-[11px] text-slate-500">
+                    Copy {currentClass.name} with {totalCurrentReqs} requirements to another section
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsCloneModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteClone} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Target Section Type *
+                </label>
+                <select
+                  required
+                  value={cloneTargetSectionId}
+                  onChange={(e) => setCloneTargetSectionId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-900 focus:outline-none focus:border-teal-700"
+                >
+                  <option value="" disabled>Select target section...</option>
+                  {sections
+                    .filter((s) => s.id !== selectedSectionId)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.min_age || '?'}-{s.max_age || '?'} yrs)
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  New Stage Name in Target Section
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={cloneNewClassName}
+                  onChange={(e) => setCloneNewClassName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-900 focus:outline-none focus:border-teal-700"
+                />
+              </div>
+
+              <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 text-[11px] text-teal-950 font-medium">
+                💡 All <strong>{totalCurrentReqs} requirements</strong>, categories, and criteria will be duplicated seamlessly into the target section!
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCloneModalOpen(false)}
+                  className="flex-1 py-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCloning || !cloneTargetSectionId}
+                  className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  {isCloning ? 'Duplicating...' : 'Duplicate Now'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL: ADD / EDIT REQUIREMENT ── */}
       {isReqModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4">
+          <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
-                  <Sparkles className="h-4 w-4" />
+                <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold text-sm">
+                  {editingReq ? '✏️' : '➕'}
                 </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900">
-                    {editingReq ? 'Edit Requirement' : 'New Requirement'}
-                  </h3>
-                  <p className="text-[10px] text-slate-500">For {currentClass?.name}</p>
-                </div>
+                <h3 className="font-bold text-sm text-slate-900">
+                  {editingReq ? 'Edit Requirement' : 'New Requirement'}
+                </h3>
               </div>
               <button onClick={() => setIsReqModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
                 <X className="h-5 w-5" />
@@ -860,35 +1140,36 @@ export default function ProgressionConfigurator({ sections }: Props) {
             </div>
 
             <form onSubmit={handleSaveReq} className="space-y-3.5">
-              {/* Category (Dynamic Autocomplete or Free Text) */}
+              {/* Category with Dynamic Autocomplete & Free-Text */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Category * (Free text or select existing)
+                  Category * (Type new or pick existing)
                 </label>
                 <input
                   type="text"
                   required
-                  list="category-suggestions"
-                  placeholder="e.g. Sports, Scouts, Religion, Service..."
+                  list="existing-categories-list"
+                  placeholder="e.g. Sports, Scouting, Religion, Service, Nature..."
                   value={reqCategoryInput}
                   onChange={(e) => setReqCategoryInput(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:border-teal-700"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-900 focus:outline-none focus:border-teal-700"
                 />
-                <datalist id="category-suggestions">
+                <datalist id="existing-categories-list">
                   {existingCategories.map((cat) => (
                     <option key={cat} value={cat} />
                   ))}
                 </datalist>
 
+                {/* Clickable category pills */}
                 {existingCategories.length > 0 && (
-                  <div className="flex items-center gap-1 flex-wrap mt-1.5">
-                    <span className="text-[10px] text-slate-400 font-bold">Suggestions:</span>
-                    {existingCategories.slice(0, 5).map((cat) => (
+                  <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                    <span className="text-[10px] text-slate-400 font-medium">Suggestions:</span>
+                    {existingCategories.map((cat) => (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => setReqCategoryInput(cat)}
-                        className="text-[10px] bg-slate-100 hover:bg-teal-50 hover:text-teal-800 text-slate-600 px-2 py-0.5 rounded-md font-bold transition-colors"
+                        className="text-[10px] bg-slate-100 hover:bg-teal-50 hover:text-teal-800 text-slate-600 px-2 py-0.5 rounded-md font-medium transition-colors"
                       >
                         {cat}
                       </button>
@@ -900,26 +1181,26 @@ export default function ProgressionConfigurator({ sections }: Props) {
               {/* Requirement Title */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Requirement Title *
+                  Requirement Title / Goal *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Run 10 km, Attend 10 masses, Tie 6 knots..."
+                  placeholder="e.g. Run 10 km, Attend 10 masses, Tie 12 scout knots..."
                   value={reqTitleInput}
                   onChange={(e) => setReqTitleInput(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-900 focus:outline-none focus:border-teal-700"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-medium focus:outline-none focus:border-teal-700"
                 />
               </div>
 
-              {/* Description */}
+              {/* Description / Pass Criteria */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Description / Verification Details (Optional)
+                  Description / Pass Criteria (Optional)
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Additional context or pass criteria..."
+                  placeholder="Detailed criteria, instructions, or testing guidelines for the leader..."
                   value={reqDescInput}
                   onChange={(e) => setReqDescInput(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-medium focus:outline-none focus:border-teal-700"
