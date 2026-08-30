@@ -14,15 +14,22 @@ export default async function PlannerPage() {
   }
 
   // 1. Fetch Profile & Role
-  const { data: profile } = await supabase
+  const groupId = user?.app_metadata?.group_id || user?.user_metadata?.group_id || null
+  const role = user?.app_metadata?.role_scope || user?.app_metadata?.role || user?.user_metadata?.role || 'leader'
+  const userTroopId = user?.app_metadata?.troop_id || user?.user_metadata?.troop_id || null
+
+  const { data: userProfile } = await supabase
     .from('profiles')
-    .select('id, full_name, role, roles, current_role, group_id, troop_id')
+    .select('id, full_name, email, rank')
     .eq('id', user.id)
     .single()
 
-  const role = user?.app_metadata?.role || profile?.current_role || profile?.role || 'leader'
-  const groupId = user?.app_metadata?.group_id || profile?.group_id
-  const userTroopId = user?.app_metadata?.troop_id || profile?.troop_id
+  const userName =
+    userProfile?.full_name ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email ||
+    'Leader'
 
   // 2. Fetch Group details
   let groupName = 'Scout des Cèdres'
@@ -90,7 +97,7 @@ export default async function PlannerPage() {
   if (user && !leaders.some((l: any) => l.id === user.id)) {
     leaders.unshift({
       id: user.id,
-      fullName: profile?.full_name || user.email || 'Current Leader',
+      fullName: userName,
       role: role || 'Leader',
       troopId: userTroopId || null,
     })
@@ -171,7 +178,7 @@ export default async function PlannerPage() {
       groupName={groupName}
       groupId={groupId || ''}
       currentRole={role}
-      userName={profile?.full_name || 'Leader'}
+      userName={userName}
       userId={user.id}
       userTroopId={userTroopId || null}
       troops={troops}

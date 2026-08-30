@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import DashboardShell from '../DashboardShell'
+import { formatLocalDateKey } from '@/utils/dateTimeUtils'
 import {
   Calendar,
   Clock,
@@ -31,7 +32,14 @@ import {
   Shield,
   FileText,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Radio,
+  Lock,
+  Eye,
+  Play,
+  SkipForward,
+  FastForward,
+  RotateCcw
 } from 'lucide-react'
 
 // ── Types ──
@@ -280,10 +288,10 @@ export default function PlannerManagement({
   const isCouncil =
     currentRole === 'chef_groupe' ||
     currentRole === 'assistant_chef_groupe' ||
-    currentRole === 'amin_serr_group'
+    currentRole === 'amin_serr_group' ||
+    currentRole === 'configurator'
   const isTroopLeader =
     currentRole === 'ka2ed_fer2a' || currentRole === 'mouse3ed_ka2ed_fer2a'
-  const canEditAny = isCouncil
   const effectiveTroopId = isTroopLeader ? userTroopId || troops[0]?.id : null
 
   // State
@@ -307,22 +315,30 @@ export default function PlannerManagement({
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false)
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false)
+  const [isLiveTrackerModalOpen, setIsLiveTrackerModalOpen] = useState(false)
+  const [liveTrackerPlan, setLiveTrackerPlan] = useState<MeetingPlan | null>(null)
   const [duplicateTargetDate, setDuplicateTargetDate] = useState('')
   const [duplicateTargetTroop, setDuplicateTargetTroop] = useState('')
   const [planToDuplicate, setPlanToDuplicate] = useState<MeetingPlan | null>(null)
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false)
 
-  // Real-time ticking for current block
+  // Manual step override in live tracker modal
+  const [manualTrackerStepIndex, setManualTrackerStepIndex] = useState<number | null>(null)
+
+  // Real-time ticking for current block (safe local time)
   const [currentTimeStr, setCurrentTimeStr] = useState('')
+  const [todayDateStr, setTodayDateStr] = useState('')
+
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
       const hh = String(now.getHours()).padStart(2, '0')
       const mm = String(now.getMinutes()).padStart(2, '0')
       setCurrentTimeStr(`${hh}:${mm}`)
+      setTodayDateStr(formatLocalDateKey(now))
     }
     updateTime()
-    const timer = setInterval(updateTime, 30000)
+    const timer = setInterval(updateTime, 15000)
     return () => clearInterval(timer)
   }, [])
 
@@ -330,6 +346,22 @@ export default function PlannerManagement({
     setStatusMessage({ text, type })
     setTimeout(() => setStatusMessage(null), 5000)
   }
+
+  // ── Permission Helper: Can Current User Edit a Specific Plan? ──
+  const canEditPlan = (plan?: MeetingPlan | null) => {
+    if (!plan) return false
+    if (isCouncil) return true
+    if (isTroopLeader && userTroopId) {
+      return plan.troop_id === userTroopId
+    }
+    return false
+  }
+
+  const isReadOnlyMode = useMemo(() => {
+    if (isNewPlan) return false
+    if (!editingPlan) return false
+    return !canEditPlan(editingPlan)
+  }, [isNewPlan, editingPlan, isCouncil, isTroopLeader, userTroopId])
 
   // ── Helper: Format Time Computations ──
   const addMinutesToTime = (timeStr: string, minutes: number): string => {
@@ -340,16 +372,20 @@ export default function PlannerManagement({
     return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`
   }
 
-  // Compute block time spans dynamically
-  const computedBlockTimes = useMemo(() => {
-    if (!editingPlan) return []
-    let currentStart = editingPlan.start_time || '14:00'
-    return (editingPlan.schedule_blocks || []).map((b) => {
+  // Compute block time spans dynamically for any plan
+  const getComputedBlockTimes = (plan: MeetingPlan | null) => {
+    if (!plan) return []
+    let currentStart = plan.start_time || '14:00'
+    return (plan.schedule_blocks || []).map((b) => {
       const start = currentStart
       const end = addMinutesToTime(start, Number(b.durationMin) || 15)
       currentStart = end
       return { id: b.id, start, end }
     })
+  }
+
+  const computedBlockTimes = useMemo(() => {
+    return getComputedBlockTimes(editingPlan)
   }, [editingPlan?.start_time, editingPlan?.schedule_blocks])
 
   // Total computed duration of current meeting
@@ -361,39 +397,54 @@ export default function PlannerManagement({
     )
   }, [editingPlan?.schedule_blocks])
 
-  // Live "On-Duty" block computation
-  const liveActiveBlock = useMemo(() => {
-    if (!editingPlan || !currentTimeStr) return null
-    const todayStr = new Date().toISOString().split('T')[0]
-    if (editingPlan.meeting_date !== todayStr) return null
+  // ── Live "On-Duty" block computation ──
+  const getLiveBlockForPlan = (plan: MeetingPlan | null) => {
+    if (!plan || !currentTimeStr || !todayDateStr) return null
+    if (plan.meeting_date !== todayDateStr) return null
 
-    for (let i = 0; i < (editingPlan.schedule_blocks || []).length; i++) {
-      const block = editingPlan.schedule_blocks[i]
-      const timing = computedBlockTimes[i]
+    const times = getComputedBlockTimes(plan)
+    for (let i = 0; i < (plan.schedule_blocks || []).length; i++) {
+      const block = plan.schedule_blocks[i]
+      const timing = times[i]
       if (
         timing &&
         currentTimeStr >= timing.start &&
         currentTimeStr < timing.end
       ) {
-        // Calculate minutes remaining
         const [currH, currM] = currentTimeStr.split(':').map(Number)
         const [endH, endM] = timing.end.split(':').map(Number)
         const rem = endH * 60 + endM - (currH * 60 + currM)
         return {
+          index: i,
           block,
           timing,
           minutesLeft: Math.max(1, rem),
-          nextBlock: editingPlan.schedule_blocks[i + 1] || null,
+          nextBlock: plan.schedule_blocks[i + 1] || null,
         }
       }
     }
     return null
-  }, [editingPlan, currentTimeStr, computedBlockTimes])
+  }
+
+  // Active meeting happening today for main hub banner
+  const todayActiveMeeting = useMemo(() => {
+    if (!todayDateStr) return null
+    const candidatePlans = isTroopLeader && userTroopId
+      ? plans.filter((p) => p.troop_id === userTroopId)
+      : plans
+
+    return candidatePlans.find((p) => p.meeting_date === todayDateStr) || null
+  }, [plans, todayDateStr, isTroopLeader, userTroopId])
+
+  const liveActiveBlockForEditing = useMemo(() => {
+    return getLiveBlockForPlan(editingPlan)
+  }, [editingPlan, currentTimeStr, todayDateStr])
 
   // ── Handlers: Create & Edit Plan ──
   const handleOpenNewPlan = (template?: (typeof PRESET_TEMPLATES)[0]) => {
-    const targetTroop = effectiveTroopId || troops[0]?.id || ''
-    const todayStr = new Date().toISOString().split('T')[0]
+    // If troop leader, strictly lock to their troop
+    const targetTroop = isTroopLeader && userTroopId ? userTroopId : troops[0]?.id || ''
+    const todayStr = formatLocalDateKey(new Date())
 
     let initialBlocks: ScheduleBlock[] = []
     let theme = ''
@@ -476,9 +527,15 @@ export default function PlannerManagement({
     setActiveView('editor')
   }
 
+  const handleOpenLiveTracker = (plan: MeetingPlan) => {
+    setLiveTrackerPlan(plan)
+    setManualTrackerStepIndex(null)
+    setIsLiveTrackerModalOpen(true)
+  }
+
   // ── Block Mutations in Editor ──
   const handleAddBlock = () => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const newBlock: ScheduleBlock = {
       id: `blk-${Date.now()}`,
       category: 'workshop',
@@ -506,11 +563,10 @@ export default function PlannerManagement({
     field: keyof ScheduleBlock,
     val: any
   ) => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const blocks = [...editingPlan.schedule_blocks]
     blocks[index] = { ...blocks[index], [field]: val }
 
-    // If duration changed, recompute meeting end time
     let newEndTime = editingPlan.end_time
     if (field === 'durationMin') {
       const totalMin = blocks.reduce(
@@ -528,7 +584,7 @@ export default function PlannerManagement({
   }
 
   const handleRemoveBlock = (index: number) => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const blocks = editingPlan.schedule_blocks.filter((_, i) => i !== index)
     const totalMin = blocks.reduce(
       (acc, b) => acc + (Number(b.durationMin) || 0),
@@ -543,7 +599,7 @@ export default function PlannerManagement({
   }
 
   const handleMoveBlock = (index: number, direction: 'up' | 'down') => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const blocks = [...editingPlan.schedule_blocks]
     const targetIdx = direction === 'up' ? index - 1 : index + 1
     if (targetIdx < 0 || targetIdx >= blocks.length) return
@@ -555,7 +611,7 @@ export default function PlannerManagement({
 
   // ── Materials Checklist Mutations ──
   const handleAddMaterialItem = () => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const newItem: MaterialItem = {
       id: `mat-${Date.now()}`,
       itemName: '',
@@ -574,14 +630,14 @@ export default function PlannerManagement({
     field: keyof MaterialItem,
     val: any
   ) => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const list = [...(editingPlan.materials_checklist || [])]
     list[index] = { ...list[index], [field]: val }
     setEditingPlan({ ...editingPlan, materials_checklist: list })
   }
 
   const handleRemoveMaterialItem = (index: number) => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     const list = (editingPlan.materials_checklist || []).filter(
       (_, i) => i !== index
     )
@@ -590,11 +646,14 @@ export default function PlannerManagement({
 
   // ── Save Plan (POST / PUT) ──
   const handleSavePlan = async () => {
-    if (!editingPlan) return
+    if (!editingPlan || isReadOnlyMode) return
     if (!editingPlan.title.trim()) {
       return showStatus('Please enter a meeting title.', 'error')
     }
-    if (!editingPlan.troop_id) {
+
+    // Ensure troop leader cannot assign to another troop
+    const targetTroopId = isTroopLeader && userTroopId ? userTroopId : editingPlan.troop_id
+    if (!targetTroopId) {
       return showStatus('Please select a target Troop unit.', 'error')
     }
 
@@ -606,7 +665,7 @@ export default function PlannerManagement({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             groupId,
-            troopId: editingPlan.troop_id,
+            troopId: targetTroopId,
             eventId: editingPlan.event_id,
             title: editingPlan.title,
             theme: editingPlan.theme,
@@ -661,6 +720,10 @@ export default function PlannerManagement({
 
   // ── Delete Plan ──
   const handleDeletePlan = async (id: string) => {
+    const target = plans.find((p) => p.id === id)
+    if (!canEditPlan(target)) {
+      return showStatus('You do not have permission to delete this plan.', 'error')
+    }
     if (!confirm('Are you sure you want to delete this meeting canevas?')) return
     setLoading(true)
     try {
@@ -684,11 +747,11 @@ export default function PlannerManagement({
   // ── Duplicate Plan ──
   const handleOpenDuplicate = (plan: MeetingPlan) => {
     setPlanToDuplicate(plan)
-    // Default next week
     const curr = new Date(plan.meeting_date)
     curr.setDate(curr.getDate() + 7)
-    setDuplicateTargetDate(curr.toISOString().split('T')[0])
-    setDuplicateTargetTroop(plan.troop_id)
+    setDuplicateTargetDate(formatLocalDateKey(curr))
+    // If troop leader, default target to their troop
+    setDuplicateTargetTroop(isTroopLeader && userTroopId ? userTroopId : plan.troop_id)
     setIsDuplicateModalOpen(true)
   }
 
@@ -702,15 +765,15 @@ export default function PlannerManagement({
         body: JSON.stringify({
           sourcePlanId: planToDuplicate.id,
           targetDate: duplicateTargetDate,
-          targetTroopId: duplicateTargetTroop,
-          targetTitle: `${planToDuplicate.title} (Next Week)`,
+          targetTroopId: isTroopLeader && userTroopId ? userTroopId : duplicateTargetTroop,
+          targetTitle: `${planToDuplicate.title} (Copy)`,
         }),
       })
       const data = await res.json()
       if (!res.ok || data.error) throw new Error(data.error || 'Failed to duplicate')
       setPlans((prev) => [data.plan, ...prev])
       setIsDuplicateModalOpen(false)
-      showStatus('Meeting plan duplicated for next week!', 'success')
+      showStatus('Meeting plan duplicated successfully!', 'success')
       handleOpenEditPlan(data.plan)
     } catch (err: any) {
       showStatus(err.message || 'Error duplicating plan.', 'error')
@@ -825,7 +888,7 @@ export default function PlannerManagement({
                 Session Planner (Canevas)
               </h1>
               <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
-                Weekly meeting schedules, duties & gear
+                {isTroopLeader ? 'My Troop Meeting Schedule & Plans' : 'Weekly meeting schedules & staff duties'}
               </p>
             </div>
           </div>
@@ -865,6 +928,42 @@ export default function PlannerManagement({
         ══════════════════════════════════════════════════════════ */}
         {activeView === 'list' && (
           <>
+            {/* LIVE TRACKER HUB BANNER (If a meeting is taking place today) */}
+            {todayActiveMeeting && (
+              <div className="bg-gradient-to-r from-teal-950 via-teal-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl border border-teal-700/80 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-teal-800/80 border border-teal-600 flex items-center justify-center text-teal-200 shrink-0 relative">
+                    <Radio className="h-5 w-5 animate-pulse text-emerald-400" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500 text-white uppercase tracking-wider">
+                        LIVE MEETING TODAY
+                      </span>
+                      <span className="text-xs font-mono font-bold text-teal-300">
+                        {todayActiveMeeting.start_time} – {todayActiveMeeting.end_time}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-black truncate mt-0.5">
+                      {todayActiveMeeting.title}
+                    </h3>
+                    <p className="text-[11px] text-teal-200 truncate">
+                      {todayActiveMeeting.troops?.name || 'Troop'} • {todayActiveMeeting.schedule_blocks?.length || 0} activity blocks
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleOpenLiveTracker(todayActiveMeeting)}
+                  className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Open Live Tracker</span>
+                </button>
+              </div>
+            )}
+
             {/* Filter & Search Bar */}
             <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs space-y-2">
               <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
@@ -893,17 +992,20 @@ export default function PlannerManagement({
                   </button>
                   {troops.map((t) => {
                     const count = plans.filter((p) => p.troop_id === t.id).length
+                    const isMyTroop = isTroopLeader && userTroopId === t.id
                     return (
                       <button
                         key={t.id}
                         onClick={() => setSelectedTroopFilter(t.id)}
-                        className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
                           selectedTroopFilter === t.id
                             ? 'bg-teal-800 text-white shadow-2xs'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
-                        {t.name} ({count})
+                        {isMyTroop && <span>⭐</span>}
+                        <span>{t.name}</span>
+                        <span className="opacity-75">({count})</span>
                       </button>
                     )
                   })}
@@ -936,16 +1038,15 @@ export default function PlannerManagement({
                 {filteredPlans.map((plan) => {
                   const troopObj = troops.find((t) => t.id === plan.troop_id)
                   const blocksCount = (plan.schedule_blocks || []).length
-                  const isToday =
-                    plan.meeting_date ===
-                    new Date().toISOString().split('T')[0]
+                  const isToday = plan.meeting_date === todayDateStr
+                  const canEdit = canEditPlan(plan)
 
                   return (
                     <div
                       key={plan.id}
                       className={`bg-white border rounded-2xl p-3.5 shadow-2xs transition-all space-y-2.5 flex flex-col justify-between ${
                         isToday
-                          ? 'border-teal-400 ring-2 ring-teal-600/10'
+                          ? 'border-emerald-400 ring-2 ring-emerald-500/20'
                           : 'border-slate-200/90'
                       }`}
                     >
@@ -958,6 +1059,11 @@ export default function PlannerManagement({
                             {isToday && (
                               <span className="text-[10px] font-black px-1.5 py-0.2 rounded-md bg-emerald-500 text-white animate-pulse">
                                 TODAY
+                              </span>
+                            )}
+                            {!canEdit && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-0.5">
+                                <Eye className="h-3 w-3" /> Inspiration
                               </span>
                             )}
                           </div>
@@ -999,6 +1105,13 @@ export default function PlannerManagement({
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                         <div className="flex items-center gap-1">
                           <button
+                            onClick={() => handleOpenLiveTracker(plan)}
+                            className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Open Live Tracker"
+                          >
+                            <Radio className="h-3.5 w-3.5" />
+                          </button>
+                          <button
                             onClick={() => handleOpenDuplicate(plan)}
                             className="p-1.5 text-slate-500 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
                             title="Duplicate for next week"
@@ -1015,7 +1128,7 @@ export default function PlannerManagement({
                           >
                             <MessageSquare className="h-3.5 w-3.5" />
                           </button>
-                          {(canEditAny || plan.troop_id === effectiveTroopId) && (
+                          {canEdit && (
                             <button
                               onClick={() => handleDeletePlan(plan.id)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
@@ -1028,9 +1141,13 @@ export default function PlannerManagement({
 
                         <button
                           onClick={() => handleOpenEditPlan(plan)}
-                          className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1"
+                          className={`font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1 active:scale-95 ${
+                            canEdit
+                              ? 'bg-teal-800 hover:bg-teal-700 text-white'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
+                          }`}
                         >
-                          <span>Open Canevas</span>
+                          {canEdit ? <span>Edit Canevas</span> : <span>View Reference</span>}
                         </button>
                       </div>
                     </div>
@@ -1046,28 +1163,54 @@ export default function PlannerManagement({
         ══════════════════════════════════════════════════════════ */}
         {activeView === 'editor' && editingPlan && (
           <div className="space-y-3">
-            {/* LIVE ON-DUTY TICKER (If active meeting today) */}
-            {liveActiveBlock && (
-              <div className="bg-emerald-900 text-white p-3 rounded-2xl border border-emerald-700 shadow-sm flex items-center justify-between gap-3 animate-in fade-in">
+            {/* Read-Only Inspiration Notice for Troop Leaders */}
+            {isReadOnlyMode && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-2xl text-xs flex items-center justify-between gap-2 shadow-2xs animate-in fade-in">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Eye className="h-4 w-4 text-amber-700 shrink-0" />
+                  <span className="font-medium">
+                    Viewing reference canevas from <strong>{troops.find((t) => t.id === editingPlan.troop_id)?.name}</strong> (Read-Only).
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleOpenDuplicate(editingPlan)}
+                  className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all shrink-0 flex items-center gap-1"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span>Duplicate for My Unit</span>
+                </button>
+              </div>
+            )}
+
+            {/* LIVE ON-DUTY TICKER IN EDITOR */}
+            {liveActiveBlockForEditing && (
+              <div className="bg-emerald-950 text-white p-3 rounded-2xl border border-emerald-700 shadow-sm flex items-center justify-between gap-3 animate-in fade-in">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-                      Active Now • {liveActiveBlock.timing.start} –{' '}
-                      {liveActiveBlock.timing.end}
+                      Active Now • {liveActiveBlockForEditing.timing.start} –{' '}
+                      {liveActiveBlockForEditing.timing.end}
                     </p>
                     <h4 className="text-xs sm:text-sm font-black truncate">
-                      {liveActiveBlock.block.title}
+                      {liveActiveBlockForEditing.block.title}
                     </h4>
                     <p className="text-[10px] text-emerald-200">
-                      Lead: {liveActiveBlock.block.leadLeaderName || 'Leader'}
+                      Lead: {liveActiveBlockForEditing.block.leadLeaderName || 'Leader'}
                     </p>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="text-sm sm:text-base font-black px-2 py-0.5 rounded-lg bg-emerald-800 border border-emerald-600">
-                    {liveActiveBlock.minutesLeft}m left
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm font-black px-2 py-0.5 rounded-lg bg-emerald-800 border border-emerald-600">
+                    {liveActiveBlockForEditing.minutesLeft}m left
                   </span>
+                  <button
+                    onClick={() => handleOpenLiveTracker(editingPlan)}
+                    className="p-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors"
+                    title="Expand Live Tracker"
+                  >
+                    <Radio className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )}
@@ -1081,25 +1224,28 @@ export default function PlannerManagement({
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnlyMode}
                     value={editingPlan.title}
                     onChange={(e) =>
                       setEditingPlan({ ...editingPlan, title: e.target.value })
                     }
                     placeholder="e.g. Séance Froissartage & Noeuds"
-                    className="w-full mt-0.5 px-3 py-1.5 text-xs sm:text-sm font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                    className="w-full mt-0.5 px-3 py-1.5 text-xs sm:text-sm font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none disabled:opacity-60"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase">
-                    Scout Unit / Troop
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase flex items-center justify-between">
+                    <span>Scout Unit / Troop</span>
+                    {isTroopLeader && <span className="text-teal-700">🔒 Locked</span>}
                   </label>
                   <select
+                    disabled={isReadOnlyMode || isTroopLeader}
                     value={editingPlan.troop_id}
                     onChange={(e) =>
                       setEditingPlan({ ...editingPlan, troop_id: e.target.value })
                     }
-                    className="w-full mt-0.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-teal-700 focus:outline-none"
+                    className="w-full mt-0.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-teal-700 focus:outline-none disabled:opacity-75"
                   >
                     {troops.map((t) => (
                       <option key={t.id} value={t.id}>
@@ -1117,6 +1263,7 @@ export default function PlannerManagement({
                   </label>
                   <input
                     type="date"
+                    disabled={isReadOnlyMode}
                     value={editingPlan.meeting_date}
                     onChange={(e) =>
                       setEditingPlan({
@@ -1124,7 +1271,7 @@ export default function PlannerManagement({
                         meeting_date: e.target.value,
                       })
                     }
-                    className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800"
+                    className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 disabled:opacity-60"
                   />
                 </div>
 
@@ -1134,6 +1281,7 @@ export default function PlannerManagement({
                   </label>
                   <input
                     type="time"
+                    disabled={isReadOnlyMode}
                     value={editingPlan.start_time}
                     onChange={(e) => {
                       const newStart = e.target.value
@@ -1147,7 +1295,7 @@ export default function PlannerManagement({
                         end_time: newEnd,
                       })
                     }}
-                    className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800"
+                    className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 disabled:opacity-60"
                   />
                 </div>
 
@@ -1169,6 +1317,7 @@ export default function PlannerManagement({
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnlyMode}
                     value={editingPlan.location || ''}
                     onChange={(e) =>
                       setEditingPlan({
@@ -1177,7 +1326,7 @@ export default function PlannerManagement({
                       })
                     }
                     placeholder="Local du Groupe"
-                    className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800"
+                    className="w-full mt-0.5 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -1189,12 +1338,13 @@ export default function PlannerManagement({
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnlyMode}
                     value={editingPlan.theme || ''}
                     onChange={(e) =>
                       setEditingPlan({ ...editingPlan, theme: e.target.value })
                     }
                     placeholder="e.g. Aventure dans la Jungle"
-                    className="w-full mt-0.5 px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800"
+                    className="w-full mt-0.5 px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 disabled:opacity-60"
                   />
                 </div>
 
@@ -1204,6 +1354,7 @@ export default function PlannerManagement({
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnlyMode}
                     value={editingPlan.objectives || ''}
                     onChange={(e) =>
                       setEditingPlan({
@@ -1212,7 +1363,7 @@ export default function PlannerManagement({
                       })
                     }
                     placeholder="e.g. Noeuds de cabestan & esprit d'équipe"
-                    className="w-full mt-0.5 px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800"
+                    className="w-full mt-0.5 px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -1229,13 +1380,15 @@ export default function PlannerManagement({
                   </span>
                 </h3>
 
-                <button
-                  onClick={handleAddBlock}
-                  className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-2.5 py-1 rounded-xl text-xs shadow-2xs flex items-center gap-1"
-                >
-                  <Plus className="h-3 w-3" />
-                  <span>Add Step</span>
-                </button>
+                {!isReadOnlyMode && (
+                  <button
+                    onClick={handleAddBlock}
+                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-2.5 py-1 rounded-xl text-xs shadow-2xs flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add Step</span>
+                  </button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1257,6 +1410,7 @@ export default function PlannerManagement({
                           </span>
 
                           <select
+                            disabled={isReadOnlyMode}
                             value={block.category}
                             onChange={(e) =>
                               handleUpdateBlock(
@@ -1265,7 +1419,7 @@ export default function PlannerManagement({
                                 e.target.value as any
                               )
                             }
-                            className={`text-xs font-black px-2 py-0.5 rounded-lg border focus:outline-none ${catConfig.bg} ${catConfig.text} ${catConfig.border}`}
+                            className={`text-xs font-black px-2 py-0.5 rounded-lg border focus:outline-none disabled:opacity-75 ${catConfig.bg} ${catConfig.text} ${catConfig.border}`}
                           >
                             {Object.entries(CATEGORIES).map(([key, cfg]) => (
                               <option key={key} value={key}>
@@ -1276,64 +1430,66 @@ export default function PlannerManagement({
                         </div>
 
                         {/* Duration Fast Stepper & Reordering */}
-                        <div className="flex items-center gap-1">
-                          <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                        {!isReadOnlyMode && (
+                          <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                              <button
+                                onClick={() =>
+                                  handleUpdateBlock(
+                                    idx,
+                                    'durationMin',
+                                    Math.max(5, Number(block.durationMin) - 5)
+                                  )
+                                }
+                                className="px-1.5 py-0.5 text-xs font-bold text-slate-600 hover:text-slate-900"
+                              >
+                                -
+                              </button>
+                              <span className="px-1 text-[11px] font-black text-slate-800 min-w-8 text-center">
+                                {block.durationMin}m
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleUpdateBlock(
+                                    idx,
+                                    'durationMin',
+                                    Number(block.durationMin) + 5
+                                  )
+                                }
+                                className="px-1.5 py-0.5 text-xs font-bold text-slate-600 hover:text-slate-900"
+                              >
+                                +
+                              </button>
+                            </div>
+
                             <button
-                              onClick={() =>
-                                handleUpdateBlock(
-                                  idx,
-                                  'durationMin',
-                                  Math.max(5, Number(block.durationMin) - 5)
-                                )
-                              }
-                              className="px-1.5 py-0.5 text-xs font-bold text-slate-600 hover:text-slate-900"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveBlock(idx, 'up')}
+                              className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-30"
+                              title="Move Up"
                             >
-                              -
+                              <ChevronUp className="h-3.5 w-3.5" />
                             </button>
-                            <span className="px-1 text-[11px] font-black text-slate-800 min-w-8 text-center">
-                              {block.durationMin}m
-                            </span>
                             <button
-                              onClick={() =>
-                                handleUpdateBlock(
-                                  idx,
-                                  'durationMin',
-                                  Number(block.durationMin) + 5
-                                )
+                              disabled={
+                                idx === editingPlan.schedule_blocks.length - 1
                               }
-                              className="px-1.5 py-0.5 text-xs font-bold text-slate-600 hover:text-slate-900"
+                              onClick={() => handleMoveBlock(idx, 'down')}
+                              className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-30"
+                              title="Move Down"
                             >
-                              +
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => handleRemoveBlock(idx)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                              title="Delete Step"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
-
-                          <button
-                            disabled={idx === 0}
-                            onClick={() => handleMoveBlock(idx, 'up')}
-                            className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-30"
-                            title="Move Up"
-                          >
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            disabled={
-                              idx === editingPlan.schedule_blocks.length - 1
-                            }
-                            onClick={() => handleMoveBlock(idx, 'down')}
-                            className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-30"
-                            title="Move Down"
-                          >
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => handleRemoveBlock(idx)}
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                            title="Delete Step"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                        )}
                       </div>
 
                       {/* Middle: Title & Leader */}
@@ -1341,17 +1497,19 @@ export default function PlannerManagement({
                         <div className="sm:col-span-2">
                           <input
                             type="text"
+                            disabled={isReadOnlyMode}
                             value={block.title}
                             onChange={(e) =>
                               handleUpdateBlock(idx, 'title', e.target.value)
                             }
                             placeholder="Activity / Game Title..."
-                            className="w-full px-2.5 py-1 text-xs font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                            className="w-full px-2.5 py-1 text-xs font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none disabled:opacity-75"
                           />
                         </div>
 
                         <div>
                           <select
+                            disabled={isReadOnlyMode}
                             value={block.leadLeaderId || ''}
                             onChange={(e) => {
                               const sel = leaders.find(
@@ -1368,7 +1526,7 @@ export default function PlannerManagement({
                                 sel?.fullName || ''
                               )
                             }}
-                            className="w-full px-2 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-teal-700 focus:outline-none"
+                            className="w-full px-2 py-1 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-teal-700 focus:outline-none disabled:opacity-75"
                           >
                             <option value="">-- Assign Lead --</option>
                             {leaders.map((l) => (
@@ -1384,21 +1542,23 @@ export default function PlannerManagement({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         <input
                           type="text"
+                          disabled={isReadOnlyMode}
                           value={block.description || ''}
                           onChange={(e) =>
                             handleUpdateBlock(idx, 'description', e.target.value)
                           }
                           placeholder="Instructions, rules or song title..."
-                          className="w-full px-2.5 py-1 text-[11px] rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-700"
+                          className="w-full px-2.5 py-1 text-[11px] rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 disabled:opacity-75"
                         />
                         <input
                           type="text"
+                          disabled={isReadOnlyMode}
                           value={block.materials || ''}
                           onChange={(e) =>
                             handleUpdateBlock(idx, 'materials', e.target.value)
                           }
                           placeholder="🎒 Required materials (e.g. 4 ropes, ball)..."
-                          className="w-full px-2.5 py-1 text-[11px] rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-700"
+                          className="w-full px-2.5 py-1 text-[11px] rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-700 disabled:opacity-75"
                         />
                       </div>
                     </div>
@@ -1413,12 +1573,14 @@ export default function PlannerManagement({
                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
                   <span>🎒 Gear & Materials Checklist</span>
                 </h3>
-                <button
-                  onClick={handleAddMaterialItem}
-                  className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-[11px] border border-slate-300 transition-all flex items-center gap-1"
-                >
-                  <Plus className="h-3 w-3" /> Add Item
-                </button>
+                {!isReadOnlyMode && (
+                  <button
+                    onClick={handleAddMaterialItem}
+                    className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-[11px] border border-slate-300 transition-all flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" /> Add Item
+                  </button>
+                )}
               </div>
 
               {(editingPlan.materials_checklist || []).length === 0 ? (
@@ -1433,6 +1595,7 @@ export default function PlannerManagement({
                       className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200"
                     >
                       <button
+                        disabled={isReadOnlyMode}
                         onClick={() =>
                           handleUpdateMaterialItem(mIdx, 'isReady', !mat.isReady)
                         }
@@ -1447,26 +1610,29 @@ export default function PlannerManagement({
 
                       <input
                         type="text"
+                        disabled={isReadOnlyMode}
                         value={mat.itemName}
                         onChange={(e) =>
                           handleUpdateMaterialItem(mIdx, 'itemName', e.target.value)
                         }
                         placeholder="Item name (e.g. 5x Ropes)"
-                        className="flex-1 px-2 py-0.5 text-xs font-bold bg-white rounded-lg border border-slate-200"
+                        className="flex-1 px-2 py-0.5 text-xs font-bold bg-white rounded-lg border border-slate-200 disabled:opacity-75"
                       />
 
                       <input
                         type="text"
+                        disabled={isReadOnlyMode}
                         value={mat.quantity || ''}
                         onChange={(e) =>
                           handleUpdateMaterialItem(mIdx, 'quantity', e.target.value)
                         }
                         placeholder="Qty"
-                        className="w-14 px-1.5 py-0.5 text-xs text-center bg-white rounded-lg border border-slate-200"
+                        className="w-14 px-1.5 py-0.5 text-xs text-center bg-white rounded-lg border border-slate-200 disabled:opacity-75"
                       />
 
                       <input
                         type="text"
+                        disabled={isReadOnlyMode}
                         value={mat.assignedLeader || ''}
                         onChange={(e) =>
                           handleUpdateMaterialItem(
@@ -1476,15 +1642,17 @@ export default function PlannerManagement({
                           )
                         }
                         placeholder="Leader responsible"
-                        className="w-28 px-2 py-0.5 text-xs bg-white rounded-lg border border-slate-200"
+                        className="w-28 px-2 py-0.5 text-xs bg-white rounded-lg border border-slate-200 disabled:opacity-75"
                       />
 
-                      <button
-                        onClick={() => handleRemoveMaterialItem(mIdx)}
-                        className="p-1 text-slate-400 hover:text-rose-600 shrink-0"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      {!isReadOnlyMode && (
+                        <button
+                          onClick={() => handleRemoveMaterialItem(mIdx)}
+                          className="p-1 text-slate-400 hover:text-rose-600 shrink-0"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1495,36 +1663,188 @@ export default function PlannerManagement({
             <div className="sticky bottom-3 z-30 bg-white/95 backdrop-blur-md p-2.5 rounded-2xl border border-slate-200/90 shadow-lg flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => setIsWhatsAppModalOpen(true)}
+                  onClick={() => handleOpenLiveTracker(editingPlan)}
                   className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1.5 transition-all"
                 >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">WhatsApp</span> Briefing
+                  <Radio className="h-3.5 w-3.5 animate-pulse" />
+                  <span className="hidden sm:inline">Live</span> Tracker
+                </button>
+
+                <button
+                  onClick={() => setIsWhatsAppModalOpen(true)}
+                  className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-3 py-2 rounded-xl text-xs border border-slate-300 flex items-center gap-1.5 transition-all"
+                >
+                  <MessageSquare className="h-3.5 w-3.5 text-emerald-700" />
+                  <span>WhatsApp</span>
                 </button>
 
                 <button
                   onClick={() => window.print()}
-                  className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-3 py-2 rounded-xl text-xs border border-slate-300 flex items-center gap-1.5 transition-all"
+                  className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-2.5 py-2 rounded-xl text-xs border border-slate-300 flex items-center gap-1 transition-all"
                 >
                   <Printer className="h-3.5 w-3.5" />
-                  <span>Print A4</span>
+                  <span className="hidden sm:inline">Print A4</span>
                 </button>
               </div>
 
-              <button
-                onClick={handleSavePlan}
-                disabled={loading}
-                className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
-              >
-                <Check className="h-3.5 w-3.5" />
-                <span>{loading ? 'Saving…' : 'Save Canevas'}</span>
-              </button>
+              {isReadOnlyMode ? (
+                <button
+                  onClick={() => handleOpenDuplicate(editingPlan)}
+                  className="bg-amber-700 hover:bg-amber-800 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center gap-1.5 transition-all"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span>Duplicate for Unit</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSavePlan}
+                  disabled={loading}
+                  className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  <span>{loading ? 'Saving…' : 'Save Canevas'}</span>
+                </button>
+              )}
             </div>
           </div>
         )}
 
         {/* ══════════════════════════════════════════════════════════
-            MODAL 1: PRE-BUILT TEMPLATES SELECTOR
+            MODAL: FULL-SCREEN LIVE MEETING TRACKER
+        ══════════════════════════════════════════════════════════ */}
+        {isLiveTrackerModalOpen && liveTrackerPlan && (() => {
+          const times = getComputedBlockTimes(liveTrackerPlan)
+          const autoBlock = getLiveBlockForPlan(liveTrackerPlan)
+          const totalBlocks = (liveTrackerPlan.schedule_blocks || []).length
+          const activeIndex =
+            manualTrackerStepIndex !== null
+              ? manualTrackerStepIndex
+              : autoBlock ? autoBlock.index : 0
+
+          const currentBlock = liveTrackerPlan.schedule_blocks[activeIndex]
+          const currentTiming = times[activeIndex]
+          const nextBlock = liveTrackerPlan.schedule_blocks[activeIndex + 1] || null
+          const catCfg = currentBlock ? CATEGORIES[currentBlock.category] || CATEGORIES.workshop : CATEGORIES.workshop
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in">
+              <div className="bg-slate-900 border border-teal-500/40 w-full max-w-xl p-4 sm:p-6 rounded-3xl shadow-2xl space-y-4 text-white my-auto max-h-[92vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black truncate text-white">
+                        Live Meeting Tracker • {liveTrackerPlan.troops?.name || 'Unit'}
+                      </h3>
+                      <p className="text-[11px] text-teal-300 font-mono">
+                        {liveTrackerPlan.title} • Current Clock: {currentTimeStr || '14:00'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsLiveTrackerModalOpen(false)}
+                    className="p-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Main Active Step Spotlight Card */}
+                {currentBlock ? (
+                  <div className="bg-gradient-to-br from-teal-900 to-slate-900 border border-teal-500/50 p-4 sm:p-5 rounded-2xl space-y-3 shadow-inner">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black border ${catCfg.bg} ${catCfg.text} ${catCfg.border}`}>
+                        {catCfg.icon} {catCfg.label}
+                      </span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-800 text-teal-300 border border-slate-700">
+                        Step {activeIndex + 1} of {totalBlocks} • {currentTiming?.start} – {currentTiming?.end}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
+                        {currentBlock.title}
+                      </h2>
+                      {currentBlock.description && (
+                        <p className="text-xs text-slate-300 mt-1">
+                          {currentBlock.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-teal-800/60 text-xs">
+                      <div className="bg-slate-900/60 p-2 rounded-xl border border-teal-900">
+                        <span className="text-[10px] text-teal-400 font-bold block uppercase">Lead on Duty</span>
+                        <span className="font-bold text-white truncate block">
+                          👤 {currentBlock.leadLeaderName || 'Leader'}
+                        </span>
+                      </div>
+                      <div className="bg-slate-900/60 p-2 rounded-xl border border-teal-900">
+                        <span className="text-[10px] text-teal-400 font-bold block uppercase">Duration</span>
+                        <span className="font-bold text-white block">
+                          ⏱️ {currentBlock.durationMin} minutes
+                        </span>
+                      </div>
+                    </div>
+
+                    {currentBlock.materials && (
+                      <div className="bg-amber-950/40 border border-amber-800/60 p-2 rounded-xl text-xs text-amber-200 flex items-center gap-1.5">
+                        <span>🎒</span>
+                        <span className="truncate"><strong>Gear:</strong> {currentBlock.materials}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-slate-400 text-xs">No activity scheduled.</div>
+                )}
+
+                {/* Up Next Preview */}
+                {nextBlock && (
+                  <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 flex items-center justify-between text-xs">
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Next Activity Up</span>
+                      <span className="font-bold text-slate-200 truncate block">{nextBlock.title} ({nextBlock.durationMin}m)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Lead: {nextBlock.leadLeaderName || 'Leader'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Live Step-Through Controls */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <button
+                    disabled={activeIndex <= 0}
+                    onClick={() => setManualTrackerStepIndex(Math.max(0, activeIndex - 1))}
+                    className="flex-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white font-bold py-2 rounded-xl text-xs border border-slate-700 transition-all flex items-center justify-center gap-1"
+                  >
+                    <span>◀ Prev Step</span>
+                  </button>
+
+                  <button
+                    onClick={() => setManualTrackerStepIndex(null)}
+                    className="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold rounded-xl text-xs border border-slate-700"
+                    title="Sync with Clock"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    disabled={activeIndex >= totalBlocks - 1}
+                    onClick={() => setManualTrackerStepIndex(Math.min(totalBlocks - 1, activeIndex + 1))}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-white font-bold py-2 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1"
+                  >
+                    <span>Next Step ▶</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ══════════════════════════════════════════════════════════
+            MODAL: PRE-BUILT TEMPLATES SELECTOR
         ══════════════════════════════════════════════════════════ */}
         {isTemplateModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
@@ -1580,7 +1900,7 @@ export default function PlannerManagement({
         )}
 
         {/* ══════════════════════════════════════════════════════════
-            MODAL 2: WHATSAPP STAFF BRIEFING
+            MODAL: WHATSAPP STAFF BRIEFING
         ══════════════════════════════════════════════════════════ */}
         {isWhatsAppModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
@@ -1637,7 +1957,7 @@ export default function PlannerManagement({
         )}
 
         {/* ══════════════════════════════════════════════════════════
-            MODAL 3: DUPLICATE TO NEXT WEEK
+            MODAL: DUPLICATE TO NEXT WEEK
         ══════════════════════════════════════════════════════════ */}
         {isDuplicateModalOpen && planToDuplicate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
@@ -1679,9 +1999,10 @@ export default function PlannerManagement({
                     Target Unit
                   </label>
                   <select
+                    disabled={isTroopLeader}
                     value={duplicateTargetTroop}
                     onChange={(e) => setDuplicateTargetTroop(e.target.value)}
-                    className="w-full mt-0.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800"
+                    className="w-full mt-0.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 disabled:opacity-75"
                   >
                     {troops.map((t) => (
                       <option key={t.id} value={t.id}>
