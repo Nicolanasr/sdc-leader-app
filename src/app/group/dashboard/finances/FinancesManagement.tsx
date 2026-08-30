@@ -1583,38 +1583,38 @@ export default function FinancesManagement({
                 )}
 
                 {/* ── Page Header with Back/Forward Year Navigation ───────────── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xs">
-                    <div>
-                        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-teal-700 uppercase tracking-wider mb-0.5">
-                            <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            {isTroopLeader ? `${activeTroopObj?.name || 'Unit'} Treasury` : 'Group Treasury & Troop Accounts'}
+                <div className="flex items-center justify-between gap-2.5 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-teal-700 uppercase tracking-wider">
+                            <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <span className="truncate">{isTroopLeader ? `${activeTroopObj?.name || 'Unit'} Treasury` : 'Group Treasury & Accounts'}</span>
                         </div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                            {isTroopLeader ? `${activeTroopObj?.name || 'Unit'} - Monthly Dues` : 'Scout Financials & Dues'}
+                        <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+                            {isTroopLeader ? `${activeTroopObj?.name || 'Unit'} Dues` : 'Scout Financials & Dues'}
                         </h1>
                     </div>
 
                     {/* Year Navigator (Back / Forward) */}
-                    <div className="flex items-center self-start sm:self-auto gap-1.5 bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200 shrink-0">
                         <button
                             onClick={() => setSelectedYearNum((prev) => prev - 1)}
-                            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
+                            className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
                             title="Previous Year"
                         >
-                            <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <ChevronLeft className="h-3.5 w-3.5" />
                         </button>
-                        <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 bg-white rounded-lg sm:rounded-xl shadow-xs border border-slate-200/80">
-                            <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-teal-700" />
-                            <span className="font-black text-xs sm:text-sm text-slate-900 font-mono tracking-tight">
+                        <div className="flex items-center gap-1 px-2 py-0.5 bg-white rounded-lg shadow-2xs border border-slate-200/80">
+                            <Calendar className="h-3 w-3 text-teal-700" />
+                            <span className="font-black text-xs sm:text-sm text-slate-900 font-mono">
                                 {selectedYearNum}
                             </span>
                         </div>
                         <button
                             onClick={() => setSelectedYearNum((prev) => prev + 1)}
-                            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
+                            className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
                             title="Next Year"
                         >
-                            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                     </div>
                 </div>
@@ -1622,74 +1622,74 @@ export default function FinancesManagement({
                 {/* ── Top KPI Overview (Role Differentiated - 2 Columns on Mobile) ── */}
                 {isGroupTreasurer ? (
                     /* Group Treasurer Overview Cards (2x2 Grid on Mobile) */
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
                                 <span className="truncate">Group Vault</span>
-                                <div className="p-1 sm:p-1.5 rounded-lg bg-teal-50 text-teal-700 shrink-0">
-                                    <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <div className="p-1 rounded-md bg-teal-50 text-teal-700 shrink-0">
+                                    <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                                <span className="text-lg sm:text-2xl font-black text-slate-900">${centralTreasury.netGroupVault.toLocaleString()}</span>
-                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400">Total</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-base sm:text-xl font-black text-slate-900">${centralTreasury.netGroupVault.toLocaleString()}</span>
+                                <span className="text-[9px] font-bold text-slate-400">Total</span>
                             </div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex flex-row justify-between gap-0.5">
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100 flex justify-between">
                                 <span>Free: <strong className="text-emerald-700">${centralTreasury.unallocatedGroupCash.toLocaleString()}</strong></span>
                                 <span>Troops: <strong className="text-teal-700">${centralTreasury.totalTroopAllocations.toLocaleString()}</strong></span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
                                 <span className="truncate">Troop Accounts</span>
-                                <div className="p-1 sm:p-1.5 rounded-lg bg-purple-50 text-purple-700 shrink-0">
-                                    <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <div className="p-1 rounded-md bg-purple-50 text-purple-700 shrink-0">
+                                    <Layers className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                                <span className="text-lg sm:text-2xl font-black text-purple-700">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-base sm:text-xl font-black text-purple-700">
                                     ${troopVaults.reduce((sum, tv) => sum + Math.max(0, tv.availableBalance), 0).toLocaleString()}
                                 </span>
-                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400">7 troops</span>
+                                <span className="text-[9px] font-bold text-slate-400">7 troops</span>
                             </div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex  flex-row justify-between gap-0.5">
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100 flex justify-between">
                                 <span>Spent: <strong>${troopVaults.reduce((sum, tv) => sum + tv.approvedDisbursements, 0)}</strong></span>
                                 <span>In: <strong>${troopVaults.reduce((sum, tv) => sum + tv.confirmedHandovers, 0)}</strong></span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
                                 <span className="truncate">Monthly Dues</span>
-                                <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-50 text-emerald-700 shrink-0">
-                                    <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <div className="p-1 rounded-md bg-emerald-50 text-emerald-700 shrink-0">
+                                    <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                                <span className="text-lg sm:text-2xl font-black text-emerald-600">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-base sm:text-xl font-black text-emerald-600">
                                     ${troopDues.filter((d) => d.month_key.startsWith(String(selectedYearNum))).reduce((sum, d) => sum + Number(d.paid_amount || 0), 0).toLocaleString()}
                                 </span>
-                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400">in {selectedYearNum}</span>
+                                <span className="text-[9px] font-bold text-slate-400">in {selectedYearNum}</span>
                             </div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                                <span>All troop dues collected</span>
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100">
+                                <span className="truncate block">All troop dues collected</span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
                                 <span className="truncate">Annual Fees</span>
-                                <div className="p-1 sm:p-1.5 rounded-lg bg-blue-50 text-blue-700 shrink-0">
-                                    <Percent className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <div className="p-1 rounded-md bg-blue-50 text-blue-700 shrink-0">
+                                    <Percent className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-1 sm:gap-2">
-                                <span className="text-lg sm:text-2xl font-black text-slate-900">${centralTreasury.totalAnnualDuesCollected.toLocaleString()}</span>
-                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400">/ ${centralTreasury.totalAnnualDuesAssessed.toLocaleString()}</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-base sm:text-xl font-black text-slate-900">${centralTreasury.totalAnnualDuesCollected.toLocaleString()}</span>
+                                <span className="text-[9px] font-bold text-slate-400">/ ${centralTreasury.totalAnnualDuesAssessed.toLocaleString()}</span>
                             </div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex justify-between">
-                                <span>Group Cotisations</span>
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100 flex justify-between">
+                                <span>Cotisations</span>
                                 <span className="font-bold text-blue-700">
                                     {centralTreasury.totalAnnualDuesAssessed > 0
                                         ? Math.round((centralTreasury.totalAnnualDuesCollected / centralTreasury.totalAnnualDuesAssessed) * 100)
@@ -1700,52 +1700,52 @@ export default function FinancesManagement({
                     </div>
                 ) : (
                     /* Troop Leader Single Troop Overview Cards */
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
                                 <span>Collected in {selectedYearNum}</span>
-                                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
-                                    <CheckCircle2 className="h-4 w-4" />
+                                <div className="p-1 rounded-md bg-emerald-50 text-emerald-700">
+                                    <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-xl sm:text-2xl font-black text-emerald-600">${activeTroopVault?.collectedFromScouts || 0}</span>
-                                <span className="text-[10px] font-bold text-slate-400">from scouts</span>
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-base sm:text-xl font-black text-emerald-600">${activeTroopVault?.collectedFromScouts || 0}</span>
+                                <span className="text-[9px] font-bold text-slate-400">from scouts</span>
                             </div>
-                            <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                                <span>Target: ${getTroopMonthlyTarget(selectedTroopId)} / member / month</span>
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100">
+                                <span>Target: ${getTroopMonthlyTarget(selectedTroopId)}/mo</span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-                                <span>Handed Over to Treasurer</span>
-                                <div className="p-1.5 rounded-lg bg-teal-50 text-teal-700">
-                                    <Send className="h-4 w-4" />
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
+                                <span>Handed Over</span>
+                                <div className="p-1 rounded-md bg-teal-50 text-teal-700">
+                                    <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-xl sm:text-2xl font-black text-teal-800">${activeTroopVault?.confirmedHandovers || 0}</span>
-                                <span className="text-[10px] font-bold text-slate-400">confirmed</span>
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-base sm:text-xl font-black text-teal-800">${activeTroopVault?.confirmedHandovers || 0}</span>
+                                <span className="text-[9px] font-bold text-slate-400">confirmed</span>
                             </div>
-                            <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex justify-between">
-                                <span>Pending Handover: <strong>${activeTroopVault?.cashInTroopHand || 0}</strong></span>
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100 flex justify-between">
+                                <span>Pending: <strong>${activeTroopVault?.cashInTroopHand || 0}</strong></span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1.5 sm:space-y-2">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-                                <span>Available Troop Balance</span>
-                                <div className="p-1.5 rounded-lg bg-purple-50 text-purple-700">
-                                    <Wallet className="h-4 w-4" />
+                        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">
+                                <span>Troop Balance</span>
+                                <div className="p-1 rounded-md bg-purple-50 text-purple-700">
+                                    <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </div>
                             </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-xl sm:text-2xl font-black text-purple-700">${activeTroopVault?.availableBalance || 0}</span>
-                                <span className="text-[10px] font-bold text-slate-400">in Group Vault</span>
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-base sm:text-xl font-black text-purple-700">${activeTroopVault?.availableBalance || 0}</span>
+                                <span className="text-[9px] font-bold text-slate-400">available</span>
                             </div>
-                            <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex justify-between">
-                                <span>Spent on Troop: <strong>${activeTroopVault?.approvedDisbursements || 0}</strong></span>
+                            <div className="text-[9px] sm:text-[10px] text-slate-500 pt-0.5 border-t border-slate-100 flex justify-between">
+                                <span>Spent: <strong>${activeTroopVault?.approvedDisbursements || 0}</strong></span>
                             </div>
                         </div>
                     </div>
@@ -1753,11 +1753,11 @@ export default function FinancesManagement({
 
                 {/* ── Native Segmented Tab Bar (Horizontal Scrollable Pills on Mobile) ── */}
                 {isGroupTreasurer && (
-                    <div className="overflow-x-auto no-scrollbar -mx-1 px-1 flex items-center gap-1.5 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="overflow-x-auto no-scrollbar -mx-1 px-1 flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80 shadow-2xs">
                         <button
                             onClick={() => setActiveTab('monthly_dues')}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'monthly_dues'
-                                ? 'bg-teal-800 text-white shadow-xs'
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'monthly_dues'
+                                ? 'bg-teal-800 text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                 }`}
                         >
@@ -1768,8 +1768,8 @@ export default function FinancesManagement({
 
                         <button
                             onClick={() => setActiveTab('troop_vaults')}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'troop_vaults'
-                                ? 'bg-teal-800 text-white shadow-xs'
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'troop_vaults'
+                                ? 'bg-teal-800 text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                 }`}
                         >
@@ -1777,7 +1777,7 @@ export default function FinancesManagement({
                             <span className="hidden sm:inline">Troop Accounts & Handovers</span>
                             <span className="sm:hidden">Troop Vaults</span>
                             {handovers.filter((h) => h.status === 'pending').length > 0 && (
-                                <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                                <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
                                     {handovers.filter((h) => h.status === 'pending').length}
                                 </span>
                             )}
@@ -1785,8 +1785,8 @@ export default function FinancesManagement({
 
                         <button
                             onClick={() => setActiveTab('monthly_statement')}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'monthly_statement'
-                                ? 'bg-teal-800 text-white shadow-xs'
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'monthly_statement'
+                                ? 'bg-teal-800 text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                 }`}
                         >
@@ -1794,7 +1794,7 @@ export default function FinancesManagement({
                             <span className="hidden sm:inline">Monthly Statement (*Kashf Hisab*)</span>
                             <span className="sm:hidden">Statement</span>
                             {currentStatementRecord?.status === 'submitted' && isGroupLeader && (
-                                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
+                                <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
                                     Review
                                 </span>
                             )}
@@ -1802,8 +1802,8 @@ export default function FinancesManagement({
 
                         <button
                             onClick={() => setActiveTab('annual_dues')}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'annual_dues'
-                                ? 'bg-teal-800 text-white shadow-xs'
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'annual_dues'
+                                ? 'bg-teal-800 text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                 }`}
                         >
@@ -1814,8 +1814,8 @@ export default function FinancesManagement({
 
                         <button
                             onClick={() => setActiveTab('treasury')}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'treasury'
-                                ? 'bg-teal-800 text-white shadow-xs'
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'treasury'
+                                ? 'bg-teal-800 text-white shadow-2xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                 }`}
                         >
@@ -1830,20 +1830,19 @@ export default function FinancesManagement({
                 {(activeTab === 'monthly_dues' || isTroopLeader) && (
                     <div className="space-y-3">
                         {/* ── UNIFIED STREAMLINED CONTROL HEADER ── */}
-                        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
                             {/* Row 1: Troop Selector + Target & Action Buttons */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                                     {isGroupTreasurer ? (
                                         troops.map((t) => (
                                             <button
                                                 key={t.id}
                                                 onClick={() => setSelectedTroopId(t.id)}
-                                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                                                    selectedTroopId === t.id
-                                                        ? 'bg-teal-700 text-white shadow-xs'
+                                                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedTroopId === t.id
+                                                        ? 'bg-teal-800 text-white shadow-2xs'
                                                         : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 {t.name}
                                             </button>
@@ -1856,28 +1855,26 @@ export default function FinancesManagement({
                                     )}
                                 </div>
 
-                                <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0 justify-between sm:justify-end">
+                                <div className="flex items-center gap-1.5 shrink-0 justify-between sm:justify-end">
+                                    <button
+                                        onClick={() => {
+                                            setNewMonthlyTarget(String(getTroopMonthlyTarget(selectedTroopId)))
+                                            setIsConfigTargetOpen(true)
+                                        }}
+                                        className="px-2 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                                        title="Configure Target"
+                                    >
+                                        <span className="text-teal-700 font-semibold">Target:</span>
+                                        <span className="bg-teal-800 text-white px-1.5 py-0.2 rounded-md text-[10px] font-black">
+                                            ${getTroopMonthlyTarget(selectedTroopId)}/mo
+                                        </span>
+                                        <Settings className="h-3 w-3 text-teal-700 ml-0.5" />
+                                    </button>
+
                                     <div className="flex items-center gap-1">
                                         <button
-                                            onClick={() => {
-                                                setNewMonthlyTarget(String(getTroopMonthlyTarget(selectedTroopId)))
-                                                setIsConfigTargetOpen(true)
-                                            }}
-                                            className="px-2 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 text-[11px] font-bold flex items-center gap-1 transition-colors"
-                                            title="Configure Target"
-                                        >
-                                            <span className="text-teal-700 font-semibold">Target:</span>
-                                            <span className="bg-teal-700 text-white px-1.5 py-0.5 rounded-md text-[10px] font-black">
-                                                ${getTroopMonthlyTarget(selectedTroopId)}/mo
-                                            </span>
-                                            <Settings className="h-3 w-3 text-teal-700 ml-0.5" />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-1.5">
-                                        <button
                                             onClick={() => setIsHandoverModalOpen(true)}
-                                            className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-2.5 py-1 rounded-xl text-xs transition-colors shadow-2xs flex items-center gap-1"
+                                            className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-2.5 py-1 rounded-xl text-xs transition-colors shadow-2xs flex items-center gap-1"
                                         >
                                             <Send className="h-3 w-3" />
                                             <span>Handover</span>
@@ -1904,7 +1901,7 @@ export default function FinancesManagement({
                                     >
                                         <ChevronLeft className="h-3.5 w-3.5" />
                                     </button>
-                                    <div className="px-2.5 py-0.5 text-xs font-black text-slate-900 min-w-[95px] text-center">
+                                    <div className="px-2 py-0.5 text-xs font-black text-slate-900 min-w-[85px] text-center">
                                         {MONTHS_ORDER.find((m) => m.key === duesMonth)?.label} {selectedYearNum}
                                     </div>
                                     <button
@@ -1929,7 +1926,7 @@ export default function FinancesManagement({
                                         if (paid >= targetPerMonth) monthPaidCount += 1
                                     })
                                     return (
-                                        <div className="text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl truncate">
+                                        <div className="text-[10px] sm:text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl truncate">
                                             <span className="text-teal-700 font-black">${monthTotalCollected}</span>
                                             <span className="text-slate-400 font-normal"> / ${selectedTroopScouts.length * targetPerMonth}</span>
                                             <span className="text-slate-400 mx-1">•</span>
@@ -1964,11 +1961,10 @@ export default function FinancesManagement({
                                     <button
                                         key={m.key}
                                         onClick={() => setDuesMonth(m.key)}
-                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-                                            duesMonth === m.key
-                                                ? 'bg-teal-700 text-white shadow-2xs'
+                                        className={`px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all shrink-0 ${duesMonth === m.key
+                                                ? 'bg-teal-800 text-white shadow-2xs'
                                                 : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                                        }`}
+                                            }`}
                                     >
                                         {m.label}
                                     </button>
@@ -2001,31 +1997,28 @@ export default function FinancesManagement({
                                         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                                             <button
                                                 onClick={() => setDuesFilterStatus('all')}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-                                                    duesFilterStatus === 'all'
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${duesFilterStatus === 'all'
                                                         ? 'bg-slate-800 text-white'
                                                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 All ({selectedTroopScouts.length})
                                             </button>
                                             <button
                                                 onClick={() => setDuesFilterStatus('unpaid')}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-                                                    duesFilterStatus === 'unpaid'
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${duesFilterStatus === 'unpaid'
                                                         ? 'bg-amber-600 text-white'
                                                         : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 Unpaid ({selectedTroopScouts.length - monthPaidCount})
                                             </button>
                                             <button
                                                 onClick={() => setDuesFilterStatus('paid')}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-                                                    duesFilterStatus === 'paid'
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${duesFilterStatus === 'paid'
                                                         ? 'bg-emerald-600 text-white'
                                                         : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 Paid ({monthPaidCount})
                                             </button>
@@ -2054,7 +2047,7 @@ export default function FinancesManagement({
                             })
 
                             return (
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
                                     {filteredScouts.length === 0 ? (
                                         <div className="p-8 text-center text-slate-400 space-y-1">
                                             <Users className="h-7 w-7 mx-auto opacity-30" />
@@ -2083,17 +2076,16 @@ export default function FinancesManagement({
                                                             })
                                                             setQuickPayAmount(isFull ? '1' : String(Math.max(1, targetPerMonth - paid)))
                                                         }}
-                                                        className="px-3.5 py-3 hover:bg-slate-50/80 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-between gap-3 group"
+                                                        className="px-3.5 py-2.5 sm:py-3 hover:bg-slate-50/80 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-between gap-3 group"
                                                     >
                                                         {/* Left: Avatar & Name */}
                                                         <div className="flex items-center gap-2.5 min-w-0">
-                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[11px] shrink-0 transition-colors ${
-                                                                isFull
+                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[11px] shrink-0 transition-colors ${isFull
                                                                     ? 'bg-emerald-100 text-emerald-800'
                                                                     : isPartial
-                                                                    ? 'bg-amber-100 text-amber-800'
-                                                                    : 'bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-800'
-                                                            }`}>
+                                                                        ? 'bg-amber-100 text-amber-800'
+                                                                        : 'bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-800'
+                                                                }`}>
                                                                 {initials || <Users className="h-3.5 w-3.5" />}
                                                             </div>
                                                             <div className="min-w-0">
@@ -2111,12 +2103,12 @@ export default function FinancesManagement({
                                                         {/* Right: Payment Status Badge & Action */}
                                                         <div className="flex items-center gap-2 shrink-0">
                                                             {isFull ? (
-                                                                <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-black text-[11px] flex items-center gap-1">
+                                                                <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-black text-[11px] flex items-center gap-1">
                                                                     <Check className="h-3 w-3 text-emerald-600" />
                                                                     <span>${paid}</span>
                                                                 </span>
                                                             ) : isPartial ? (
-                                                                <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
+                                                                <span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
                                                                     ${paid} / ${targetPerMonth}
                                                                 </span>
                                                             ) : (
@@ -2134,7 +2126,7 @@ export default function FinancesManagement({
                                                                         })
                                                                         setQuickPayAmount(String(targetPerMonth))
                                                                     }}
-                                                                    className="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1"
+                                                                    className="px-2.5 py-1 rounded-lg bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1"
                                                                 >
                                                                     <span>Pay ${targetPerMonth}</span>
                                                                 </button>
@@ -2151,14 +2143,14 @@ export default function FinancesManagement({
 
                         {/* ── VIEW 2: FULL YEAR MATRIX TABLE (OPTIONAL TOGGLE) ── */}
                         {duesViewMode === 'matrix' && (
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                                             <tr>
-                                                <th className="px-4 py-3 sticky left-0 bg-slate-50 z-10 min-w-[160px]">Scout Name</th>
+                                                <th className="px-4 py-3 sticky left-0 bg-slate-50 z-10 min-w-[150px]">Scout Name</th>
                                                 {MONTHS_ORDER.map((m) => (
-                                                    <th key={m.key} className="px-2.5 py-3 text-center min-w-[65px]">
+                                                    <th key={m.key} className="px-2 py-3 text-center min-w-[55px]">
                                                         {m.label}
                                                     </th>
                                                 ))}
@@ -2181,8 +2173,8 @@ export default function FinancesManagement({
                                                     return (
                                                         <tr key={scout.id} className="hover:bg-slate-50/70 transition-colors">
                                                             {/* Scout Name (Sticky) */}
-                                                            <td className="px-4 py-2.5 font-bold text-slate-900 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-100">
-                                                                <div className="truncate max-w-[150px]">
+                                                            <td className="px-4 py-2 font-bold text-slate-900 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-100">
+                                                                <div className="truncate max-w-[140px]">
                                                                     {scout.first_name} {scout.last_name}
                                                                 </div>
                                                                 {scout.current_rank && (
@@ -2200,7 +2192,7 @@ export default function FinancesManagement({
                                                                 const isPartial = paid > 0 && paid < targetPerMonth
 
                                                                 return (
-                                                                    <td key={m.key} className="px-1.5 py-2 text-center">
+                                                                    <td key={m.key} className="px-1 py-1.5 text-center">
                                                                         <button
                                                                             onClick={() => {
                                                                                 setQuickPayCell({
@@ -2213,7 +2205,7 @@ export default function FinancesManagement({
                                                                                 })
                                                                                 setQuickPayAmount(isFull ? '1' : String(Math.max(1, targetPerMonth - paid)))
                                                                             }}
-                                                                            className={`w-full py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all border ${isFull
+                                                                            className={`w-full py-1 px-0.5 rounded-lg text-[10px] font-bold transition-all border ${isFull
                                                                                 ? 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200'
                                                                                 : isPartial
                                                                                     ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
@@ -2228,7 +2220,7 @@ export default function FinancesManagement({
                                                             })}
 
                                                             {/* Scout Year Total */}
-                                                            <td className="px-4 py-2.5 text-right font-black text-slate-900">
+                                                            <td className="px-4 py-2 text-right font-black text-slate-900">
                                                                 ${scoutTotalPaid}
                                                             </td>
                                                         </tr>
@@ -2245,34 +2237,34 @@ export default function FinancesManagement({
 
                 {/* ── TAB 2: TROOP ACCOUNTS & HANDOVERS (GROUP TREASURER ONLY) ─── */}
                 {isGroupTreasurer && activeTab === 'troop_vaults' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {/* Troop Cards Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {troopVaults.map((tv) => (
                                 <div
                                     key={tv.troop.id}
-                                    className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4 hover:border-teal-400 hover:shadow-md transition-all group flex flex-col justify-between"
+                                    className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3 hover:border-teal-400 hover:shadow-xs transition-all group flex flex-col justify-between"
                                 >
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                             <div>
-                                                <h4 className="font-bold text-slate-900 text-base group-hover:text-teal-800 transition-colors">
+                                                <h4 className="font-bold text-slate-900 text-sm group-hover:text-teal-800 transition-colors">
                                                     {tv.troop.name}
                                                 </h4>
-                                                <p className="text-xs text-slate-500">Virtual Troop Account</p>
+                                                <p className="text-[10px] text-slate-400">Virtual Troop Account</p>
                                             </div>
-                                            <span className="bg-teal-50 text-teal-800 text-xs font-black px-2.5 py-1 rounded-lg border border-teal-200">
-                                                Balance: ${tv.availableBalance}
+                                            <span className="bg-teal-50 text-teal-800 text-xs font-black px-2 py-0.5 rounded-lg border border-teal-200">
+                                                ${tv.availableBalance}
                                             </span>
                                         </div>
 
-                                        <div className="space-y-2 text-xs">
+                                        <div className="space-y-1.5 text-xs">
                                             <div className="flex justify-between text-slate-600">
-                                                <span>Total Collected from Scouts ({selectedYearNum}):</span>
+                                                <span>Collected ({selectedYearNum}):</span>
                                                 <strong className="text-slate-900">${tv.collectedFromScouts}</strong>
                                             </div>
                                             <div className="flex justify-between text-slate-600">
-                                                <span>Handed Over to Treasurer:</span>
+                                                <span>Handed Over:</span>
                                                 <strong className="text-emerald-700">${tv.confirmedHandovers}</strong>
                                             </div>
                                             <div className="flex justify-between text-slate-600">
@@ -2280,8 +2272,8 @@ export default function FinancesManagement({
                                                 <strong className="text-rose-600">-${tv.approvedDisbursements}</strong>
                                             </div>
                                             {tv.cashInTroopHand > 0 && (
-                                                <div className="flex justify-between text-amber-700 bg-amber-50 p-2 rounded-lg font-bold">
-                                                    <span>Cash Pending Handover:</span>
+                                                <div className="flex justify-between text-amber-700 bg-amber-50 p-1.5 rounded-lg font-bold text-[11px]">
+                                                    <span>Pending Handover:</span>
                                                     <span>${tv.cashInTroopHand}</span>
                                                 </div>
                                             )}
@@ -2294,35 +2286,87 @@ export default function FinancesManagement({
                                             setTroopDetailsSubTab('scouts')
                                             setDetailsScoutSearch('')
                                         }}
-                                        className="w-full mt-2 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-900 font-bold py-2 px-3 rounded-xl text-xs border border-slate-200 hover:border-teal-300 transition-all flex items-center justify-center gap-1.5 shadow-2xs"
+                                        className="w-full mt-1 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-900 font-bold py-1.5 px-2.5 rounded-xl text-xs border border-slate-200 hover:border-teal-300 transition-all flex items-center justify-center gap-1.5 shadow-2xs"
                                     >
-                                        <span>Inspect Troop Dues & Transactions</span>
+                                        <span>Audit Dues & Ledger</span>
                                         <ArrowRight className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Pending Handovers Table (Treasurer Action) */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                        {/* Pending Handovers Table & Mobile Cards */}
+                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
                             <div className="flex items-center justify-between">
-                                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <h3 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
                                     <Send className="h-4 w-4 text-teal-700" />
                                     <span>Troop Handovers to Treasurer (*Taslim El Sandou2*)</span>
                                 </h3>
+                                <span className="text-[10px] font-bold text-slate-400">{handovers.length} Total</span>
                             </div>
 
-                            <div className="overflow-x-auto">
+                            {/* Mobile Cards View */}
+                            <div className="space-y-2 md:hidden">
+                                {handovers.length === 0 ? (
+                                    <div className="p-6 text-center text-slate-400 text-xs">No handovers submitted yet.</div>
+                                ) : (
+                                    handovers.map((h) => (
+                                        <div key={h.id} className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="min-w-0">
+                                                    <span className="font-bold text-xs text-slate-900 block">{h.troops?.name}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono">{h.handover_date} • {h.month_key}</span>
+                                                </div>
+                                                <span className="font-black text-sm text-emerald-700 font-mono">${h.amount}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-200/60">
+                                                <span className="text-slate-500 text-[10px]">By: {h.handed_over?.full_name || 'Leader'}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${h.status === 'confirmed'
+                                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                                            : h.status === 'rejected'
+                                                                ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                                                            }`}
+                                                    >
+                                                        {h.status === 'confirmed' ? 'Approved' : h.status === 'rejected' ? 'Declined' : 'Pending'}
+                                                    </span>
+                                                    {h.status === 'pending' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleConfirmHandover(h)}
+                                                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] shadow-2xs"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeclineHandover(h)}
+                                                                className="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded-lg text-[10px] border border-rose-200"
+                                                            >
+                                                                Decline
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
                                         <tr>
-                                            <th className="px-4 py-3">Date</th>
-                                            <th className="px-4 py-3">Troop</th>
-                                            <th className="px-4 py-3">Month</th>
-                                            <th className="px-4 py-3">Amount</th>
-                                            <th className="px-4 py-3">Handed Over By</th>
-                                            <th className="px-4 py-3">Status</th>
-                                            <th className="px-4 py-3 text-right">Action</th>
+                                            <th className="px-4 py-2.5">Date</th>
+                                            <th className="px-4 py-2.5">Troop</th>
+                                            <th className="px-4 py-2.5">Month</th>
+                                            <th className="px-4 py-2.5">Amount</th>
+                                            <th className="px-4 py-2.5">Handed Over By</th>
+                                            <th className="px-4 py-2.5">Status</th>
+                                            <th className="px-4 py-2.5 text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 font-medium">
@@ -2335,12 +2379,12 @@ export default function FinancesManagement({
                                         ) : (
                                             handovers.map((h) => (
                                                 <tr key={h.id} className="hover:bg-slate-50">
-                                                    <td className="px-4 py-3 text-slate-500">{h.handover_date}</td>
-                                                    <td className="px-4 py-3 font-bold text-slate-900">{h.troops?.name}</td>
-                                                    <td className="px-4 py-3 font-mono text-[11px]">{h.month_key}</td>
-                                                    <td className="px-4 py-3 font-black text-emerald-700">${h.amount}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{h.handed_over?.full_name || 'Leader'}</td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-2.5 text-slate-500">{h.handover_date}</td>
+                                                    <td className="px-4 py-2.5 font-bold text-slate-900">{h.troops?.name}</td>
+                                                    <td className="px-4 py-2.5 font-mono text-[11px]">{h.month_key}</td>
+                                                    <td className="px-4 py-2.5 font-black text-emerald-700">${h.amount}</td>
+                                                    <td className="px-4 py-2.5 text-slate-600">{h.handed_over?.full_name || 'Leader'}</td>
+                                                    <td className="px-4 py-2.5">
                                                         <span
                                                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${h.status === 'confirmed'
                                                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -2352,7 +2396,7 @@ export default function FinancesManagement({
                                                             {h.status === 'confirmed' ? 'Approved' : h.status === 'rejected' ? 'Declined' : 'Pending'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-right">
+                                                    <td className="px-4 py-2.5 text-right">
                                                         {h.status === 'pending' ? (
                                                             <div className="flex items-center justify-end gap-1.5">
                                                                 <button
@@ -2380,24 +2424,76 @@ export default function FinancesManagement({
                             </div>
                         </div>
 
-                        {/* Troop Disbursements Table */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        {/* Troop Disbursements Table & Mobile Cards */}
+                        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+                            <h3 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
                                 <Receipt className="h-4 w-4 text-purple-700" />
                                 <span>Troop Fund Disbursements & Cash Advances (*Talab Masarif*)</span>
                             </h3>
 
-                            <div className="overflow-x-auto">
+                            {/* Mobile Cards View */}
+                            <div className="space-y-2 md:hidden">
+                                {disbursements.length === 0 ? (
+                                    <div className="p-6 text-center text-slate-400 text-xs">No disbursement requests logged yet.</div>
+                                ) : (
+                                    disbursements.map((d) => (
+                                        <div key={d.id} className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="min-w-0">
+                                                    <span className="font-bold text-xs text-slate-900 block">{d.troops?.name}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono">{d.request_date}</span>
+                                                </div>
+                                                <span className="font-black text-sm text-rose-600 font-mono">${d.amount}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-700 font-medium">{d.purpose}</p>
+                                            <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-200/60">
+                                                <span className="text-slate-500 text-[10px]">By: {d.requested_by_leader?.full_name || 'Leader'}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${d.status === 'approved'
+                                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                                            : d.status === 'rejected'
+                                                                ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                                                            }`}
+                                                    >
+                                                        {d.status === 'approved' ? 'Approved' : d.status === 'rejected' ? 'Declined' : 'Pending'}
+                                                    </span>
+                                                    {d.status === 'pending' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleApproveDisbursement(d)}
+                                                                className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] shadow-2xs"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeclineDisbursement(d)}
+                                                                className="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded-lg text-[10px] border border-rose-200"
+                                                            >
+                                                                Decline
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
                                         <tr>
-                                            <th className="px-4 py-3">Date</th>
-                                            <th className="px-4 py-3">Troop</th>
-                                            <th className="px-4 py-3">Purpose</th>
-                                            <th className="px-4 py-3">Amount</th>
-                                            <th className="px-4 py-3">Requested By</th>
-                                            <th className="px-4 py-3">Status</th>
-                                            <th className="px-4 py-3 text-right">Action</th>
+                                            <th className="px-4 py-2.5">Date</th>
+                                            <th className="px-4 py-2.5">Troop</th>
+                                            <th className="px-4 py-2.5">Purpose</th>
+                                            <th className="px-4 py-2.5">Amount</th>
+                                            <th className="px-4 py-2.5">Requested By</th>
+                                            <th className="px-4 py-2.5">Status</th>
+                                            <th className="px-4 py-2.5 text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 font-medium">
@@ -2410,12 +2506,12 @@ export default function FinancesManagement({
                                         ) : (
                                             disbursements.map((d) => (
                                                 <tr key={d.id} className="hover:bg-slate-50">
-                                                    <td className="px-4 py-3 text-slate-500">{d.request_date}</td>
-                                                    <td className="px-4 py-3 font-bold text-slate-900">{d.troops?.name}</td>
-                                                    <td className="px-4 py-3 text-slate-900">{d.purpose}</td>
-                                                    <td className="px-4 py-3 font-black text-rose-600">${d.amount}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{d.requested_by_leader?.full_name || 'Leader'}</td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-2.5 text-slate-500">{d.request_date}</td>
+                                                    <td className="px-4 py-2.5 font-bold text-slate-900">{d.troops?.name}</td>
+                                                    <td className="px-4 py-2.5 text-slate-900">{d.purpose}</td>
+                                                    <td className="px-4 py-2.5 font-black text-rose-600">${d.amount}</td>
+                                                    <td className="px-4 py-2.5 text-slate-600">{d.requested_by_leader?.full_name || 'Leader'}</td>
+                                                    <td className="px-4 py-2.5">
                                                         <span
                                                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${d.status === 'approved'
                                                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -2427,7 +2523,7 @@ export default function FinancesManagement({
                                                             {d.status === 'approved' ? 'Approved' : d.status === 'rejected' ? 'Declined' : 'Pending'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-right">
+                                                    <td className="px-4 py-2.5 text-right">
                                                         {d.status === 'pending' ? (
                                                             <div className="flex items-center justify-end gap-1.5">
                                                                 <button
@@ -2579,7 +2675,7 @@ export default function FinancesManagement({
                         {/* ── OFFICIAL MONTHLY STATEMENT CARD (PRINTABLE & STRUCTURED LIKE IMAGE) ── */}
                         <div
                             id="printable-statement-card"
-                            className="bg-white rounded-3xl border border-slate-300 p-6 md:p-8 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0 print:m-0"
+                            className="space-y-6 print:border-none print:shadow-none print:p-0 print:m-0"
                         >
                             {/* Header */}
                             <div className="border-b-2 border-slate-900 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-3 text-right">
@@ -2610,7 +2706,39 @@ export default function FinancesManagement({
                                     </span>
                                 </div>
 
-                                <div className="overflow-x-auto">
+                                {/* Mobile Inflow Cards View */}
+                                <div className="p-3 space-y-2 md:hidden print:hidden bg-sky-50/30">
+                                    {monthlyStatementData.groupedInflows.length === 0 ? (
+                                        <div className="p-6 text-center text-slate-400 text-xs">
+                                            لا توجد مقبوضات مسجلة لهذا الشهر (No recorded income).
+                                        </div>
+                                    ) : (
+                                        monthlyStatementData.groupedInflows.map((group) => (
+                                            <div
+                                                key={group.key}
+                                                onClick={() => setSelectedStatementGroup(group)}
+                                                className="p-3 bg-white border border-sky-200 rounded-xl shadow-2xs space-y-1.5 cursor-pointer active:scale-98 transition-all"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-xs text-slate-900 leading-snug">{group.title}</span>
+                                                    <span className="font-black text-sm text-emerald-700 font-mono">
+                                                        {group.totalUSD > 0 ? `$${group.totalUSD.toLocaleString()}` : ''}
+                                                        {group.totalLBP > 0 ? ` LBP ${group.totalLBP.toLocaleString()}` : ''}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
+                                                    <span className="bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-full">
+                                                        {group.count} {group.count === 1 ? 'entry' : 'entries'}
+                                                    </span>
+                                                    <span className="text-sky-700 font-bold">Details →</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Desktop & Print Table View */}
+                                <div className="hidden md:block print:block overflow-x-auto">
                                     <table className="w-full text-left text-xs border-collapse min-w-[580px]">
                                         <thead className="bg-sky-50/80 border-b border-sky-200 text-slate-700 font-bold uppercase text-[10px]">
                                             <tr>
@@ -2693,7 +2821,39 @@ export default function FinancesManagement({
                                     </span>
                                 </div>
 
-                                <div className="overflow-x-auto">
+                                {/* Mobile Outflow Cards View */}
+                                <div className="p-3 space-y-2 md:hidden print:hidden bg-slate-50/50">
+                                    {monthlyStatementData.groupedOutflows.length === 0 ? (
+                                        <div className="p-6 text-center text-slate-400 text-xs">
+                                            لا توجد مدفوعات مسجلة لهذا الشهر (No recorded expenses).
+                                        </div>
+                                    ) : (
+                                        monthlyStatementData.groupedOutflows.map((group) => (
+                                            <div
+                                                key={group.key}
+                                                onClick={() => setSelectedStatementGroup(group)}
+                                                className="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-1.5 cursor-pointer active:scale-98 transition-all"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-xs text-slate-900 leading-snug">{group.title}</span>
+                                                    <span className="font-black text-sm text-rose-600 font-mono">
+                                                        {group.totalUSD > 0 ? `$${group.totalUSD.toLocaleString()}` : ''}
+                                                        {group.totalLBP > 0 ? ` LBP ${group.totalLBP.toLocaleString()}` : ''}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
+                                                    <span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full">
+                                                        {group.count} {group.count === 1 ? 'entry' : 'entries'}
+                                                    </span>
+                                                    <span className="text-slate-700 font-bold">Details →</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Desktop & Print Table View */}
+                                <div className="hidden md:block print:block overflow-x-auto">
                                     <table className="w-full text-left text-xs border-collapse min-w-[580px]">
                                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px]">
                                             <tr>
@@ -2925,9 +3085,8 @@ export default function FinancesManagement({
                                             >
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                                                            isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                                        }`}>
+                                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                                            }`}>
                                                             {initials || <Users className="h-4 w-4" />}
                                                         </div>
                                                         <div>
@@ -2941,11 +3100,10 @@ export default function FinancesManagement({
                                                     </div>
 
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border capitalize ${
-                                                            isPaid
+                                                        className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border capitalize ${isPaid
                                                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                                                 : 'bg-rose-50 text-rose-800 border-rose-200'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {fee.status}
                                                     </span>
@@ -3124,32 +3282,29 @@ export default function FinancesManagement({
                                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                                         <button
                                             onClick={() => setTreasuryFilterType('all')}
-                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                                                treasuryFilterType === 'all'
+                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${treasuryFilterType === 'all'
                                                     ? 'bg-slate-800 text-white shadow-xs'
                                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                            }`}
+                                                }`}
                                         >
                                             All ({transactions.length})
                                         </button>
                                         <button
                                             onClick={() => setTreasuryFilterType('income')}
-                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
-                                                treasuryFilterType === 'income'
+                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${treasuryFilterType === 'income'
                                                     ? 'bg-emerald-600 text-white shadow-xs'
                                                     : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-                                            }`}
+                                                }`}
                                         >
                                             <ArrowDownRight className="h-3 w-3" />
                                             <span>Income (${totalFilteredIncome.toLocaleString()})</span>
                                         </button>
                                         <button
                                             onClick={() => setTreasuryFilterType('expense')}
-                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${
-                                                treasuryFilterType === 'expense'
+                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 ${treasuryFilterType === 'expense'
                                                     ? 'bg-rose-600 text-white shadow-xs'
                                                     : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200'
-                                            }`}
+                                                }`}
                                         >
                                             <ArrowUpRight className="h-3 w-3" />
                                             <span>Expenses (${totalFilteredExpense.toLocaleString()})</span>
@@ -3178,9 +3333,8 @@ export default function FinancesManagement({
                                                 {/* Top row: Category badge, Date, and Amount */}
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
-                                                            isIncome ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                                        }`}>
+                                                        <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${isIncome ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                                            }`}>
                                                             {isIncome ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                                                         </div>
                                                         <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${catMeta.color}`}>
@@ -3955,89 +4109,157 @@ export default function FinancesManagement({
                                     const targetPerMonth = getTroopMonthlyTarget(selectedTroopForDetails.id)
 
                                     return (
-                                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full text-left text-xs min-w-[480px]">
-                                                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
-                                                        <tr>
-                                                            <th className="px-4 py-3">Scout Name</th>
-                                                            <th className="px-4 py-3">Months Paid</th>
-                                                            <th className="px-4 py-3">Total Paid</th>
-                                                            <th className="px-4 py-3">Status</th>
-                                                            <th className="px-4 py-3 text-right">Action</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100 font-medium">
-                                                        {troopScouts.length === 0 ? (
+                                        <div className="space-y-3">
+                                            {/* Mobile Scouts Card List */}
+                                            <div className="space-y-2 md:hidden">
+                                                {troopScouts.length === 0 ? (
+                                                    <div className="p-6 text-center text-slate-400 text-xs">
+                                                        No scouts found for this filter.
+                                                    </div>
+                                                ) : (
+                                                    troopScouts.map((scout) => {
+                                                        let totalPaid = 0
+                                                        let paidMonthsCount = 0
+
+                                                        MONTHS_ORDER.forEach((m) => {
+                                                            const due = getDueCell(scout.id, `${selectedYearNum}-${m.key}`)
+                                                            const p = Number(due?.paid_amount || 0)
+                                                            totalPaid += p
+                                                            if (p >= targetPerMonth) paidMonthsCount += 1
+                                                        })
+
+                                                        const isFullyPaidYear = paidMonthsCount >= 12
+                                                        const isPartiallyPaid = totalPaid > 0
+
+                                                        return (
+                                                            <div
+                                                                key={scout.id}
+                                                                onClick={() => {
+                                                                    setSelectedTroopId(selectedTroopForDetails.id)
+                                                                    setActiveTab('monthly_dues')
+                                                                    setSelectedTroopForDetails(null)
+                                                                }}
+                                                                className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-2 cursor-pointer active:scale-98 transition-all"
+                                                            >
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="min-w-0">
+                                                                        <span className="font-bold text-xs text-slate-900 block truncate">{scout.first_name} {scout.last_name}</span>
+                                                                        {scout.current_rank && <span className="text-[10px] text-slate-400">{scout.current_rank}</span>}
+                                                                    </div>
+                                                                    <span className="font-black text-sm text-emerald-700 font-mono">${totalPaid}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-200/60">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="text-slate-600 font-semibold text-[10px]">{paidMonthsCount}/12 mo</span>
+                                                                        <div className="w-12 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className="bg-teal-600 h-full rounded-full"
+                                                                                style={{ width: `${Math.round((paidMonthsCount / 12) * 100)}%` }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <span
+                                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isFullyPaidYear
+                                                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                                                            : isPartiallyPaid
+                                                                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                                                                : 'bg-rose-50 text-rose-800 border-rose-200'
+                                                                            }`}
+                                                                    >
+                                                                        {isFullyPaidYear ? 'Full' : isPartiallyPaid ? 'Partial' : 'Unpaid'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })
+                                                )}
+                                            </div>
+
+                                            {/* Desktop Scouts Table */}
+                                            <div className="hidden md:block border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left text-xs min-w-[480px]">
+                                                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
                                                             <tr>
-                                                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                                                                    No scouts found for this filter.
-                                                                </td>
+                                                                <th className="px-4 py-3">Scout Name</th>
+                                                                <th className="px-4 py-3">Months Paid</th>
+                                                                <th className="px-4 py-3">Total Paid</th>
+                                                                <th className="px-4 py-3">Status</th>
+                                                                <th className="px-4 py-3 text-right">Action</th>
                                                             </tr>
-                                                        ) : (
-                                                            troopScouts.map((scout) => {
-                                                                let totalPaid = 0
-                                                                let paidMonthsCount = 0
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100 font-medium">
+                                                            {troopScouts.length === 0 ? (
+                                                                <tr>
+                                                                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                                                                        No scouts found for this filter.
+                                                                    </td>
+                                                                </tr>
+                                                            ) : (
+                                                                troopScouts.map((scout) => {
+                                                                    let totalPaid = 0
+                                                                    let paidMonthsCount = 0
 
-                                                                MONTHS_ORDER.forEach((m) => {
-                                                                    const due = getDueCell(scout.id, `${selectedYearNum}-${m.key}`)
-                                                                    const p = Number(due?.paid_amount || 0)
-                                                                    totalPaid += p
-                                                                    if (p >= targetPerMonth) paidMonthsCount += 1
-                                                                })
+                                                                    MONTHS_ORDER.forEach((m) => {
+                                                                        const due = getDueCell(scout.id, `${selectedYearNum}-${m.key}`)
+                                                                        const p = Number(due?.paid_amount || 0)
+                                                                        totalPaid += p
+                                                                        if (p >= targetPerMonth) paidMonthsCount += 1
+                                                                    })
 
-                                                                const isFullyPaidYear = paidMonthsCount >= 12
-                                                                const isPartiallyPaid = totalPaid > 0
+                                                                    const isFullyPaidYear = paidMonthsCount >= 12
+                                                                    const isPartiallyPaid = totalPaid > 0
 
-                                                                return (
-                                                                    <tr key={scout.id} className="hover:bg-slate-50">
-                                                                        <td className="px-4 py-3">
-                                                                            <span className="font-bold text-slate-900 block">{scout.first_name} {scout.last_name}</span>
-                                                                            {scout.current_rank && <span className="text-[10px] text-slate-400">{scout.current_rank}</span>}
-                                                                        </td>
-                                                                        <td className="px-4 py-3">
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <span className="font-bold text-slate-700">{paidMonthsCount} / 12 months</span>
-                                                                                <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                                                                    <div
-                                                                                        className="bg-teal-600 h-full rounded-full"
-                                                                                        style={{ width: `${Math.round((paidMonthsCount / 12) * 100)}%` }}
-                                                                                    />
+                                                                    return (
+                                                                        <tr key={scout.id} className="hover:bg-slate-50">
+                                                                            <td className="px-4 py-3">
+                                                                                <span className="font-bold text-slate-900 block">{scout.first_name} {scout.last_name}</span>
+                                                                                {scout.current_rank && <span className="text-[10px] text-slate-400">{scout.current_rank}</span>}
+                                                                            </td>
+                                                                            <td className="px-4 py-3">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="font-bold text-slate-700">{paidMonthsCount} / 12 months</span>
+                                                                                    <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                                                                        <div
+                                                                                            className="bg-teal-600 h-full rounded-full"
+                                                                                            style={{ width: `${Math.round((paidMonthsCount / 12) * 100)}%` }}
+                                                                                        />
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="px-4 py-3 font-black text-emerald-700">${totalPaid}</td>
-                                                                        <td className="px-4 py-3">
-                                                                            <span
-                                                                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isFullyPaidYear
-                                                                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                                                                    : isPartiallyPaid
-                                                                                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                                                                        : 'bg-rose-50 text-rose-800 border-rose-200'
-                                                                                    }`}
-                                                                            >
-                                                                                {isFullyPaidYear ? 'Fully Paid' : isPartiallyPaid ? 'Partially Paid' : 'Unpaid'}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-right">
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setSelectedTroopId(selectedTroopForDetails.id)
-                                                                                    setActiveTab('monthly_dues')
-                                                                                    setSelectedTroopForDetails(null)
-                                                                                }}
-                                                                                className="text-teal-700 font-bold hover:underline text-[11px] inline-flex items-center gap-1"
-                                                                            >
-                                                                                <span>Open</span>
-                                                                                <ArrowRight className="h-3 w-3" />
-                                                                            </button>
-                                                                        </td>
-                                                                    </tr>
-                                                                )
-                                                            })
-                                                        )}
-                                                    </tbody>
-                                                </table>
+                                                                            </td>
+                                                                            <td className="px-4 py-3 font-black text-emerald-700">${totalPaid}</td>
+                                                                            <td className="px-4 py-3">
+                                                                                <span
+                                                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isFullyPaidYear
+                                                                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                                                                        : isPartiallyPaid
+                                                                                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                                                                            : 'bg-rose-50 text-rose-800 border-rose-200'
+                                                                                        }`}
+                                                                                >
+                                                                                    {isFullyPaidYear ? 'Fully Paid' : isPartiallyPaid ? 'Partially Paid' : 'Unpaid'}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td className="px-4 py-3 text-right">
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setSelectedTroopId(selectedTroopForDetails.id)
+                                                                                        setActiveTab('monthly_dues')
+                                                                                        setSelectedTroopForDetails(null)
+                                                                                    }}
+                                                                                    className="text-teal-700 font-bold hover:underline text-[11px] inline-flex items-center gap-1"
+                                                                                >
+                                                                                    <span>Open</span>
+                                                                                    <ArrowRight className="h-3 w-3" />
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    )
+                                                                })
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
                                     )
