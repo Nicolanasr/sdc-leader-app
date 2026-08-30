@@ -20,9 +20,9 @@ export default async function PlannerPage() {
     .eq('id', user.id)
     .single()
 
-  const currentRole = profile?.current_role || profile?.role || 'member'
-  const groupId = profile?.group_id
-  const userTroopId = profile?.troop_id
+  const role = user?.app_metadata?.role || profile?.current_role || profile?.role || 'leader'
+  const groupId = user?.app_metadata?.group_id || profile?.group_id
+  const userTroopId = user?.app_metadata?.troop_id || profile?.troop_id
 
   // 2. Fetch Group details
   let groupName = 'Scout des Cèdres'
@@ -53,23 +53,48 @@ export default async function PlannerPage() {
     sectionName: t.section_types?.name || 'Scout Unit',
   }))
 
-  // 4. Fetch All Registered Leaders (for assigning activity leads)
-  let leadersQuery = supabase
-    .from('profiles')
-    .select('id, full_name, role, roles, current_role, troop_id')
-    .order('full_name')
-
+  // 4. Fetch All Registered Leaders in Group (for assigning activity leads)
+  let profilesData: any[] = []
   if (groupId) {
-    leadersQuery = leadersQuery.eq('group_id', groupId)
+    const { data: pData } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        full_name,
+        email,
+        rank,
+        user_roles!inner(group_id, troop_id, roles:role_id(name))
+      `)
+      .eq('user_roles.group_id', groupId)
+      .order('full_name')
+    profilesData = pData || []
   }
 
-  const { data: leadersData } = await leadersQuery
-  const leaders = (leadersData || []).map((l: any) => ({
-    id: l.id,
-    fullName: l.full_name || 'Leader',
-    role: l.current_role || l.role || 'leader',
-    troopId: l.troop_id,
+  if (profilesData.length === 0) {
+    // Fallback: select all profiles
+    const { data: allProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, rank')
+      .order('full_name')
+    profilesData = allProfiles || []
+  }
+
+  const leaders = (profilesData || []).map((p: any) => ({
+    id: p.id,
+    fullName: p.full_name || p.email || 'Leader',
+    role: p.user_roles?.[0]?.roles?.name || p.rank || 'Leader',
+    troopId: p.user_roles?.[0]?.troop_id || null,
   }))
+
+  // Ensure current user is present in leaders list
+  if (user && !leaders.some((l: any) => l.id === user.id)) {
+    leaders.unshift({
+      id: user.id,
+      fullName: profile?.full_name || user.email || 'Current Leader',
+      role: role || 'Leader',
+      troopId: userTroopId || null,
+    })
+  }
 
   // 5. Fetch Initial Meeting Plans
   let initialPlans: any[] = []
@@ -145,7 +170,7 @@ export default async function PlannerPage() {
     <PlannerManagement
       groupName={groupName}
       groupId={groupId || ''}
-      currentRole={currentRole}
+      currentRole={role}
       userName={profile?.full_name || 'Leader'}
       userId={user.id}
       userTroopId={userTroopId || null}
