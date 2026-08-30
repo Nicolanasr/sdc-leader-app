@@ -64,64 +64,61 @@ export default function GroupDashboardLayout({
                 </div>
             )}
 
-            <header className="mb-4">
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Dashboard Overview</h2>
+            <header className="mb-2">
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Dashboard Overview</h2>
             </header>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="bg-white p-4 sm:p-6 border border-slate-200 rounded-xl shadow-xs">
-                    <div className="text-xs font-medium text-slate-400 uppercase">Youth Scouts</div>
-                    <div className="mt-1 text-2xl sm:text-3xl font-bold text-slate-800">{stats.scoutCount}</div>
-                    <p className="text-xs text-slate-400 mt-0.5">Active scouts registered</p>
+            {/* Stats Grid - 2 columns on mobile */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                <div className="bg-white p-3 sm:p-5 border border-slate-200/90 rounded-2xl shadow-2xs">
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Youth Scouts</div>
+                    <div className="mt-0.5 text-xl sm:text-3xl font-black text-slate-900">{stats.scoutCount}</div>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Active registered</p>
                 </div>
 
-                <div className="bg-white p-4 sm:p-6 border border-slate-200 rounded-xl shadow-xs">
-                    <div className="text-xs font-medium text-slate-400 uppercase">Units / Troops</div>
-                    <div className="mt-1 text-2xl sm:text-3xl font-bold text-slate-800">{stats.troopCount}</div>
-                    <p className="text-xs text-slate-400 mt-0.5">Dynamic active units</p>
+                <div className="bg-white p-3 sm:p-5 border border-slate-200/90 rounded-2xl shadow-2xs">
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Units / Troops</div>
+                    <div className="mt-0.5 text-xl sm:text-3xl font-black text-slate-900">{stats.troopCount}</div>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Active units</p>
                 </div>
 
-                <div className="bg-white p-4 sm:p-6 border border-slate-200 rounded-xl shadow-xs">
-                    <div className="text-xs font-medium text-slate-400 uppercase">Active Leaders</div>
-                    <div className="mt-1 text-2xl sm:text-3xl font-bold text-slate-800">{stats.leaderCount}</div>
-                    <p className="text-xs text-slate-400 mt-0.5">Council & troop leaders</p>
+                <div className="bg-white p-3 sm:p-5 border border-slate-200/90 rounded-2xl shadow-2xs">
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Active Leaders</div>
+                    <div className="mt-0.5 text-xl sm:text-3xl font-black text-slate-900">{stats.leaderCount}</div>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Council & troop</p>
                 </div>
 
-                <div className="bg-white p-4 sm:p-6 border border-slate-200 rounded-xl shadow-xs">
-                    <div className="text-xs font-medium text-slate-400 uppercase">Pending Approvals</div>
-                    <div className="mt-1 text-2xl sm:text-3xl font-bold text-rose-600">{stats.pendingTransactions}</div>
-                    <p className="text-xs text-slate-400 mt-0.5">Expenses awaiting reviews</p>
+                <div className="bg-white p-3 sm:p-5 border border-slate-200/90 rounded-2xl shadow-2xs">
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Reviews</div>
+                    <div className="mt-0.5 text-xl sm:text-3xl font-black text-rose-600">{stats.pendingTransactions}</div>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Expenses</p>
                 </div>
             </div>
 
-            {/* Group Leaders Operations & Forms */}
-            <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Quick Actions Checklist */}
-                <div className="lg:col-span-3 space-y-4">
-                    <div className="bg-white p-4 sm:p-6 border border-slate-200 rounded-xl shadow-xs">
-                        <h3 className="text-base font-semibold text-teal-800 mb-3">Quick Operations</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <Link
-                                href="/group/dashboard/leaders"
-                                className="flex items-center p-3.5 bg-slate-50 border border-slate-200 hover:border-teal-500 rounded-xl transition-all group"
-                            >
-                                <div>
-                                    <h4 className="font-semibold text-sm text-slate-800 group-hover:text-teal-700">Invite new leaders</h4>
-                                    <p className="text-xs text-slate-400 mt-0.5">Onboard Secretaries, Treasurers, or Unit Leaders</p>
-                                </div>
-                            </Link>
+            {/* Quick Actions Checklist */}
+            <div className="mt-2 space-y-3">
+                <div className="bg-white p-3.5 sm:p-5 border border-slate-200/90 rounded-2xl shadow-2xs">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-2.5 uppercase tracking-wide">Quick Operations</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <Link
+                            href="/group/dashboard/leaders"
+                            className="flex items-center p-3 bg-slate-50 border border-slate-200/80 hover:border-teal-600 rounded-xl transition-all group"
+                        >
+                            <div>
+                                <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-teal-800">Invite new leaders</h4>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Onboard Secretaries, Treasurers, or Unit Leaders</p>
+                            </div>
+                        </Link>
 
-                            <Link
-                                href="/group/dashboard/troops"
-                                className="flex items-center p-3.5 bg-slate-50 border border-slate-200 hover:border-teal-500 rounded-xl transition-all group"
-                            >
-                                <div>
-                                    <h4 className="font-semibold text-sm text-slate-800 group-hover:text-teal-700">Manage units & troops</h4>
-                                    <p className="text-xs text-slate-400 mt-0.5">Configure youth sections, Kechefe units, or global troops</p>
-                                </div>
-                            </Link>
-                        </div>
+                        <Link
+                            href="/group/dashboard/troops"
+                            className="flex items-center p-3 bg-slate-50 border border-slate-200/80 hover:border-teal-600 rounded-xl transition-all group"
+                        >
+                            <div>
+                                <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-teal-800">Manage units & troops</h4>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Configure youth sections, Kechefe units, or global troops</p>
+                            </div>
+                        </Link>
                     </div>
                 </div>
             </div>

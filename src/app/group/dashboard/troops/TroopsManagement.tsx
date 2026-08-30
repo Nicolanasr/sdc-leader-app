@@ -163,8 +163,10 @@ export default function TroopsManagement({
             </div>
           )}
 
-          <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Units & Troops</h2>
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 mb-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Units & Troops</h2>
+            </div>
             {canManage && (
               <button
                 onClick={() => {
@@ -172,32 +174,32 @@ export default function TroopsManagement({
                   setSectionTypeId('')
                   setShowCreateModal(true)
                 }}
-                className="inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-600 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors text-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-teal-800 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl shadow-2xs transition-all text-xs"
               >
                 <Plus className="h-4 w-4" />
-                Create Unit / Troop
+                Create Unit
               </button>
             )}
           </header>
 
-          <div className="space-y-6">
-            <div className="w-full bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800">Active Scout Units & Divisions</h3>
-                <span className="text-xs font-semibold text-slate-400">{troops.length} Units</span>
+          <div className="space-y-4">
+            <div className="w-full bg-white border border-slate-200/90 rounded-2xl shadow-2xs overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70 flex justify-between items-center">
+                <h3 className="font-bold text-xs sm:text-sm text-slate-800">Active Scout Units ({troops.length})</h3>
+                <span className="text-[11px] font-bold text-slate-400">{troops.length} Units</span>
               </div>
               <div className="divide-y divide-slate-100">
                 {troops.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-sm">No units or troops defined yet.</div>
+                  <div className="p-6 text-center text-slate-400 text-xs">No units or troops defined yet.</div>
                 ) : (
                   troops.map((troop) => (
-                    <div key={troop.id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-slate-50/50 transition-colors">
-                      <div>
-                        <h4 className="font-bold text-slate-950 text-base">{troop.name}</h4>
-                        <p className="text-xs text-slate-400 mt-0.5">Unit ID: <span className="font-mono text-slate-500">{troop.id}</span></p>
+                    <div key={troop.id} className="p-3.5 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:bg-slate-50/50 transition-colors">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 text-sm">{troop.name}</h4>
+                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {troop.id.slice(0, 8)}...</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-teal-50 text-teal-800 border border-teal-100 shadow-xs">
+                      <div className="flex items-center justify-between w-full sm:w-auto gap-2.5">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-50 text-teal-800 border border-teal-100">
                           {troop.sectionName}
                         </span>
                         {canManage && (
