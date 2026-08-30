@@ -87,8 +87,7 @@ export default async function ProgressionPage() {
     currentRank: m.current_rank || 'Scout',
   }))
 
-  // 6. Fetch all Progression Classes & Requirements across section types
-  const { data: classesData } = await adminDb
+    const { data: classesData } = await adminDb
     .from('progression_classes')
     .select(`
       id,
@@ -96,6 +95,7 @@ export default async function ProgressionPage() {
       name,
       badge_icon,
       sort_order,
+      class_type,
       progression_requirements (
         id,
         class_id,
@@ -114,6 +114,7 @@ export default async function ProgressionPage() {
     name: c.name,
     badgeIcon: c.badge_icon || '⚜️',
     sortOrder: c.sort_order,
+    classType: c.class_type || 'rank',
     requirements: (c.progression_requirements || [])
       .filter((r: any) => !r.is_deleted)
       .sort((a: any, b: any) => a.sort_order - b.sort_order)

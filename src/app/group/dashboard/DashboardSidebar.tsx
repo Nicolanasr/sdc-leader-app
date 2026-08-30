@@ -44,15 +44,15 @@ const navLink = (href: string, label: string, icon: React.ReactNode, active: boo
 export default function DashboardSidebar({ groupName, currentRole, onClose, onLogout }: Props) {
   const pathname = usePathname()
 
-  // Role permissions per view
+  // Role permissions per view (Supports multi-role leaders: group leaders, troop leaders, treasurers, and quartermasters)
   const canAccessBroadcast = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
   const canAccessLeaders = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
   const canAccessTroops = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
-  const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
-  const canAccessAttendance = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const canAccessAttendance = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
   const canAccessEvents = true
-  const canAccessFinances = ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
-  const canAccessInventory = ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessFinances = ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const canAccessInventory = ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
   const canAccessPantry = ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'configurator'].includes(currentRole)
 
   return (

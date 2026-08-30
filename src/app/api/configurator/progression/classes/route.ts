@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
         name,
         badge_icon,
         sort_order,
+        class_type,
         created_at,
         progression_requirements (
           id,
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { section_type_id, name, badge_icon, sort_order } = body
+    const { section_type_id, name, badge_icon, sort_order, class_type } = body
 
     if (!section_type_id || !name?.trim()) {
       return NextResponse.json({ error: 'Section Type and Class Name are required.' }, { status: 400 })
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         badge_icon: badge_icon || '⚜️',
         sort_order: sort_order || 0,
+        class_type: class_type || 'rank',
       })
       .select()
       .single()
@@ -106,20 +108,23 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { id, name, badge_icon, sort_order } = body
+    const { id, name, badge_icon, sort_order, class_type } = body
 
     if (!id || !name?.trim()) {
       return NextResponse.json({ error: 'Class ID and Name are required.' }, { status: 400 })
     }
 
     const adminDb = createAdminClient()
+    const updatePayload: any = {
+      name: name.trim(),
+      badge_icon: badge_icon || '⚜️',
+      sort_order: sort_order ?? 0,
+    }
+    if (class_type) updatePayload.class_type = class_type
+
     const { data, error } = await adminDb
       .from('progression_classes')
-      .update({
-        name: name.trim(),
-        badge_icon: badge_icon || '⚜️',
-        sort_order: sort_order ?? 0,
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single()

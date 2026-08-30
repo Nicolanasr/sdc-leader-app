@@ -53,6 +53,7 @@ interface ProgressionClass {
   name: string
   badgeIcon: string
   sortOrder: number
+  classType?: 'rank' | 'specialty'
   requirements: ProgressionRequirement[]
 }
 
@@ -95,6 +96,9 @@ export default function ProgressionManagement({
   classes,
   initialRecords,
 }: Props) {
+  // ── Track Switcher ('rank' vs 'specialty') ──
+  const [activeTrack, setActiveTrack] = useState<'rank' | 'specialty'>('rank')
+
   // ── Selected Troop ──
   const initialTroopId = isTroopLeader && userTroopId
     ? userTroopId
@@ -107,11 +111,15 @@ export default function ProgressionManagement({
     return troops.find((t) => t.id === selectedTroopId) || troops[0] || null
   }, [troops, selectedTroopId])
 
-  // Classes available for this troop's section type
+  // Classes available for this troop's section type and active track
   const availableClasses = useMemo(() => {
     if (!currentTroop) return []
-    return classes.filter((c) => c.sectionTypeId === currentTroop.sectionTypeId)
-  }, [classes, currentTroop])
+    return classes.filter(
+      (c) =>
+        c.sectionTypeId === currentTroop.sectionTypeId &&
+        (c.classType || 'rank') === activeTrack
+    )
+  }, [classes, currentTroop, activeTrack])
 
   // Selected Class ID
   const [selectedClassId, setSelectedClassId] = useState<string>(availableClasses[0]?.id || '')
@@ -403,6 +411,41 @@ export default function ProgressionManagement({
           </div>
         </div>
 
+        {/* ── TRACK SWITCHER: RANKS VS SPECIALTY BADGES ── */}
+        <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 max-w-md shadow-2xs">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTrack('rank')
+              setSelectedCategory('all')
+            }}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              activeTrack === 'rank'
+                ? 'bg-teal-800 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <GraduationCap className="h-4 w-4" />
+            <span>Rank Stages (المراحل)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTrack('specialty')
+              setSelectedCategory('all')
+            }}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              activeTrack === 'specialty'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Specialty Badges (الأوسمة)</span>
+          </button>
+        </div>
+
         {/* ── CLASS / STAGE TABS (Kouboul, Moubtada2, Daraja Thanya, Daraja Oula, Tohdiri Chara) ── */}
         {availableClasses.length > 0 ? (
           <div className="space-y-3">
@@ -420,15 +463,17 @@ export default function ProgressionManagement({
                     }}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
                       isSelected
-                        ? 'bg-teal-800 text-white shadow-xs scale-100'
+                        ? activeTrack === 'specialty' ? 'bg-amber-600 text-white shadow-xs scale-100' : 'bg-teal-800 text-white shadow-xs scale-100'
                         : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <span className="text-base leading-none">{cls.badgeIcon || '⚜️'}</span>
+                    <span className="text-base leading-none">{cls.badgeIcon || (activeTrack === 'specialty' ? '🪢' : '⚜️')}</span>
                     <span>{cls.name}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
-                        isSelected ? 'bg-teal-700 text-teal-100' : 'bg-slate-100 text-slate-500'
+                        isSelected
+                          ? activeTrack === 'specialty' ? 'bg-amber-700 text-amber-100' : 'bg-teal-700 text-teal-100'
+                          : 'bg-slate-100 text-slate-500'
                       }`}
                     >
                       {cls.requirements.length}
@@ -602,10 +647,20 @@ export default function ProgressionManagement({
                                   >
                                     {req.title}
                                   </p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                     <span className="text-[9px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-100">
                                       {req.category}
                                     </span>
+                                    {hasEvidence && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEvidence(scout, req)}
+                                        className="inline-flex items-center gap-1 text-[9px] font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 px-1.5 py-0.2 rounded border border-teal-300 transition-colors"
+                                      >
+                                        <Paperclip className="h-2.5 w-2.5" />
+                                        <span>Proof Attached</span>
+                                      </button>
+                                    )}
                                     {isDone && record?.validatorName && (
                                       <span className="text-[9px] text-slate-400 truncate">
                                         ✓ by {record.validatorName}
@@ -641,11 +696,13 @@ export default function ProgressionManagement({
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center mx-auto">
-              <GraduationCap className="h-6 w-6" />
+              {activeTrack === 'rank' ? <GraduationCap className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
             </div>
-            <h3 className="font-bold text-base text-slate-900">No Curriculum Configured Yet</h3>
+            <h3 className="font-bold text-base text-slate-900">
+              {activeTrack === 'rank' ? 'No Rank Curriculum Configured Yet' : 'No Specialty Badges Configured Yet'}
+            </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              The Configurator hasn&apos;t defined progression classes for this unit&apos;s section type ({currentTroop?.sectionName || 'Section'}).
+              The Configurator hasn&apos;t defined {activeTrack === 'rank' ? 'progression rank classes' : 'specialty badges'} for this unit&apos;s section type ({currentTroop?.sectionName || 'Section'}).
             </p>
           </div>
         )}
@@ -653,7 +710,7 @@ export default function ProgressionManagement({
         {/* ── EVIDENCE & NOTES MODAL ── */}
         {evidenceModalTarget && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
+            <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
@@ -690,22 +747,36 @@ export default function ProgressionManagement({
                 )}
               </div>
 
-              {/* Existing Evidence File View */}
+              {/* Existing Evidence File View & Inline Preview */}
               {evidenceModalTarget.record?.evidenceFileUrl && (
-                <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <CheckCircle2 className="h-4 w-4 text-teal-800 shrink-0" />
-                    <span className="text-xs font-bold text-teal-950 truncate">Attached Evidence on Drive</span>
+                <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CheckCircle2 className="h-4 w-4 text-teal-800 shrink-0" />
+                      <span className="text-xs font-bold text-teal-950 truncate">Google Drive Synced Proof</span>
+                    </div>
+                    <a
+                      href={evidenceModalTarget.record.evidenceFileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-[11px] font-bold transition-colors flex items-center gap-1 shrink-0"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>View Original</span>
+                    </a>
                   </div>
-                  <a
-                    href={evidenceModalTarget.record.evidenceFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    <span>View File</span>
-                  </a>
+
+                  {/* Inline preview */}
+                  <div className="rounded-xl overflow-hidden border border-teal-200/80 bg-white p-2 flex items-center justify-center">
+                    <img
+                      src={evidenceModalTarget.record.evidenceFileUrl}
+                      alt="Proof"
+                      className="max-h-48 rounded-lg object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none'
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

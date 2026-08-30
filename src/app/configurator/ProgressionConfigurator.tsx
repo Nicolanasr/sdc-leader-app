@@ -38,6 +38,7 @@ interface ProgressionClass {
   name: string
   badge_icon: string
   sort_order: number
+  class_type?: 'rank' | 'specialty'
   progression_requirements?: ProgressionRequirement[]
 }
 
@@ -45,10 +46,26 @@ interface Props {
   sections: SectionType[]
 }
 
-const BADGE_ICONS = ['⚜️', '🐺', '🌟', '🎖️', '🏹', '⛺', '🔥', '🧗', '🧭', '🌲', '👑', '🏅', '🏆', '⚓', '🌿']
+const BADGE_ICONS = [
+  '⚜️', '🪢', '🚑', '🧭', '⛺', '🍳', '🏊‍♂️', '🎨', '🌲', '🔥', '🏹', '🧗',
+  '🐺', '🌟', '🎖️', '👑', '🏅', '🏆', '⚓', '🌿', '🪵', '🔦', '📷', '🛠️', '🎵'
+]
+
+const SPECIALTY_BADGE_PRESETS = [
+  { name: 'العقّاد (Al 3akkad)', icon: '🪢' },
+  { name: 'المسعف (Al Mosa3ef)', icon: '🚑' },
+  { name: 'الدليل (Al Dalil)', icon: '🧭' },
+  { name: 'المخيّم (Al Mokhayyem)', icon: '⛺' },
+  { name: 'الطبّاخ (Al Tabakh)', icon: '🍳' },
+  { name: 'السبّاح (Al Sabeeh)', icon: '🏊‍♂️' },
+  { name: 'رجل النار (Al Naar)', icon: '🔥' },
+  { name: 'حارس الغابة (Al Ghaba)', icon: '🌲' },
+  { name: 'الفنّان (Al Fannan)', icon: '🎨' },
+]
 
 export default function ProgressionConfigurator({ sections }: Props) {
   const [selectedSectionId, setSelectedSectionId] = useState<string>(sections[0]?.id || '')
+  const [curriculumView, setCurriculumView] = useState<'rank' | 'specialty'>('rank')
   const [classes, setClasses] = useState<ProgressionClass[]>([])
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -59,6 +76,7 @@ export default function ProgressionConfigurator({ sections }: Props) {
   const [editingClass, setEditingClass] = useState<ProgressionClass | null>(null)
   const [classNameInput, setClassNameInput] = useState('')
   const [classIconInput, setClassIconInput] = useState('⚜️')
+  const [classTypeInput, setClassTypeInput] = useState<'rank' | 'specialty'>('rank')
   const [classSortInput, setClassSortInput] = useState(0)
 
   // Requirement Modal State
@@ -105,9 +123,14 @@ export default function ProgressionConfigurator({ sections }: Props) {
     }
   }, [selectedSectionId])
 
+  const displayedClasses = useMemo(() => {
+    return classes.filter((c) => (c.class_type || 'rank') === curriculumView)
+  }, [classes, curriculumView])
+
   const currentClass = useMemo(() => {
-    return classes.find((c) => c.id === selectedClassId) || null
-  }, [classes, selectedClassId])
+    const found = displayedClasses.find((c) => c.id === selectedClassId)
+    return found || displayedClasses[0] || null
+  }, [displayedClasses, selectedClassId])
 
   // Collect all unique categories across this section and current class for autocomplete
   const existingCategories = useMemo(() => {
@@ -136,18 +159,21 @@ export default function ProgressionConfigurator({ sections }: Props) {
   }, [currentClass])
 
   // ── Class Form Handlers ──
-  const handleOpenAddClass = () => {
+  const handleOpenAddClass = (typeOverride?: 'rank' | 'specialty') => {
+    const targetType = typeOverride || curriculumView
     setEditingClass(null)
     setClassNameInput('')
-    setClassIconInput('⚜️')
-    setClassSortInput(classes.length)
+    setClassIconInput(targetType === 'specialty' ? '🪢' : '⚜️')
+    setClassTypeInput(targetType)
+    setClassSortInput(displayedClasses.length)
     setIsClassModalOpen(true)
   }
 
   const handleOpenEditClass = (cls: ProgressionClass) => {
     setEditingClass(cls)
     setClassNameInput(cls.name)
-    setClassIconInput(cls.badge_icon || '⚜️')
+    setClassIconInput(cls.badge_icon || (cls.class_type === 'specialty' ? '🪢' : '⚜️'))
+    setClassTypeInput(cls.class_type || 'rank')
     setClassSortInput(cls.sort_order)
     setIsClassModalOpen(true)
   }
@@ -167,12 +193,13 @@ export default function ProgressionConfigurator({ sections }: Props) {
             id: editingClass.id,
             name: classNameInput.trim(),
             badge_icon: classIconInput,
+            class_type: classTypeInput,
             sort_order: classSortInput,
           }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to update class')
-        showStatus('Class updated successfully!', 'success')
+        showStatus('Saved successfully!', 'success')
       } else {
         // Create
         const res = await fetch('/api/configurator/progression/classes', {
@@ -182,12 +209,13 @@ export default function ProgressionConfigurator({ sections }: Props) {
             section_type_id: selectedSectionId,
             name: classNameInput.trim(),
             badge_icon: classIconInput,
+            class_type: classTypeInput,
             sort_order: classSortInput,
           }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to create class')
-        showStatus('Class created successfully!', 'success')
+        showStatus('Created successfully!', 'success')
       }
 
       setIsClassModalOpen(false)
@@ -344,14 +372,24 @@ export default function ProgressionConfigurator({ sections }: Props) {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenAddClass}
-          className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Rank / Class</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleOpenAddClass('rank')}
+            className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Rank Stage</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleOpenAddClass('specialty')}
+            className="bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Add Specialty Badge</span>
+          </button>
+        </div>
       </div>
 
       {/* ── SECTION TYPE TABS ── */}
@@ -378,42 +416,93 @@ export default function ProgressionConfigurator({ sections }: Props) {
         ))}
       </div>
 
+      {/* ── TRACK SWITCHER: RANKS VS SPECIALTY BADGES ── */}
+      <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 max-w-md shadow-2xs">
+        <button
+          type="button"
+          onClick={() => {
+            setCurriculumView('rank')
+            setSelectedClassId(null)
+          }}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            curriculumView === 'rank'
+              ? 'bg-teal-800 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <GraduationCap className="h-4 w-4" />
+          <span>Rank Stages (المراحل)</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+              curriculumView === 'rank' ? 'bg-teal-700 text-teal-100' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {classes.filter((c) => (c.class_type || 'rank') === 'rank').length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setCurriculumView('specialty')
+            setSelectedClassId(null)
+          }}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            curriculumView === 'specialty'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Sparkles className="h-4 w-4" />
+          <span>Specialty Badges (الأوسمة)</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+              curriculumView === 'specialty' ? 'bg-amber-700 text-amber-100' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {classes.filter((c) => c.class_type === 'specialty').length}
+          </span>
+        </button>
+      </div>
+
       {/* ── MAIN WORKSPACE: CLASSES LIST & REQUIREMENTS TREE ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Classes / Stages (e.g. Kouboul, Moubtada2, Daraja Thanya, Daraja Oula, Tohdiri Chara) */}
+        {/* Left Column: Classes / Stages / Badges */}
         <div className="lg:col-span-4 space-y-3">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Progression Classes ({classes.length})
+              {curriculumView === 'rank' ? 'Rank Stages' : 'Specialty Badges'} ({displayedClasses.length})
             </h3>
             <button
-              onClick={handleOpenAddClass}
+              onClick={() => handleOpenAddClass()}
               className="text-xs font-bold text-teal-800 hover:text-teal-900 flex items-center gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
-              <span>Add Stage</span>
+              <span>{curriculumView === 'rank' ? 'Add Stage' : 'Add Badge'}</span>
             </button>
           </div>
 
-          {classes.length === 0 ? (
+          {displayedClasses.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-center space-y-3">
               <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
-                <GraduationCap className="h-5 w-5" />
+                {curriculumView === 'rank' ? <GraduationCap className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                No progression classes created for this section yet.
+                {curriculumView === 'rank'
+                  ? 'No rank stages created for this section yet.'
+                  : 'No specialty badges created for this section yet.'}
               </p>
               <button
                 type="button"
-                onClick={handleOpenAddClass}
+                onClick={() => handleOpenAddClass()}
                 className="px-3.5 py-1.5 rounded-xl bg-teal-50 text-teal-800 hover:bg-teal-100 text-xs font-bold transition-all"
               >
-                + Create First Class (e.g. Kouboul)
+                {curriculumView === 'rank' ? '+ Create First Stage (e.g. Kouboul)' : '+ Create Badge (e.g. Al 3akkad)'}
               </button>
             </div>
           ) : (
             <div className="space-y-2">
-              {classes.map((cls, idx) => {
+              {displayedClasses.map((cls, idx) => {
                 const isSelected = cls.id === selectedClassId
                 const reqCount = cls.progression_requirements?.length || 0
 
@@ -617,14 +706,79 @@ export default function ProgressionConfigurator({ sections }: Props) {
             </div>
 
             <form onSubmit={handleSaveClass} className="space-y-3.5">
+              {/* Type Toggle */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Class / Stage Name *
+                  Type *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClassTypeInput('rank')
+                      if (classIconInput === '🪢') setClassIconInput('⚜️')
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                      classTypeInput === 'rank'
+                        ? 'bg-teal-800 text-white border-teal-800 shadow-2xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    <span>Rank Stage</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClassTypeInput('specialty')
+                      if (classIconInput === '⚜️') setClassIconInput('🪢')
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                      classTypeInput === 'specialty'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Specialty Badge</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Specialty Presets */}
+              {classTypeInput === 'specialty' && (
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                    Quick Badge Presets:
+                  </label>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {SPECIALTY_BADGE_PRESETS.map((p) => (
+                      <button
+                        key={p.name}
+                        type="button"
+                        onClick={() => {
+                          setClassNameInput(p.name)
+                          setClassIconInput(p.icon)
+                        }}
+                        className="text-[10px] bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 px-2 py-0.5 rounded-md font-bold transition-colors flex items-center gap-1"
+                      >
+                        <span>{p.icon}</span>
+                        <span>{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  {classTypeInput === 'rank' ? 'Class / Stage Name *' : 'Specialty Badge Name *'}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Kouboul, Moubtada2, Daraja Thanya..."
+                  placeholder={classTypeInput === 'rank' ? 'e.g. Kouboul, Moubtada2...' : 'e.g. العقّاد (Al 3akkad)...'}
                   value={classNameInput}
                   onChange={(e) => setClassNameInput(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-bold text-slate-900 focus:outline-none focus:border-teal-700"

@@ -15,19 +15,36 @@ export default async function MembersPage() {
   }
 
   const groupId = user.app_metadata?.group_id
-  const userRole = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
-  const userTroopId = user.app_metadata?.troop_id || null
+  let userRole = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
+  let userTroopId = user.app_metadata?.troop_id || null
+
+  const adminDb = (await import('@/utils/supabase/admin')).createAdminClient()
+
+  // If user has multiple roles, query user_roles to check for troop leader or group permissions
+  const { data: userRolesData } = await adminDb
+    .from('user_roles')
+    .select('role_id, troop_id, roles:role_id (name, permission_scope)')
+    .eq('profile_id', user.id)
+
+  const activeScopes = (userRolesData || []).map((ur: any) => ur.roles?.permission_scope || ur.roles?.name).filter(Boolean)
+  if (!userTroopId) {
+    const troopRole = (userRolesData || []).find((ur: any) => ur.troop_id)
+    if (troopRole) userTroopId = troopRole.troop_id
+  }
 
   const allowedRoles = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
-    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator',
+    'amin_sandou2_group', 'amin_tejhizet_group',
+    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator',
   ]
 
-  if (!groupId || !allowedRoles.includes(userRole)) {
+  const hasAccess = allowedRoles.includes(userRole) || activeScopes.some((s: string) => allowedRoles.includes(s))
+
+  if (!groupId || !hasAccess) {
     redirect('/group/dashboard?message=Unauthorized. Youth Roster access only.')
   }
 
-  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a'
+  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a' || userRole === 'chef_troupe' || (activeScopes.includes('ka2ed_fer2a') && !activeScopes.includes('chef_groupe'))
 
   // 2. Fetch Group Name
   const { data: groupData } = await supabase
