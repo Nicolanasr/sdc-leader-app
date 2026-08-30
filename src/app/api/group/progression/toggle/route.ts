@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Member not found or access denied.' }, { status: 404 })
     }
 
-    if (currentRole === 'chef_troupe' && userTroopId && memberData.troop_id !== userTroopId) {
+    const troopLeaderScopes = ['chef_troupe', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a']
+    if (troopLeaderScopes.includes(currentRole) && userTroopId && memberData.troop_id !== userTroopId) {
       return NextResponse.json({ error: 'Access restricted to your troop members.' }, { status: 403 })
     }
 

@@ -39,8 +39,24 @@ export default async function ProgressionPage() {
 
   const adminDb = createAdminClient()
 
-  // 4. Fetch Troops belonging to this group with their section_type_id
-  const { data: troopsData } = await adminDb
+  // Determine all user roles and assigned troop
+  const { data: userRolesData } = await adminDb
+    .from('user_roles')
+    .select('role_id, troop_id, roles:role_id (name, permission_scope)')
+    .eq('profile_id', user.id)
+
+  const activeScopes = (userRolesData || []).map((ur: any) => ur.roles?.permission_scope || ur.roles?.name).filter(Boolean)
+  let effectiveTroopId = userTroopId
+  if (!effectiveTroopId) {
+    const troopRole = (userRolesData || []).find((ur: any) => ur.troop_id)
+    if (troopRole) effectiveTroopId = troopRole.troop_id
+  }
+
+  const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role) || activeScopes.some((s: string) => ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(s))
+  const isTroopLeader = !isGroupAdmin && (['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(role) || activeScopes.some((s: string) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(s)))
+
+  // 4. Fetch Troops belonging to this group (strictly scoped if troop leader)
+  let troopsQuery = adminDb
     .from('troops')
     .select(`
       id,
@@ -52,6 +68,12 @@ export default async function ProgressionPage() {
     .eq('is_deleted', false)
     .order('name', { ascending: true })
 
+  if (isTroopLeader && effectiveTroopId) {
+    troopsQuery = troopsQuery.eq('id', effectiveTroopId)
+  }
+
+  const { data: troopsData } = await troopsQuery
+
   const troopsList = (troopsData || []).map((t: any) => ({
     id: t.id,
     name: t.name,
@@ -59,8 +81,8 @@ export default async function ProgressionPage() {
     sectionName: t.section_types?.name || '',
   }))
 
-  // 5. Fetch all Active Members for this group with patrol names
-  const { data: membersData } = await adminDb
+  // 5. Fetch Active Members (strictly scoped to troop if troop leader)
+  let membersQuery = adminDb
     .from('members')
     .select(`
       id,
@@ -76,6 +98,12 @@ export default async function ProgressionPage() {
     .eq('is_deleted', false)
     .eq('is_active', true)
     .order('first_name', { ascending: true })
+
+  if (isTroopLeader && effectiveTroopId) {
+    membersQuery = membersQuery.eq('troop_id', effectiveTroopId)
+  }
+
+  const { data: membersData } = await membersQuery
 
   const membersList = (membersData || []).map((m: any) => ({
     id: m.id,
@@ -161,8 +189,6 @@ export default async function ProgressionPage() {
     }))
   }
 
-  const isTroopLeader = role === 'chef_troupe' && !!userTroopId
-
   return (
     <ProgressionManagement
       groupId={groupId}
@@ -170,7 +196,7 @@ export default async function ProgressionPage() {
       currentRole={role}
       userName={userName}
       userId={user.id}
-      userTroopId={userTroopId}
+      userTroopId={effectiveTroopId}
       isTroopLeader={isTroopLeader}
       troops={troopsList}
       members={membersList}

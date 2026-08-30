@@ -384,9 +384,19 @@ export default function ProgressionManagement({
             </div>
           </div>
 
-          {/* Troop Selector */}
+          {/* Troop Selector (Locked if Troop Leader) */}
           <div className="flex items-center gap-2">
-            {!isTroopLeader ? (
+            {isTroopLeader || troops.length <= 1 ? (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-900 border border-teal-200 text-xs font-bold shadow-2xs">
+                <Layers className="h-3.5 w-3.5 text-teal-700" />
+                <span>Unit: {currentTroop?.name || 'Assigned Troop'}</span>
+                {currentTroop?.sectionName && (
+                  <span className="text-[10px] bg-teal-200/60 px-1.5 py-0.2 rounded font-black text-teal-950">
+                    {currentTroop.sectionName}
+                  </span>
+                )}
+              </div>
+            ) : (
               <div className="w-full sm:w-56">
                 <select
                   value={selectedTroopId}
@@ -403,10 +413,6 @@ export default function ProgressionManagement({
                   ))}
                 </select>
               </div>
-            ) : (
-              <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-200">
-                Unit: {currentTroop?.name}
-              </span>
             )}
           </div>
         </div>
