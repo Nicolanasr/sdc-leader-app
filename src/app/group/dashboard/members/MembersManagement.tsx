@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2 } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -918,11 +918,48 @@ export default function MembersManagement({
                                     >
                                         👦👧 Siblings & Log
                                     </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
+                                            const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
+                                            router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
+                                        }}
+                                        className="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1"
+                                    >
+                                        <span>🎖️ Progression Passport</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                    </button>
                                 </div>
 
                                 {/* Tab 1: Scout Details */}
                                 {profileTab === 'scout' && (
                                     <div className="space-y-4">
+                                        {/* Progression Quick Card */}
+                                        <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-base">
+                                                    🎖️
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-xs text-slate-900">Progression & Badges</h4>
+                                                    <p className="text-[11px] text-slate-500">Track and validate milestones & badges</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
+                                                    const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
+                                                    router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
+                                                }}
+                                                className="px-2.5 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                                            >
+                                                <span>Open Passport</span>
+                                                <ExternalLink className="h-3 w-3" />
+                                            </button>
+                                        </div>
+
                                         <div className="grid grid-cols-2 gap-4 text-xs">
                                             <div>
                                                 <span className="block text-slate-400 uppercase font-bold text-[10px]">Blood Type</span>

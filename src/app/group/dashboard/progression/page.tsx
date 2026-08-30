@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { redirect } from 'next/navigation'
@@ -190,18 +191,20 @@ export default async function ProgressionPage() {
   }
 
   return (
-    <ProgressionManagement
-      groupId={groupId}
-      groupName={groupName}
-      currentRole={role}
-      userName={userName}
-      userId={user.id}
-      userTroopId={effectiveTroopId}
-      isTroopLeader={isTroopLeader}
-      troops={troopsList}
-      members={membersList}
-      classes={classesList}
-      initialRecords={progressionRecords}
-    />
+    <Suspense fallback={null}>
+      <ProgressionManagement
+        groupId={groupId}
+        groupName={groupName}
+        currentRole={role}
+        userName={userName}
+        userId={user.id}
+        userTroopId={effectiveTroopId}
+        isTroopLeader={isTroopLeader}
+        troops={troopsList}
+        members={membersList}
+        classes={classesList}
+        initialRecords={progressionRecords}
+      />
+    </Suspense>
   )
 }

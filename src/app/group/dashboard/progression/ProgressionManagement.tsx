@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import DashboardShell from '../DashboardShell'
 import {
   GraduationCap,
@@ -98,15 +100,22 @@ export default function ProgressionManagement({
   classes,
   initialRecords,
 }: Props) {
+  const searchParams = useSearchParams()
+  const urlSearch = searchParams?.get('search') || ''
+  const urlTroop = searchParams?.get('troop') || ''
+
   // ── Track Switcher ('rank' vs 'specialty') ──
   const [activeTrack, setActiveTrack] = useState<'rank' | 'specialty'>('rank')
 
   // ── Selected Troop ──
   const initialTroopId = isTroopLeader && userTroopId
     ? userTroopId
+    : urlTroop && troops.some((t) => t.id === urlTroop)
+    ? urlTroop
     : troops[0]?.id || ''
 
   const [selectedTroopId, setSelectedTroopId] = useState<string>(initialTroopId)
+  const [searchQuery, setSearchQuery] = useState<string>(urlSearch)
 
   // Current selected Troop object
   const currentTroop = useMemo(() => {
@@ -166,9 +175,6 @@ export default function ProgressionManagement({
 
   // Category Filter
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-
-  // Search Query for Scouts
-  const [searchQuery, setSearchQuery] = useState('')
 
   // Records state (optimistic fast updates)
   const [records, setRecords] = useState<ProgressionRecord[]>(initialRecords)
@@ -988,9 +994,18 @@ function ScoutsProgressionGrid({
                   {scout.lastName.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-sm text-slate-900 truncate">
-                    {scout.firstName} {scout.lastName}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-sm text-slate-900 truncate">
+                      {scout.firstName} {scout.lastName}
+                    </h3>
+                    <Link
+                      href={`/group/dashboard/members?search=${encodeURIComponent(`${scout.firstName} ${scout.lastName}`)}`}
+                      className="text-slate-400 hover:text-teal-800 transition-colors p-0.5"
+                      title="View Scout Profile Dossier"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
                   <p className="text-[11px] text-slate-500 font-medium truncate">
                     {scout.patrolName} • {scout.currentRank}
                   </p>
