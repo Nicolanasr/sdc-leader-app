@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -88,6 +88,10 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
 
         {canAccessMembers && (
           navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)
+        )}
+
+        {canAccessMembers && (
+          navLink('/group/dashboard/progression', 'Progression & Badges', <Award className="h-4 w-4" />, pathname.startsWith('/group/dashboard/progression'), onClose)
         )}
 
         {canAccessAttendance && (

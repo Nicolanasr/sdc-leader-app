@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Shield, Award, Briefcase, Plus, Users, Landmark, Layers, Key } from 'lucide-react'
+import { Menu, X, Shield, Award, Briefcase, Plus, Users, Landmark, Layers, Key, GraduationCap } from 'lucide-react'
+import ProgressionConfigurator from './ProgressionConfigurator'
 
 interface Commissariat {
   id: string
@@ -62,7 +63,7 @@ interface Props {
   initialProfiles: UserProfile[]
 }
 
-type TabType = 'commissariats' | 'groups' | 'sections' | 'ranks' | 'responsibilities' | 'roles' | 'leaders' | 'onboard'
+type TabType = 'commissariats' | 'groups' | 'sections' | 'ranks' | 'responsibilities' | 'roles' | 'leaders' | 'onboard' | 'progression'
 
 export default function ConfiguratorDashboard({
   initialCommissariats,
@@ -456,6 +457,15 @@ export default function ConfiguratorDashboard({
             >
               <Layers className="h-4 w-4" />
               Dynamic Sections
+            </button>
+            <button
+              onClick={() => navigateTab('progression')}
+              className={`flex items-center gap-3 w-full text-left px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                activeTab === 'progression' ? 'bg-teal-700 text-white' : 'text-teal-100 hover:bg-teal-800'
+              }`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              Progression & Badges
             </button>
             <button
               onClick={() => navigateTab('ranks')}
@@ -1037,6 +1047,11 @@ export default function ConfiguratorDashboard({
                 </form>
               </div>
             </div>
+          )}
+
+          {/* Tab 9: Progression & Badges */}
+          {activeTab === 'progression' && (
+            <ProgressionConfigurator sections={sections} />
           )}
         </div>
       </main>
