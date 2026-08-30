@@ -396,19 +396,19 @@ export default function LibraryManagement({
         )}
 
         {/* ── TOP HEADER (Clean, Consistent White Card) ── */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
-              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" />
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-row items-center justify-between gap-2.5 mb-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Library & Archive</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight flex items-center gap-1.5 truncate">
+                <span className="truncate">Library & Archive</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 shrink-0">
                   {itemsList.length}
                 </span>
               </h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                 Scout books, training materials, songs & blueprints
               </p>
             </div>
@@ -417,10 +417,10 @@ export default function LibraryManagement({
           {canManage && (
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-2xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+              className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1 shrink-0"
             >
-              <Plus className="h-4 w-4" />
-              <span>Add Resource / Song</span>
+              <Plus className="h-3.5 w-3.5" />
+              <span><span className="hidden sm:inline">Add</span> Resource</span>
             </button>
           )}
         </div>

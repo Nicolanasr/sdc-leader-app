@@ -429,15 +429,28 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                     {/* ─── LIST VIEW ───────────────────────────────────────────────── */}
                     {view === 'list' && (
                         <>
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Attendance</h2>
+                            {/* ── TOP HEADER CARD ── */}
+                            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-row items-center justify-between gap-2.5 mb-2">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+                                        <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
+                                            Attendance
+                                        </h1>
+                                        <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                                            Weekly meetings & leadership sessions
+                                        </p>
+                                    </div>
                                 </div>
+
                                 <button
                                     onClick={() => setView('new')}
-                                    className="inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-600 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors text-sm"
+                                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1 shrink-0"
                                 >
-                                    <Plus className="h-4 w-4" /> New Session
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span>New Session</span>
                                 </button>
                             </div>
 
@@ -569,24 +582,24 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                     {view !== 'list' && view !== 'new' && activeSession && activeEvent && (
                         <div className="flex flex-col flex-1 min-h-0">
                             {/* Sheet header */}
-                            <div className="flex items-start justify-between mb-4 gap-4">
-                                <div className="flex items-start gap-3 min-w-0">
-                                    <button onClick={() => setView('list')} className="mt-0.5 text-teal-700 hover:text-teal-900 shrink-0">
-                                        <ChevronLeft className="h-5 w-5" />
+                            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 mb-3">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <button onClick={() => setView('list')} className="p-1.5 rounded-lg bg-slate-100 text-teal-900 hover:bg-slate-200 transition-colors shrink-0">
+                                        <ChevronLeft className="h-4 w-4" />
                                     </button>
                                     <div className="min-w-0">
-                                        <h2 className="text-xl font-extrabold text-slate-900 truncate">{activeEvent.title}</h2>
-                                        <p className="text-xs text-slate-500 mt-0.5">
-                                            {new Date(activeSession.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                        <h2 className="text-xs sm:text-sm font-black text-slate-900 truncate">{activeEvent.title}</h2>
+                                        <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                                            {new Date(activeSession.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                                         </p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={handleSaveSheet}
                                     disabled={loading}
-                                    className="shrink-0 px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-sm font-bold shadow disabled:bg-slate-300 transition-colors"
+                                    className="shrink-0 bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs shadow-2xs transition-all disabled:opacity-50"
                                 >
-                                    {loading ? 'Saving…' : 'Save'}
+                                    {loading ? 'Saving…' : 'Save Sheet'}
                                 </button>
                             </div>
 

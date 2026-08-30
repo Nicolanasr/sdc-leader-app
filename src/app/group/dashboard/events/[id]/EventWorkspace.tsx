@@ -2021,65 +2021,67 @@ export default function EventWorkspace({
             )}
 
             {/* Breadcrumb Back Button */}
-            <Link
-                href="/group/dashboard/events"
-                className="inline-flex items-center gap-2 text-xs font-bold text-teal-800 hover:text-teal-900 transition-colors"
-            >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Events Directory
-            </Link>
+            <div className="flex items-center justify-between">
+                <Link
+                    href="/group/dashboard/events"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-800 hover:text-teal-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition-all active:scale-95"
+                >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <span>Back to Events</span>
+                </Link>
+            </div>
 
             {/* Hero Event Banner */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${eventItem.scope === 'group' ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-5 shadow-2xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5">
+                <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${eventItem.scope === 'group' ? 'bg-teal-50 text-teal-800 border border-teal-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
                             }`}>
-                            {eventItem.scope === 'group' ? 'Full Group Event' : 'Unit / Troop Event'}
+                            {eventItem.scope === 'group' ? 'Full Group' : 'Troop Unit'}
                         </span>
-                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 uppercase tracking-wider">
                             {eventItem.event_type}
                         </span>
                         {canEditEvent && (
                             <button
                                 onClick={openEditEventDetailsModal}
-                                className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded text-xs transition-colors"
+                                className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-lg text-[10px] transition-colors"
                             >
                                 <Edit className="h-3 w-3" /> Edit
                             </button>
                         )}
                     </div>
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">{eventItem.title}</h1>
-                    {eventItem.description && <p className="text-xs text-slate-500 mt-1">{eventItem.description}</p>}
+                    <h1 className="text-base sm:text-xl font-black text-slate-900 leading-tight">{eventItem.title}</h1>
+                    {eventItem.description && <p className="text-[11px] text-slate-500 line-clamp-2">{eventItem.description}</p>}
                 </div>
 
-                <div className="bg-slate-50 border border-slate-150 p-4 rounded-xl text-xs space-y-1.5 w-full md:w-auto md:shrink-0 md:min-w-64">
-                    <div className="flex justify-between"><span className="text-slate-400 font-semibold">Start:</span><span className="font-bold text-slate-800">{startDateStr}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400 font-semibold">End:</span><span className="font-bold text-slate-800">{endDateStr}</span></div>
-                    {eventItem.location && <div className="flex justify-between"><span className="text-slate-400 font-semibold">Location:</span><span className="font-bold text-teal-800">{eventItem.location}</span></div>}
-                    <div className="flex justify-between pt-1 border-t border-slate-200"><span className="text-slate-400 font-semibold">Fee per scout:</span><span className="font-extrabold text-teal-700">${eventItem.participant_fee}</span></div>
+                <div className="bg-slate-50 border border-slate-200 p-2.5 sm:p-3 rounded-xl text-[11px] space-y-1 w-full md:w-auto md:shrink-0 md:min-w-60">
+                    <div className="flex justify-between"><span className="text-slate-400 font-medium">Start:</span><span className="font-bold text-slate-800">{startDateStr}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400 font-medium">End:</span><span className="font-bold text-slate-800">{endDateStr}</span></div>
+                    {eventItem.location && <div className="flex justify-between"><span className="text-slate-400 font-medium">Location:</span><span className="font-bold text-teal-800 truncate ml-2">{eventItem.location}</span></div>}
+                    <div className="flex justify-between pt-1 border-t border-slate-200"><span className="text-slate-400 font-medium">Fee:</span><span className="font-black text-teal-800">${eventItem.participant_fee} / scout</span></div>
                 </div>
             </div>
 
             {/* Role Access Notice */}
             {!canEditEvent && userAssignedRoles.length > 0 && (
-                <div className="bg-teal-50 border border-teal-200 text-teal-900 text-xs px-4 py-2.5 rounded-xl font-medium flex items-center gap-2">
+                <div className="bg-teal-50 border border-teal-200 text-teal-900 text-xs px-3.5 py-2 rounded-xl font-medium flex items-center gap-2">
                     <ShieldAlert className="h-4 w-4 shrink-0 text-teal-700" />
                     <span>
-                        Role Scoped Access Active: You are assigned as <strong>{userAssignedRoles.map((r) => getRoleLabel(r, eventItem.event_type)).join(', ')}</strong>. Tabs have been tailored for your responsibilities.
+                        Role Scoped Access: Assigned as <strong>{userAssignedRoles.map((r) => getRoleLabel(r, eventItem.event_type)).join(', ')}</strong>.
                     </span>
                 </div>
             )}
 
             {/* Workspace Pill Navigation Tabs (Mobile Scrollable Pill Bar) */}
-            <div className="bg-slate-200/70 p-1.5 rounded-2xl flex overflow-x-auto gap-1.5 shrink-0 scrollbar-none">
+            <div className="bg-slate-100/90 p-1 rounded-xl flex overflow-x-auto gap-1 shrink-0 scrollbar-none border border-slate-200/70">
                 {availableTabs.map((t) => (
                     <button
                         key={t.key}
                         onClick={() => setActiveTab(t.key)}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap flex items-center gap-2 ${activeTab === t.key
-                            ? 'bg-teal-800 text-white shadow-md'
-                            : 'bg-white text-slate-700 hover:bg-slate-50'
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap flex items-center gap-1.5 ${activeTab === t.key
+                            ? 'bg-teal-800 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                             }`}
                     >
                         <span>{t.icon}</span>

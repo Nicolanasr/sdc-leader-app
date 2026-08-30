@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -714,54 +714,66 @@ export default function MembersManagement({
                         </div>
                     )}
 
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Youth Roster</h2>
+                    {/* ── TOP HEADER CARD ── */}
+                    <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-row items-center justify-between gap-2.5 mb-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+                                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
+                                    Youth Roster
+                                </h1>
+                                <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                                    Scout profiles, patrols, badges & records
+                                </p>
+                            </div>
                         </div>
+
                         {canWrite && (
-                            <div className="flex gap-2 w-full sm:w-auto">
+                            <div className="flex items-center gap-1.5 shrink-0">
                                 <button
                                     onClick={() => {
                                         setNewPatrolName('')
                                         setNewPatrolTroopId(isTroopLeader ? (userTroopId || '') : troops[0]?.id || '')
                                         setShowPatrolModal(true)
                                     }}
-                                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-2 rounded-xl border border-slate-350 transition-colors text-xs"
+                                    className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl border border-slate-300 transition-all text-xs flex items-center gap-1"
                                 >
-                                    <Plus className="h-4 w-4" />
-                                    Create Patrol
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">Create</span> Patrol
                                 </button>
                                 <button
                                     onClick={openAddModal}
-                                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-teal-700 hover:bg-teal-600 text-white font-semibold px-3.5 py-2 rounded-xl shadow-sm transition-colors text-xs"
+                                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl shadow-2xs transition-all text-xs flex items-center gap-1"
                                 >
-                                    <Plus className="h-4 w-4" />
-                                    Add Scout
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span>Add Scout</span>
                                 </button>
                             </div>
                         )}
                     </div>
 
                     {/* Filters Bar */}
-                    <div className="bg-white border border-slate-200 p-3 sm:p-4 rounded-xl shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-                        <div className="relative w-full sm:max-w-xs">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between mb-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Search by name..."
+                                placeholder="Search by scout name or rank…"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2 w-full rounded-lg border border-slate-200 bg-white text-xs sm:text-sm focus:border-teal-500 focus:outline-none"
+                                className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
                             />
                         </div>
-                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <div className="flex flex-wrap gap-1.5 shrink-0">
                             {!isTroopLeader && (
                                 <select
                                     value={troopFilter}
                                     onChange={(e) => setTroopFilter(e.target.value)}
-                                    className="rounded-lg border border-slate-200 bg-white text-xs sm:text-sm px-3 py-2 text-slate-700"
+                                    className="rounded-xl border border-slate-200 bg-slate-50 text-xs px-2.5 py-1.5 text-slate-700 font-bold focus:border-teal-700 focus:outline-none"
                                 >
-                                    <option value="">-- All Unit Troops --</option>
+                                    <option value="">-- All Units --</option>
                                     {troops.map((t) => (
                                         <option key={t.id} value={t.id}>
                                             {t.name}

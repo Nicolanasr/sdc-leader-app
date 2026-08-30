@@ -295,28 +295,51 @@ export default function BroadcastManagement({
 
     return (
         <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
-            <div className="max-w-7xl mx-auto space-y-6 pb-12">
-                {/* ── STATUS MESSAGE ── */}
+            <div className="max-w-7xl mx-auto space-y-3 pb-12">
+                {/* Status Toast */}
                 {statusMessage && (
                     <div
-                        className={`p-4 rounded-2xl flex items-center gap-3 border text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2 duration-200 ${statusMessage.type === 'success'
+                        className={`p-3.5 rounded-2xl flex items-center gap-2 border text-xs font-bold shadow-2xs animate-in fade-in slide-in-from-top-2 duration-200 ${statusMessage.type === 'success'
                                 ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
                                 : 'bg-rose-50 text-rose-900 border-rose-200'
                             }`}
                     >
                         {statusMessage.type === 'success' ? (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                         ) : (
-                            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
+                            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
                         )}
                         <span>{statusMessage.text}</span>
                     </div>
                 )}
 
+                {/* ── TOP HEADER CARD ── */}
+                <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-row items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+                            <Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
+                                Announcements & Broadcast
+                            </h1>
+                            <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                                WhatsApp, Telegram & In-App notifications
+                            </p>
+                        </div>
+                    </div>
+
+                    <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-xl border border-teal-200/60 shrink-0">
+                        {typeof estimatedRecipientCount === 'number'
+                            ? `${estimatedRecipientCount} Selected`
+                            : estimatedRecipientCount}
+                    </span>
+                </div>
+
                 {/* ── MAIN WORKSPACE GRID ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                     {/* ── LEFT / MAIN: AUDIENCE & COMPOSER (8 COLS) ── */}
-                    <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-4">
 
                         {/* 1. AUDIENCE TARGET SELECTOR */}
                         <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4">
