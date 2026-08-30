@@ -16,13 +16,10 @@ import {
   ChevronRight,
   Sparkles,
   Check,
-  Eye,
-  FileText,
   User,
   Layers,
   Award,
   ArrowLeft,
-  Filter,
 } from 'lucide-react'
 
 interface Troop {
@@ -368,7 +365,7 @@ export default function ProgressionManagement({
         ]
       })
 
-      showStatus('Evidence & notes saved successfully!', 'success')
+      showStatus('Evidence saved!', 'success')
       setEvidenceModalTarget(null)
     } catch (err: any) {
       console.error('[Save Evidence Error]:', err)
@@ -380,11 +377,11 @@ export default function ProgressionManagement({
 
   return (
     <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
-      <div className="w-full pb-24 space-y-4">
+      <div className="w-full pb-20 space-y-3">
         {/* Toast Alert */}
         {statusMessage && (
           <div
-            className={`p-3.5 rounded-2xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in ${
+            className={`p-3 rounded-xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in ${
               statusMessage.type === 'success' ? 'bg-teal-900 text-white' : 'bg-rose-600 text-white'
             }`}
           >
@@ -402,80 +399,76 @@ export default function ProgressionManagement({
           </div>
         )}
 
-        {/* ── TOP HEADER CARD ── */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800 shrink-0">
-              <Award className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Progression & Badges</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                  {records.length} Validated
-                </span>
+        {/* ── STREAMLINED MINIMALIST TOP HEADER ── */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg">⚜️</span>
+              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
+                Progression & Badges
               </h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Track and validate scout ranks, milestones & evidence in the field
-              </p>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                {records.length} done
+              </span>
             </div>
+
+            {/* Locked Troop Badge (Mobile display) */}
+            {isTroopLeader || troops.length <= 1 ? (
+              <span className="sm:hidden text-[11px] font-bold px-2 py-0.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200 shrink-0">
+                {currentTroop?.name}
+              </span>
+            ) : null}
           </div>
 
-          {/* Troop Selector (Locked if Troop Leader) */}
-          <div className="flex items-center gap-2">
+          {/* Desktop Troop Selector / Badge */}
+          <div className="hidden sm:flex items-center gap-2">
             {isTroopLeader || troops.length <= 1 ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-900 border border-teal-200 text-xs font-bold shadow-2xs">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-teal-50 text-teal-900 border border-teal-200 text-xs font-bold">
                 <Layers className="h-3.5 w-3.5 text-teal-700" />
-                <span>Unit: {currentTroop?.name || 'Assigned Troop'}</span>
+                <span>Unit: {currentTroop?.name}</span>
                 {currentTroop?.sectionName && (
-                  <span className="text-[10px] bg-teal-200/60 px-1.5 py-0.2 rounded font-black text-teal-950">
+                  <span className="text-[10px] bg-teal-200/60 px-1 py-0.2 rounded font-black text-teal-950">
                     {currentTroop.sectionName}
                   </span>
                 )}
               </div>
             ) : (
-              <div className="w-full sm:w-56">
-                <select
-                  value={selectedTroopId}
-                  onChange={(e) => {
-                    setSelectedTroopId(e.target.value)
-                    setSelectedCategory('all')
-                    setSelectedBadgeId(null)
-                  }}
-                  className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 focus:outline-none focus:border-teal-700"
-                >
-                  {troops.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.sectionName})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={selectedTroopId}
+                onChange={(e) => {
+                  setSelectedTroopId(e.target.value)
+                  setSelectedCategory('all')
+                  setSelectedBadgeId(null)
+                }}
+                className="px-2.5 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 focus:outline-none focus:border-teal-700"
+              >
+                {troops.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.sectionName})
+                  </option>
+                ))}
+              </select>
             )}
           </div>
         </div>
 
-        {/* ── TRACK SWITCHER: RANKS VS SPECIALTY BADGES ── */}
-        <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 max-w-md shadow-2xs">
+        {/* ── STREAMLINED TRACK SWITCHER (RANKS VS SPECIALTY) ── */}
+        <div className="grid grid-cols-2 gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/70">
           <button
             type="button"
             onClick={() => {
               setActiveTrack('rank')
               setSelectedCategory('all')
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTrack === 'rank'
-                ? 'bg-teal-800 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-white text-teal-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <GraduationCap className="h-4 w-4" />
-            <span>Rank Stages (المراحل)</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
-                activeTrack === 'rank' ? 'bg-teal-700 text-teal-100' : 'bg-slate-100 text-slate-600'
-              }`}
-            >
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span>Rank Stages</span>
+            <span className="text-[10px] px-1 rounded bg-slate-100 text-slate-600 font-bold">
               {rankClasses.length}
             </span>
           </button>
@@ -486,33 +479,29 @@ export default function ProgressionManagement({
               setActiveTrack('specialty')
               setSelectedCategory('all')
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTrack === 'specialty'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-white text-amber-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Sparkles className="h-4 w-4" />
-            <span>Specialty Badges (الأوسمة)</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
-                activeTrack === 'specialty' ? 'bg-amber-700 text-amber-100' : 'bg-slate-100 text-slate-600'
-              }`}
-            >
+            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+            <span>Specialty Badges</span>
+            <span className="text-[10px] px-1 rounded bg-amber-50 text-amber-800 font-bold">
               {specialtyBadges.length}
             </span>
           </button>
         </div>
 
         {/* ══════════════════════════════════════════════════════════ */}
-        {/* ── MODE 1: RANK STAGES (Horizontal Stage Tabs Flow) ──   */}
+        {/* ── MODE 1: RANK STAGES ──                                 */}
         {/* ══════════════════════════════════════════════════════════ */}
         {activeTrack === 'rank' && (
           <>
             {rankClasses.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {/* Horizontal Rank Stages Tabs */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
                   {rankClasses.map((cls) => {
                     const isSelected = effectiveClass?.id === cls.id
                     return (
@@ -523,16 +512,16 @@ export default function ProgressionManagement({
                           setSelectedRankClassId(cls.id)
                           setSelectedCategory('all')
                         }}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                           isSelected
-                            ? 'bg-teal-800 text-white shadow-xs scale-100'
-                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                            ? 'bg-teal-800 text-white shadow-2xs'
+                            : 'bg-white text-slate-700 border border-slate-200/80 hover:bg-slate-50'
                         }`}
                       >
-                        <span className="text-base leading-none">{cls.badgeIcon || '⚜️'}</span>
+                        <span>{cls.badgeIcon || '⚜️'}</span>
                         <span>{cls.name}</span>
                         <span
-                          className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                          className={`text-[9px] px-1 rounded font-bold ${
                             isSelected ? 'bg-teal-700 text-teal-100' : 'bg-slate-100 text-slate-500'
                           }`}
                         >
@@ -543,31 +532,31 @@ export default function ProgressionManagement({
                   })}
                 </div>
 
-                {/* Search & Category Filter Bar */}
-                <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                {/* Compact Search & Category Filter Bar */}
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200 space-y-2">
                   <div className="relative">
-                    <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Search scouts by name, patrol..."
+                      placeholder="Search scouts..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                      className="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
                     />
                   </div>
 
                   {classCategories.length > 0 && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-none border-t border-slate-100">
+                    <div className="flex items-center gap-1 overflow-x-auto pt-1 pb-0.5 scrollbar-none border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => setSelectedCategory('all')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
                           selectedCategory === 'all'
-                            ? 'bg-teal-800 text-white shadow-2xs'
+                            ? 'bg-teal-800 text-white'
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                         }`}
                       >
-                        All Categories ({effectiveClass?.requirements.length || 0})
+                        All ({effectiveClass?.requirements.length || 0})
                       </button>
 
                       {classCategories.map((cat) => {
@@ -577,20 +566,14 @@ export default function ProgressionManagement({
                             key={cat}
                             type="button"
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                            className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
                               selectedCategory === cat
-                                ? 'bg-teal-800 text-white shadow-2xs'
+                                ? 'bg-teal-800 text-white'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                             }`}
                           >
                             <span>{cat}</span>
-                            <span
-                              className={`text-[9px] px-1 py-0.2 rounded font-bold ${
-                                selectedCategory === cat ? 'bg-teal-700 text-teal-100' : 'bg-slate-200 text-slate-600'
-                              }`}
-                            >
-                              {catReqs.length}
-                            </span>
+                            <span className="text-[9px] opacity-75">({catReqs.length})</span>
                           </button>
                         )
                       })}
@@ -610,68 +593,59 @@ export default function ProgressionManagement({
                 />
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center mx-auto">
-                  <GraduationCap className="h-6 w-6" />
-                </div>
-                <h3 className="font-bold text-base text-slate-900">No Rank Stages Configured Yet</h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  The Configurator hasn&apos;t defined progression rank stages for this unit&apos;s section ({currentTroop?.sectionName || 'Section'}).
-                </p>
+              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-2">
+                <GraduationCap className="h-6 w-6 mx-auto text-slate-300" />
+                <h3 className="font-bold text-sm text-slate-900">No Rank Stages Configured</h3>
+                <p className="text-xs text-slate-500">Configure progression stages in the Configurator.</p>
               </div>
             )}
           </>
         )}
 
         {/* ═════════════════════════════════════════════════════════════════ */}
-        {/* ── MODE 2: SPECIALTY BADGES (Search-First Catalog & Award) ──   */}
+        {/* ── MODE 2: SPECIALTY BADGES ──                                    */}
         {/* ═════════════════════════════════════════════════════════════════ */}
         {activeTrack === 'specialty' && (
           <>
-            {/* If a Badge is actively selected, show its Award Matrix */}
+            {/* If a Badge is actively selected: Clean, Minimalist Award Sub-Header */}
             {selectedBadgeId && effectiveClass ? (
-              <div className="space-y-4 animate-in fade-in duration-150">
-                {/* Active Badge Header */}
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
+              <div className="space-y-2.5 animate-in fade-in duration-150">
+                <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedBadgeId(null)
                         setSelectedCategory('all')
                       }}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5"
+                      className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1 shrink-0"
                     >
-                      <ArrowLeft className="h-4 w-4" />
-                      <span>All Badges</span>
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Badges</span>
                     </button>
 
-                    <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center shrink-0">
-                      {effectiveClass.badgeIcon || '🪢'}
+                    <span className="text-xl shrink-0">{effectiveClass.badgeIcon || '🪢'}</span>
+
+                    <div className="min-w-0">
+                      <h2 className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                        {effectiveClass.name}
+                      </h2>
                     </div>
 
-                    <div>
-                      <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-                        <span>{effectiveClass.name}</span>
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900">
-                          {effectiveClass.requirements.length} Tasks
-                        </span>
-                      </h2>
-                      <p className="text-xs text-slate-500 font-medium">
-                        Award this specialty badge to scouts who complete all required skills
-                      </p>
-                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 shrink-0">
+                      {effectiveClass.requirements.length} Tasks
+                    </span>
                   </div>
 
-                  <div className="w-full sm:w-64">
+                  <div className="w-36 sm:w-52 shrink-0">
                     <div className="relative">
-                      <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                      <Search className="absolute left-2.5 top-1.5 h-3 w-3 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search scouts in unit..."
+                        placeholder="Search scouts..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-amber-600 font-medium"
+                        className="w-full pl-7 pr-2 py-0.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-amber-600 font-medium"
                       />
                     </div>
                   </div>
@@ -690,46 +664,36 @@ export default function ProgressionManagement({
                 />
               </div>
             ) : (
-              /* Searchable Badge Catalog Grid */
-              <div className="space-y-4">
+              /* Searchable Badge Catalog Grid (Sleek 2-col on mobile) */
+              <div className="space-y-2.5">
                 {/* Search Bar for Badges */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search specialty badges (e.g. Knotter, 3akkad, First Aid, المسعف, Chef, طبّاخ)..."
-                      value={badgeSearchQuery}
-                      onChange={(e) => setBadgeSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-amber-600 font-medium"
-                    />
-                  </div>
-                  <span className="text-xs font-bold text-slate-500 shrink-0 px-1">
-                    Showing {filteredSpecialtyBadges.length} of {specialtyBadges.length} badges
-                  </span>
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center gap-2">
+                  <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search badge (e.g. Knotter, 3akkad, First Aid, Chef)..."
+                    value={badgeSearchQuery}
+                    onChange={(e) => setBadgeSearchQuery(e.target.value)}
+                    className="w-full text-xs font-medium focus:outline-none"
+                  />
+                  {badgeSearchQuery && (
+                    <button onClick={() => setBadgeSearchQuery('')} className="text-xs text-slate-400 hover:text-slate-600">
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 {/* Badges Cards Grid */}
                 {filteredSpecialtyBadges.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mx-auto">
-                      <Sparkles className="h-6 w-6" />
-                    </div>
-                    <h3 className="font-bold text-base text-slate-900">
-                      {specialtyBadges.length === 0
-                        ? 'No Specialty Badges Configured'
-                        : `No badges match "${badgeSearchQuery}"`}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-2">
+                    <Sparkles className="h-6 w-6 mx-auto text-amber-500" />
+                    <h3 className="font-bold text-sm text-slate-900">
+                      {specialtyBadges.length === 0 ? 'No Specialty Badges' : `No badges matching "${badgeSearchQuery}"`}
                     </h3>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto">
-                      {specialtyBadges.length === 0
-                        ? `The Configurator hasn't added specialty badges for ${currentTroop?.sectionName || 'this section'} yet.`
-                        : 'Try searching with a different name or keyword.'}
-                    </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
                     {filteredSpecialtyBadges.map((badge) => {
-                      // Calculate how many scouts in this troop have 100% earned this badge
                       const totalBadgeReqs = badge.requirements.length
                       const awardedCount = troopMembers.filter((m) => {
                         if (totalBadgeReqs === 0) return false
@@ -744,40 +708,37 @@ export default function ProgressionManagement({
                             setSelectedBadgeId(badge.id)
                             setSelectedCategory('all')
                           }}
-                          className="bg-white rounded-2xl border border-slate-200 hover:border-amber-400 hover:ring-2 hover:ring-amber-400/20 p-4 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 group"
+                          className="bg-white rounded-xl border border-slate-200 hover:border-amber-400 p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between space-y-2 group"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl shrink-0 group-hover:scale-110 transition-transform">
                               {badge.badgeIcon || '🪢'}
-                            </div>
+                            </span>
                             <div className="min-w-0">
-                              <h3 className="font-bold text-sm text-slate-900 truncate group-hover:text-amber-700 transition-colors">
+                              <h3 className="font-bold text-xs text-slate-900 truncate group-hover:text-amber-700">
                                 {badge.name}
                               </h3>
-                              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                                {badge.requirements.length} {badge.requirements.length === 1 ? 'task' : 'tasks'}
+                              <p className="text-[10px] text-slate-400 font-medium">
+                                {badge.requirements.length} tasks
                               </p>
                             </div>
                           </div>
 
-                          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                          <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between">
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
                                 awardedCount > 0
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                  ? 'bg-amber-100 text-amber-900'
                                   : 'bg-slate-100 text-slate-500'
                               }`}
                             >
-                              ⭐ {awardedCount} {awardedCount === 1 ? 'Scout' : 'Scouts'} Awarded
+                              ⭐ {awardedCount}
                             </span>
 
-                            <button
-                              type="button"
-                              className="text-xs font-bold text-amber-700 group-hover:text-amber-800 flex items-center gap-1"
-                            >
+                            <span className="text-[10px] font-bold text-amber-700 flex items-center gap-0.5">
                               <span>Award</span>
-                              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                            </button>
+                              <ChevronRight className="h-3 w-3" />
+                            </span>
                           </div>
                         </div>
                       )
@@ -792,15 +753,15 @@ export default function ProgressionManagement({
         {/* ── EVIDENCE & NOTES MODAL ── */}
         {evidenceModalTarget && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
-                    <Paperclip className="h-4 w-4" />
+            <div className="bg-white rounded-2xl p-4 sm:p-5 max-w-md w-full shadow-2xl border border-slate-100 space-y-3.5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-900 flex items-center justify-center font-bold">
+                    <Paperclip className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900">Progression Evidence</h3>
-                    <p className="text-[11px] text-slate-500">
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-900">Task Evidence</h3>
+                    <p className="text-[10px] text-slate-500">
                       {evidenceModalTarget.member.firstName} {evidenceModalTarget.member.lastName}
                     </p>
                   </div>
@@ -810,20 +771,20 @@ export default function ProgressionManagement({
                   onClick={() => setEvidenceModalTarget(null)}
                   className="p-1 text-slate-400 hover:text-slate-700"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Requirement Summary */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
-                <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-0.5">
+                <span className="text-[9px] font-bold text-teal-800 uppercase tracking-wider">
                   {evidenceModalTarget.requirement.category}
                 </span>
                 <h4 className="font-bold text-xs text-slate-900">
                   {evidenceModalTarget.requirement.title}
                 </h4>
                 {evidenceModalTarget.requirement.description && (
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
                     {evidenceModalTarget.requirement.description}
                   </p>
                 )}
@@ -831,29 +792,28 @@ export default function ProgressionManagement({
 
               {/* Existing Evidence File View & Inline Preview */}
               {evidenceModalTarget.record?.evidenceFileUrl && (
-                <div className="p-3 bg-teal-50/70 rounded-2xl border border-teal-200 space-y-2.5">
+                <div className="p-2.5 bg-teal-50/70 rounded-xl border border-teal-200 space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <CheckCircle2 className="h-4 w-4 text-teal-800 shrink-0" />
-                      <span className="text-xs font-bold text-teal-950 truncate">Google Drive Synced Proof</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-teal-800 shrink-0" />
+                      <span className="text-[11px] font-bold text-teal-950 truncate">Google Drive Proof</span>
                     </div>
                     <a
                       href={evidenceModalTarget.record.evidenceFileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-[11px] font-bold transition-colors flex items-center gap-1 shrink-0"
+                      className="px-2 py-0.5 bg-teal-800 hover:bg-teal-700 text-white rounded text-[10px] font-bold transition-colors flex items-center gap-1 shrink-0"
                     >
-                      <ExternalLink className="h-3 w-3" />
-                      <span>View Original</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                      <span>Open File</span>
                     </a>
                   </div>
 
-                  {/* Inline preview */}
-                  <div className="rounded-xl overflow-hidden border border-teal-200/80 bg-white p-2 flex items-center justify-center">
+                  <div className="rounded-lg overflow-hidden border border-teal-200/80 bg-white p-1 flex items-center justify-center">
                     <img
                       src={evidenceModalTarget.record.evidenceFileUrl}
                       alt="Proof"
-                      className="max-h-48 rounded-lg object-contain"
+                      className="max-h-40 rounded object-contain"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none'
                       }}
@@ -862,56 +822,46 @@ export default function ProgressionManagement({
                 </div>
               )}
 
-              <form onSubmit={handleSaveEvidence} className="space-y-3.5">
-                {/* Upload File to Google Drive */}
+              <form onSubmit={handleSaveEvidence} className="space-y-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Upload Photo / Document (Google Drive Synced)
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                    Upload Photo / Document (Drive Synced)
                   </label>
                   <input
                     type="file"
                     accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
                     onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 border border-slate-200 rounded-xl p-1"
+                    className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 border border-slate-200 rounded-lg p-1"
                   />
                 </div>
 
-                {/* Field Notes */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Leader Verification Notes
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                    Verification Notes
                   </label>
                   <textarea
-                    rows={3}
-                    placeholder="e.g. Completed during Baskinta hike. Displayed great mastery..."
+                    rows={2}
+                    placeholder="Field notes / feedback..."
                     value={evidenceNotes}
                     onChange={(e) => setEvidenceNotes(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-medium focus:outline-none focus:border-teal-700"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 font-medium focus:outline-none focus:border-teal-700"
                   />
                 </div>
 
-                {/* Actions */}
-                <div className="pt-2 border-t border-slate-100 flex gap-2">
+                <div className="pt-1.5 border-t border-slate-100 flex gap-2">
                   <button
                     type="button"
                     onClick={() => setEvidenceModalTarget(null)}
-                    className="flex-1 py-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100"
+                    className="flex-1 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 hover:bg-slate-100"
                   >
                     Close
                   </button>
                   <button
                     type="submit"
                     disabled={isUploadingEvidence}
-                    className="flex-1 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
+                    className="flex-1 py-1.5 rounded-lg bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1"
                   >
-                    {isUploadingEvidence ? (
-                      <span>Uploading to Drive...</span>
-                    ) : (
-                      <>
-                        <Upload className="h-3.5 w-3.5" />
-                        <span>Save Evidence</span>
-                      </>
-                    )}
+                    {isUploadingEvidence ? 'Uploading...' : 'Save'}
                   </button>
                 </div>
               </form>
@@ -947,26 +897,24 @@ function ScoutsProgressionGrid({
 }: ScoutsGridProps) {
   if (members.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
-        <User className="h-8 w-8 mx-auto text-slate-300" />
-        <h4 className="font-bold text-sm text-slate-800">No active scouts found</h4>
-        <p className="text-xs text-slate-500">No scouts found matching your filter criteria in this unit.</p>
+      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 space-y-1">
+        <User className="h-6 w-6 mx-auto text-slate-300" />
+        <h4 className="font-bold text-xs text-slate-800">No scouts found</h4>
       </div>
     )
   }
 
   if (requirements.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
-        <GraduationCap className="h-8 w-8 mx-auto text-slate-300" />
-        <h4 className="font-bold text-sm text-slate-800">No requirements in this category</h4>
-        <p className="text-xs text-slate-500">Configure requirements in the Configurator panel.</p>
+      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 space-y-1">
+        <GraduationCap className="h-6 w-6 mx-auto text-slate-300" />
+        <h4 className="font-bold text-xs text-slate-800">No tasks configured</h4>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
       {members.map((scout) => {
         const totalClassReqs = requirements.length
         const completedClassReqs = requirements.filter(
@@ -978,64 +926,58 @@ function ScoutsProgressionGrid({
         return (
           <div
             key={scout.id}
-            className={`bg-white rounded-2xl border transition-all p-4 space-y-3 shadow-xs ${
+            className={`bg-white rounded-xl border transition-all p-3 space-y-2 shadow-2xs ${
               isFullyCompleted
                 ? badgeMode
-                  ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/15'
-                  : 'border-emerald-400 ring-2 ring-emerald-400/20 bg-emerald-50/10'
+                  ? 'border-amber-300 bg-amber-50/10'
+                  : 'border-emerald-300 bg-emerald-50/10'
                 : 'border-slate-200'
             }`}
           >
-            {/* Scout Header */}
-            <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 font-black text-sm flex items-center justify-center shrink-0">
+            {/* Minimalist Scout Header */}
+            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center shrink-0">
                   {scout.firstName.charAt(0)}
                   {scout.lastName.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-sm text-slate-900 truncate">
+                  <div className="flex items-center gap-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                       {scout.firstName} {scout.lastName}
                     </h3>
                     <Link
                       href={`/group/dashboard/members?search=${encodeURIComponent(`${scout.firstName} ${scout.lastName}`)}`}
                       className="text-slate-400 hover:text-teal-800 transition-colors p-0.5"
-                      title="View Scout Profile Dossier"
+                      title="View Dossier"
                     >
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-2.5 w-2.5" />
                     </Link>
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium truncate">
+                  <p className="text-[10px] text-slate-400 font-medium truncate">
                     {scout.patrolName} • {scout.currentRank}
                   </p>
                 </div>
               </div>
 
-              {/* Progress Badge */}
+              {/* Progress Chip */}
               <div className="text-right shrink-0">
-                <div
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-black ${
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black ${
                     isFullyCompleted
                       ? badgeMode
-                        ? 'bg-amber-500 text-slate-950 shadow-2xs'
-                        : 'bg-emerald-600 text-white shadow-2xs'
-                      : 'bg-teal-50 text-teal-900 border border-teal-200'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                        : 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-600'
                   }`}
                 >
-                  <span>{completedClassReqs}/{totalClassReqs}</span>
-                  <span className="text-[10px] opacity-85">({percent}%)</span>
-                </div>
-                {isFullyCompleted && (
-                  <span className={`block text-[9px] font-black uppercase tracking-tight mt-0.5 ${badgeMode ? 'text-amber-800' : 'text-emerald-700'}`}>
-                    ⭐ {badgeMode ? 'Badge Earned!' : 'Ready for Rank'}
-                  </span>
-                )}
+                  {completedClassReqs}/{totalClassReqs} ({percent}%)
+                </span>
               </div>
             </div>
 
             {/* Requirements Checklist */}
-            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5 scrollbar-thin">
+            <div className="space-y-1 max-h-60 overflow-y-auto pr-0.5 scrollbar-thin">
               {requirements.map((req) => {
                 const key = `${scout.id}_${req.id}`
                 const record = recordMap[key]
@@ -1046,69 +988,53 @@ function ScoutsProgressionGrid({
                 return (
                   <div
                     key={req.id}
-                    className={`p-2 rounded-xl border transition-all flex items-start justify-between gap-2 ${
+                    className={`p-1.5 rounded-lg border transition-all flex items-center justify-between gap-1.5 ${
                       isDone
-                        ? 'bg-emerald-50/60 border-emerald-200 text-slate-900'
-                        : 'bg-slate-50/70 border-slate-200 text-slate-600 hover:border-slate-300'
+                        ? 'bg-emerald-50/50 border-emerald-200'
+                        : 'bg-slate-50/60 border-slate-200/80 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
                       <button
                         type="button"
                         disabled={isToggling}
                         onClick={() => onToggleRequirement(scout.id, req.id)}
-                        className={`w-5 h-5 rounded-lg flex items-center justify-center font-bold transition-all shrink-0 mt-0.5 ${
+                        className={`w-4 h-4 rounded flex items-center justify-center font-bold transition-all shrink-0 ${
                           isDone
-                            ? 'bg-emerald-600 text-white shadow-2xs scale-105'
+                            ? 'bg-emerald-600 text-white'
                             : 'border border-slate-300 bg-white hover:border-teal-600'
                         }`}
                       >
-                        {isDone && <Check className="h-3 w-3" />}
+                        {isDone && <Check className="h-2.5 w-2.5" />}
                       </button>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p
-                          className={`text-xs leading-snug ${
+                          className={`text-[11px] leading-tight truncate ${
                             isDone ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
                           }`}
                         >
                           {req.title}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className="text-[9px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-100">
-                            {req.category}
-                          </span>
-                          {hasEvidence && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenEvidence(scout, req)}
-                              className="inline-flex items-center gap-1 text-[9px] font-bold text-teal-800 bg-teal-100/90 hover:bg-teal-200 px-1.5 py-0.2 rounded border border-teal-300 transition-colors"
-                            >
-                              <Paperclip className="h-2.5 w-2.5" />
-                              <span>Proof Attached</span>
-                            </button>
-                          )}
-                          {isDone && record?.validatorName && (
-                            <span className="text-[9px] text-slate-400 truncate">
-                              ✓ by {record.validatorName}
-                            </span>
-                          )}
-                        </div>
                       </div>
+
+                      <span className="text-[9px] font-bold text-teal-800 bg-teal-50 px-1 py-0.2 rounded shrink-0">
+                        {req.category}
+                      </span>
                     </div>
 
                     {/* Evidence / Notes Button */}
                     <button
                       type="button"
                       onClick={() => onOpenEvidence(scout, req)}
-                      className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                      className={`p-1 rounded transition-colors shrink-0 ${
                         hasEvidence
-                          ? 'bg-teal-800 text-white shadow-2xs'
-                          : 'text-slate-400 hover:text-teal-800 hover:bg-teal-50'
+                          ? 'bg-teal-800 text-white'
+                          : 'text-slate-400 hover:text-teal-800'
                       }`}
-                      title={hasEvidence ? 'View attached evidence & notes' : 'Attach photo evidence or notes'}
+                      title={hasEvidence ? 'View attached evidence' : 'Attach evidence'}
                     >
-                      <Paperclip className="h-3.5 w-3.5" />
+                      <Paperclip className="h-3 w-3" />
                     </button>
                   </div>
                 )
