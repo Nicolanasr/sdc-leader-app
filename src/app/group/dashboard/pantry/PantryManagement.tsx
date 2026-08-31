@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
+import * as XLSX from 'xlsx'
 import { createClient } from '@/utils/supabase/client'
 import {
     UtensilsCrossed, Plus, Search, AlertTriangle, Check, Trash2, Edit, Loader2,
     Package, ShoppingBag, ArrowUpDown, ChevronRight, Apple, Minus, Layers, Clock,
     Calendar, CheckCircle2, XCircle, Send, Sparkles, Filter, X, ChevronDown, Tag,
-    Scale, Info
+    Scale, Info, Download, FileSpreadsheet, FileText
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -29,7 +30,7 @@ export const DEFAULT_PANTRY_CATEGORIES = [
 export interface PantryBatch {
     id: string
     quantity: number
-    package_size?: string      // e.g. "400g", "750g", "900g", "1kg", "500g", "300g"
+    package_size?: string      // e.g. "400g", "750g", "900g", "1kg", "500g", "300g", "5L", "sachet"
     brand?: string             // e.g. "Nido", "Klim", "Carry", "Pasta Zara", "Arbella"
     expiry_date: string        // e.g. "2027-06-30" or "06/2027"
     lot_number?: string
@@ -80,18 +81,79 @@ interface Props {
     initialRequests?: EventPantryRequest[]
 }
 
+// ── Smart Aggregator for Total Weight (kg/g) or Volume (L/ml) ──
+export function computeTotalWeightOrVolume(batches?: PantryBatch[] | null): string | null {
+    if (!batches || batches.length === 0) return null
+
+    let totalGrams = 0
+    let hasGrams = false
+    let totalLiters = 0
+    let hasLiters = false
+
+    batches.forEach((b) => {
+        const qty = Number(b.quantity) || 1
+        const sizeStr = (b.package_size || '').trim().toLowerCase()
+        if (!sizeStr) return
+
+        // 1. Check for kg: e.g. "1kg", "1.5kg", "2 kg"
+        const kgMatch = sizeStr.match(/^([\d\.]+)\s*kg$/)
+        if (kgMatch) {
+            totalGrams += parseFloat(kgMatch[1]) * 1000 * qty
+            hasGrams = true
+            return
+        }
+
+        // 2. Check for grams: e.g. "500g", "185g", "400 g", "750g"
+        const gMatch = sizeStr.match(/^([\d\.]+)\s*g$/)
+        if (gMatch) {
+            totalGrams += parseFloat(gMatch[1]) * qty
+            hasGrams = true
+            return
+        }
+
+        // 3. Check for liters: e.g. "3l", "1.8l", "0.85l", "5 l"
+        const lMatch = sizeStr.match(/^([\d\.]+)\s*l$/)
+        if (lMatch) {
+            totalLiters += parseFloat(lMatch[1]) * qty
+            hasLiters = true
+            return
+        }
+
+        // 4. Check for ml: e.g. "750ml", "500ml", "250 ml"
+        const mlMatch = sizeStr.match(/^([\d\.]+)\s*ml$/)
+        if (mlMatch) {
+            totalLiters += (parseFloat(mlMatch[1]) / 1000) * qty
+            hasLiters = true
+            return
+        }
+    })
+
+    if (hasGrams && totalGrams > 0) {
+        if (totalGrams >= 1000) {
+            const kgVal = totalGrams / 1000
+            const formatted = Number.isInteger(kgVal) ? kgVal.toString() : kgVal.toFixed(2).replace(/\.?0+$/, '')
+            return `${formatted} kg`
+        }
+        return `${Math.round(totalGrams)} g`
+    }
+
+    if (hasLiters && totalLiters > 0) {
+        const formatted = Number.isInteger(totalLiters) ? totalLiters.toString() : totalLiters.toFixed(2).replace(/\.?0+$/, '')
+        return `${formatted} L`
+    }
+
+    return null
+}
+
 // ── Fast Expiry Date Parser Utility ──
-// Supports "6/27", "06/27", "12/28", "06/2027", "2027-06-30"
 export function parseExpiryInput(input: string): string {
     if (!input) return ''
     const trimmed = input.trim()
 
-    // If standard ISO date YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
         return trimmed
     }
 
-    // If MM/YY e.g. "6/27" or "06/27" or "6-27"
     const mmYyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{2})$/)
     if (mmYyMatch) {
         const month = parseInt(mmYyMatch[1], 10)
@@ -102,7 +164,6 @@ export function parseExpiryInput(input: string): string {
         }
     }
 
-    // If MM/YYYY e.g. "06/2027" or "6/2027"
     const mmYyyyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{4})$/)
     if (mmYyyyMatch) {
         const month = parseInt(mmYyyyMatch[1], 10)
@@ -182,6 +243,10 @@ export default function PantryManagement({
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
     const categoryDropdownRef = useRef<HTMLDivElement>(null)
 
+    // Export Dropdown State
+    const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false)
+    const exportDropdownRef = useRef<HTMLDivElement>(null)
+
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingItem, setEditingItem] = useState<PantryItem | null>(null)
@@ -203,11 +268,14 @@ export default function PantryManagement({
     const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
     const isProvisionsLeader = currentRole === 'amin_mounet_group' || currentRole === 'mas2oul_mounet' || isGroupAdmin
 
-    // Close category dropdown on outside click
+    // Close category and export dropdowns on outside click
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
                 setIsCategoryDropdownOpen(false)
+            }
+            if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+                setIsExportDropdownOpen(false)
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
@@ -219,14 +287,12 @@ export default function PantryManagement({
         setTimeout(() => setStatusMessage(null), 6000)
     }
 
-    // ── Derive All Available Categories (Default + Stored in DB + Custom Created) ──
+    // ── Derive All Available Categories ──
     const allCategories = useMemo(() => {
         const map = new Map<string, { id: string; label: string; ar?: string; color: string }>()
 
-        // 1. Add Defaults
         DEFAULT_PANTRY_CATEGORIES.forEach((c) => map.set(c.id, c))
 
-        // 2. Discover from existing pantry items in database (prevents any data loss)
         pantryList.forEach((item) => {
             if (item.category && !map.has(item.category)) {
                 const cleanLabel = item.category
@@ -241,13 +307,11 @@ export default function PantryManagement({
             }
         })
 
-        // 3. Add Custom Categories created this session
         customCategories.forEach((c) => map.set(c.id, c))
 
         return Array.from(map.values())
     }, [pantryList, customCategories])
 
-    // Filtered Category options for Searchable Combobox
     const filteredCategoryOptions = useMemo(() => {
         if (!categorySearchQuery.trim()) return allCategories
         const q = categorySearchQuery.toLowerCase()
@@ -259,7 +323,6 @@ export default function PantryManagement({
         )
     }, [allCategories, categorySearchQuery])
 
-    // Handler to create & select a new custom category on the fly
     const handleCreateCustomCategory = (nameToCreate: string) => {
         const trimmed = nameToCreate.trim()
         if (!trimmed) return
@@ -361,29 +424,6 @@ export default function PantryManagement({
         setIsModalOpen(true)
     }
 
-    // ── Quick Stock Step Counter in Table ──
-    const handleAdjustQuantity = async (item: PantryItem, delta: number) => {
-        if (!isProvisionsLeader) return
-        const newQty = Math.max(0, (Number(item.quantity_available) || 0) + delta)
-
-        // Optimistic update
-        setPantryList((prev) =>
-            prev.map((i) => (i.id === item.id ? { ...i, quantity_available: newQty } : i))
-        )
-
-        const { error } = await supabase
-            .from('group_pantry_items')
-            .update({ quantity_available: newQty })
-            .eq('id', item.id)
-
-        if (error) {
-            showStatus('Failed to update quantity.', 'error')
-            setPantryList((prev) =>
-                prev.map((i) => (i.id === item.id ? item : i))
-            )
-        }
-    }
-
     // ── Save Form (POST / PUT) ──
     const handleSavePantryItem = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -396,7 +436,6 @@ export default function PantryManagement({
         const qty = parseFloat(formQuantity) || 0
         const minThresh = parseFloat(formMinThreshold) || 0
 
-        // If multiple batches are added, compute total quantity & earliest expiry date
         let finalQty = qty
         let finalExpiry = parseExpiryInput(formExpiryDate) || null
 
@@ -413,7 +452,6 @@ export default function PantryManagement({
 
         try {
             if (editingItem) {
-                // Update
                 const payload: any = {
                     name: formName.trim(),
                     category: formCategory,
@@ -452,7 +490,6 @@ export default function PantryManagement({
                 setPantryList((prev) => prev.map((i) => (i.id === data.id ? { ...data, expiry_batches: formBatches } : i)))
                 showStatus(`Updated "${data.name}" successfully!`, 'success')
             } else {
-                // Insert
                 const payload: any = {
                     group_id: groupId,
                     name: formName.trim(),
@@ -529,7 +566,6 @@ export default function PantryManagement({
                 .eq('id', req.id)
             if (reqErr) throw reqErr
 
-            // Deduct from stock
             const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
             if (pantryItem) {
                 const newQty = Math.max(0, (pantryItem.quantity_available || 0) - req.quantity)
@@ -562,6 +598,184 @@ export default function PantryManagement({
             showStatus(err.message || 'Failed to decline request.', 'error')
         } finally {
             setIsSubmitting(false)
+        }
+    }
+
+    // ── Excel (.xlsx) Multi-Sheet Export ──
+    const handleExportExcel = () => {
+        try {
+            const wb = XLSX.utils.book_new()
+
+            // 1. Sheet 1: Detailed Lots & Packages Breakdown
+            const detailedRows: any[] = []
+            pantryList.forEach((item) => {
+                const catObj = getCategoryObj(item.category)
+                const batches = item.expiry_batches || []
+                const totalCalculated = computeTotalWeightOrVolume(batches)
+
+                if (batches.length > 0) {
+                    batches.forEach((b) => {
+                        let status = '🟢 OK'
+                        if (b.expiry_date) {
+                            const days = (new Date(b.expiry_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)
+                            if (days < 0) status = '🔴 Expired'
+                            else if (days <= 45) status = '🟡 Expiring Soon'
+                        }
+                        detailedRows.push({
+                            'Category': catObj.label,
+                            'Product Name': item.name,
+                            'Brand / Subtype': b.brand || '—',
+                            'Format / Size': b.package_size || '—',
+                            'Quantity': b.quantity,
+                            'Unit': item.unit,
+                            'Product Total Weight/Vol': totalCalculated || '—',
+                            'Expiry Date': b.expiry_date || '—',
+                            'Expiry (Short)': formatExpiryShort(b.expiry_date),
+                            'Freshness Status': status,
+                            'Storage Location': item.location_stored || '—',
+                            'Lot Note': b.lot_number || b.notes || '—',
+                        })
+                    })
+                } else {
+                    detailedRows.push({
+                        'Category': catObj.label,
+                        'Product Name': item.name,
+                        'Brand / Subtype': '—',
+                        'Format / Size': '—',
+                        'Quantity': item.quantity_available,
+                        'Unit': item.unit,
+                        'Product Total Weight/Vol': '—',
+                        'Expiry Date': item.expiry_date || '—',
+                        'Expiry (Short)': formatExpiryShort(item.expiry_date),
+                        'Freshness Status': '🟢 OK',
+                        'Storage Location': item.location_stored || '—',
+                        'Lot Note': item.notes || '—',
+                    })
+                }
+            })
+
+            const wsDetailed = XLSX.utils.json_to_sheet(detailedRows)
+            wsDetailed['!cols'] = [
+                { wch: 24 }, // Category
+                { wch: 30 }, // Product Name
+                { wch: 20 }, // Brand
+                { wch: 20 }, // Format / Size
+                { wch: 10 }, // Quantity
+                { wch: 10 }, // Unit
+                { wch: 22 }, // Total Weight/Vol
+                { wch: 14 }, // Expiry Date
+                { wch: 14 }, // Expiry Short
+                { wch: 18 }, // Status
+                { wch: 18 }, // Location
+                { wch: 24 }, // Notes
+            ]
+            XLSX.utils.book_append_sheet(wb, wsDetailed, 'Detailed Stock (Lots)')
+
+            // 2. Sheet 2: Summary by Product & Category
+            const summaryRows = pantryList.map((item) => {
+                const catObj = getCategoryObj(item.category)
+                const batchesCount = item.expiry_batches?.length || 1
+                const totalWeightVol = computeTotalWeightOrVolume(item.expiry_batches)
+                const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
+                return {
+                    'Category': catObj.label,
+                    'Product Name': item.name,
+                    'Total Available Stock': item.quantity_available,
+                    'Unit': item.unit,
+                    'Total Weight / Volume': totalWeightVol || '—',
+                    'Number of Lots': batchesCount,
+                    'Earliest Expiry': item.expiry_date || '—',
+                    'Stock Level': isLow ? '⚠️ Low Stock' : '✅ Sufficient',
+                    'Min Threshold': item.min_threshold || 0,
+                    'Storage Location': item.location_stored || '—',
+                    'Notes': item.notes || '—',
+                }
+            })
+            const wsSummary = XLSX.utils.json_to_sheet(summaryRows)
+            wsSummary['!cols'] = [
+                { wch: 24 }, // Category
+                { wch: 30 }, // Product Name
+                { wch: 20 }, // Total Stock
+                { wch: 10 }, // Unit
+                { wch: 22 }, // Total Weight/Vol
+                { wch: 14 }, // Lots
+                { wch: 16 }, // Earliest Expiry
+                { wch: 16 }, // Level
+                { wch: 14 }, // Min Threshold
+                { wch: 18 }, // Location
+                { wch: 28 }, // Notes
+            ]
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary by Product')
+
+            const today = new Date().toISOString().split('T')[0]
+            const filename = `${groupName.replace(/[^a-zA-Z0-9_-]/g, '_')}_Pantry_Inventory_${today}.xlsx`
+            XLSX.writeFile(wb, filename)
+            setIsExportDropdownOpen(false)
+            showStatus('Excel workbook exported successfully!', 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to export Excel file.', 'error')
+        }
+    }
+
+    // ── CSV Export with UTF-8 BOM for Arabic Support ──
+    const handleExportCSV = () => {
+        try {
+            const headers = ['Category', 'Product Name', 'Brand', 'Format / Size', 'Quantity', 'Unit', 'Total Weight/Vol', 'Expiry Date', 'Location', 'Notes']
+            const rows: string[][] = []
+
+            pantryList.forEach((item) => {
+                const catObj = getCategoryObj(item.category)
+                const batches = item.expiry_batches || []
+                const totalCalculated = computeTotalWeightOrVolume(batches) || ''
+
+                if (batches.length > 0) {
+                    batches.forEach((b) => {
+                        rows.push([
+                            catObj.label,
+                            item.name,
+                            b.brand || '',
+                            b.package_size || '',
+                            String(b.quantity),
+                            item.unit,
+                            totalCalculated,
+                            b.expiry_date || '',
+                            item.location_stored || '',
+                            b.lot_number || b.notes || item.notes || '',
+                        ])
+                    })
+                } else {
+                    rows.push([
+                        catObj.label,
+                        item.name,
+                        '',
+                        '',
+                        String(item.quantity_available),
+                        item.unit,
+                        '',
+                        item.expiry_date || '',
+                        item.location_stored || '',
+                        item.notes || '',
+                    ])
+                }
+            })
+
+            const csvContent = '\uFEFF' + [headers, ...rows]
+                .map((row) => row.map((cell) => `"${(cell || '').replace(/"/g, '""')}"`).join(','))
+                .join('\r\n')
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            const today = new Date().toISOString().split('T')[0]
+            link.setAttribute('href', url)
+            link.setAttribute('download', `${groupName.replace(/[^a-zA-Z0-9_-]/g, '_')}_Pantry_${today}.csv`)
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            setIsExportDropdownOpen(false)
+            showStatus('CSV file exported successfully!', 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to export CSV.', 'error')
         }
     }
 
@@ -648,7 +862,6 @@ export default function PantryManagement({
         })
     }, [pantryList, selectedCategory, filterLowStockOnly, filterExpiringSoonOnly, search])
 
-    // Overall KPI counts
     const lowStockCount = useMemo(
         () => pantryList.filter((i) => (i.quantity_available || 0) <= (i.min_threshold || 0)).length,
         [pantryList]
@@ -667,7 +880,6 @@ export default function PantryManagement({
         return pantryList.reduce((acc, item) => acc + (Number(item.quantity_available) || 0), 0)
     }, [pantryList])
 
-    // Current category object helper
     const getCategoryObj = (catId: string) => {
         return allCategories.find((c) => c.id === catId) || {
             id: catId,
@@ -726,6 +938,48 @@ export default function PantryManagement({
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Export Dropdown */}
+                        <div className="relative" ref={exportDropdownRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+                                className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-xs border border-slate-300 transition-all flex items-center gap-1 shadow-2xs"
+                                title="Export pantry stock to Excel or CSV"
+                            >
+                                <Download className="h-3.5 w-3.5 text-teal-800" />
+                                <span className="hidden sm:inline">Export</span>
+                                <ChevronDown className="h-3 w-3 opacity-60" />
+                            </button>
+
+                            {isExportDropdownOpen && (
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in">
+                                    <button
+                                        type="button"
+                                        onClick={handleExportExcel}
+                                        className="w-full text-left p-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-900 text-slate-800 text-xs font-bold flex items-center gap-2 transition-colors"
+                                    >
+                                        <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                                        <div>
+                                            <span className="block leading-tight">Excel Workbook</span>
+                                            <span className="text-[9px] text-slate-400 font-normal">.xlsx with multi-sheets</span>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleExportCSV}
+                                        className="w-full text-left p-2 rounded-xl hover:bg-teal-50 hover:text-teal-900 text-slate-800 text-xs font-bold flex items-center gap-2 transition-colors"
+                                    >
+                                        <FileText className="h-4 w-4 text-teal-600" />
+                                        <div>
+                                            <span className="block leading-tight">Standard CSV</span>
+                                            <span className="text-[9px] text-slate-400 font-normal">.csv (UTF-8 Arabic)</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {isProvisionsLeader && (
                             <button
                                 onClick={handleOpenCreateModal}
@@ -828,7 +1082,7 @@ export default function PantryManagement({
                                 <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search by name, brand (Nido, Klim, Bahar), size (400g, 900g), shelf…"
+                                    placeholder="Search by name, brand (Nido, Klim, Bahar), size (400g, 900g, 1kg), shelf…"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
@@ -875,7 +1129,7 @@ export default function PantryManagement({
                                 <div>
                                     <h3 className="text-sm font-bold text-slate-700">No pantry items found</h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Add your first provision item with brands, grammages, and expiry dates.
+                                        Add your first provision item with brands, sizes, and expiry dates.
                                     </p>
                                 </div>
                                 {isProvisionsLeader && (
@@ -894,6 +1148,7 @@ export default function PantryManagement({
                                     const catCfg = getCategoryObj(item.category)
                                     const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
                                     const batches = item.expiry_batches || []
+                                    const computedTotal = computeTotalWeightOrVolume(batches)
 
                                     return (
                                         <div
@@ -915,7 +1170,7 @@ export default function PantryManagement({
                                                     )}
                                                 </div>
 
-                                                {/* Item Title & Stock Counter */}
+                                                {/* Item Title & Stock Display (Dual Unit: Count + Weight/Volume) */}
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
@@ -928,18 +1183,20 @@ export default function PantryManagement({
                                                         )}
                                                     </div>
 
-                                                    {/* Quantity Badge */}
+                                                    {/* Quantity + Weight / Volume Badge */}
                                                     <div className="text-right shrink-0">
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-base sm:text-lg font-black text-teal-900">
-                                                                {item.quantity_available}
+                                                        <div className="flex items-baseline justify-end gap-1.5 flex-wrap">
+                                                            <span className="text-sm sm:text-base font-black text-teal-950">
+                                                                {item.quantity_available} {item.unit}
                                                             </span>
-                                                            <span className="text-xs font-bold text-slate-500">
-                                                                {item.unit}
-                                                            </span>
+                                                            {computedTotal && (
+                                                                <span className="text-[11px] sm:text-xs font-black px-2 py-0.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200/80">
+                                                                    {computedTotal}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         {isLow && (
-                                                            <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded-md block">
+                                                            <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded-md inline-block mt-0.5">
                                                                 Low Stock
                                                             </span>
                                                         )}
@@ -977,50 +1234,25 @@ export default function PantryManagement({
                                                 )}
                                             </div>
 
-                                            {/* Action Strip: Quick Stepper & Edit */}
-                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                                                {/* Fast +/- Stepper */}
-                                                {isProvisionsLeader ? (
-                                                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
-                                                        <button
-                                                            onClick={() => handleAdjustQuantity(item, -1)}
-                                                            className="w-6 h-6 rounded-lg bg-white hover:bg-slate-200 font-black text-slate-700 text-xs flex items-center justify-center transition-colors shadow-2xs active:scale-95"
-                                                            title="Decrease 1"
-                                                        >
-                                                            -
-                                                        </button>
-                                                        <span className="text-[11px] font-black text-slate-800 px-1 min-w-6 text-center">
-                                                            {item.quantity_available}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => handleAdjustQuantity(item, 1)}
-                                                            className="w-6 h-6 rounded-lg bg-teal-800 hover:bg-teal-700 font-black text-white text-xs flex items-center justify-center transition-colors shadow-2xs active:scale-95"
-                                                            title="Increase 1"
-                                                        >
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div />
-                                                )}
-
+                                            {/* Action Strip: Edit & Delete (No +- stepper) */}
+                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-1.5">
                                                 {isProvisionsLeader && (
-                                                    <div className="flex items-center gap-1">
+                                                    <>
                                                         <button
                                                             onClick={() => handleOpenEditModal(item)}
                                                             className="p-1.5 text-slate-600 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
                                                             title="Edit item & batches"
                                                         >
-                                                            <Edit className="h-3.5 w-3.5" />
+                                                            <Edit className="h-4 w-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeletePantryItem(item.id, item.name)}
                                                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                                             title="Delete item"
                                                         >
-                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            <Trash2 className="h-4 w-4" />
                                                         </button>
-                                                    </div>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -1273,6 +1505,7 @@ export default function PantryManagement({
                                             <option value="kg">kg (Kilograms)</option>
                                             <option value="g">g (Grams)</option>
                                             <option value="bottles">bottles (قنينة)</option>
+                                            <option value="jars">jars (مرطبان)</option>
                                             <option value="boxes">boxes (كرتونة)</option>
                                             <option value="pieces">pieces (حبة)</option>
                                             <option value="liters">liters (L)</option>
@@ -1337,7 +1570,7 @@ export default function PantryManagement({
                                     {/* Quick format suggestion chips */}
                                     <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5 pt-0.5">
                                         <span className="text-[9px] font-bold text-amber-800 uppercase shrink-0">Quick sizes:</span>
-                                        {['1kg', '400g', '750g', '900g', '500g', '300g', 'sachet', '1L', '5L'].map((sz) => (
+                                        {['1kg', '400g', '750g', '900g', '500g', '185g', '300g', '700g', 'sachet', '1L', '5L'].map((sz) => (
                                             <button
                                                 key={sz}
                                                 type="button"
@@ -1397,7 +1630,7 @@ export default function PantryManagement({
                                                         </button>
                                                     </div>
 
-                                                    {/* Row 2: Quantity + Expiry (Supports typing "6/27" or "12/28") */}
+                                                    {/* Row 2: Quantity + Expiry Date Picker */}
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <div>
                                                             <label className="block text-[9px] font-bold text-slate-400 uppercase">
@@ -1421,19 +1654,13 @@ export default function PantryManagement({
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-[9px] font-bold text-slate-400 uppercase flex items-center justify-between">
-                                                                <span>Expiry (e.g. 6/27)</span>
-                                                                {batch.expiry_date && (
-                                                                    <span className="text-emerald-700 font-bold">
-                                                                        {formatExpiryShort(batch.expiry_date)}
-                                                                    </span>
-                                                                )}
+                                                            <label className="block text-[9px] font-bold text-slate-400 uppercase">
+                                                                Expiry Date
                                                             </label>
                                                             <input
-                                                                type="text"
-                                                                placeholder="e.g. 6/27 or 08/27"
-                                                                defaultValue={batch.expiry_date ? formatExpiryShort(batch.expiry_date) : ''}
-                                                                onBlur={(e) =>
+                                                                type="date"
+                                                                value={batch.expiry_date || ''}
+                                                                onChange={(e) =>
                                                                     handleUpdateBatch(batch.id, 'expiry_date', e.target.value)
                                                                 }
                                                                 className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 focus:bg-white text-slate-800"
