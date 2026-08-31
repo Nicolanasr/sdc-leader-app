@@ -97,7 +97,6 @@ export function parseExpiryInput(input: string): string {
         const month = parseInt(mmYyMatch[1], 10)
         const year = 2000 + parseInt(mmYyMatch[2], 10)
         if (month >= 1 && month <= 12) {
-            // Last day of that month
             const lastDay = new Date(year, month, 0).getDate()
             return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
         }
@@ -117,7 +116,7 @@ export function parseExpiryInput(input: string): string {
     return trimmed
 }
 
-// Formats an ISO date into clean "MM/YY" or "MMM YYYY" for scout display
+// Formats an ISO date into clean "MM/YY" for scout display
 export function formatExpiryShort(dateStr?: string | null): string {
     if (!dateStr) return '—'
     const parsed = new Date(dateStr)
@@ -156,9 +155,6 @@ function normalizePantryItem(item: PantryItem): PantryItem {
         expiry_batches: batches,
     }
 }
-
-// Common Package Sizes for fast chips
-const COMMON_PACKAGE_SIZES = ['300g', '400g', '500g', '700g', '750g', '900g', '1kg', '2kg', '5L']
 
 export default function PantryManagement({
     groupId,
@@ -199,6 +195,9 @@ export default function PantryManagement({
     const [formLocation, setFormLocation] = useState('Pantry Shelf A')
     const [formNotes, setFormNotes] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Request filters
+    const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'approved'>('all')
 
     // Permissions
     const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
@@ -519,6 +518,102 @@ export default function PantryManagement({
         }
     }
 
+    // ── Requests Approvals ──
+    const handleApproveRequest = async (req: EventPantryRequest) => {
+        if (!isProvisionsLeader) return
+        setIsSubmitting(true)
+        try {
+            const { error: reqErr } = await supabase
+                .from('event_pantry_requests')
+                .update({ status: 'approved', approved_by: userId })
+                .eq('id', req.id)
+            if (reqErr) throw reqErr
+
+            // Deduct from stock
+            const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
+            if (pantryItem) {
+                const newQty = Math.max(0, (pantryItem.quantity_available || 0) - req.quantity)
+                await supabase.from('group_pantry_items').update({ quantity_available: newQty }).eq('id', pantryItem.id)
+                setPantryList((prev) => prev.map((p) => (p.id === pantryItem.id ? { ...p, quantity_available: newQty } : p)))
+            }
+
+            setRequestsList((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: 'approved' } : r)))
+            showStatus(`Approved provision transfer for ${req.events?.title || 'Camp'}.`, 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to approve request.', 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleRejectRequest = async (req: EventPantryRequest) => {
+        if (!isProvisionsLeader) return
+        setIsSubmitting(true)
+        try {
+            const { error: reqErr } = await supabase
+                .from('event_pantry_requests')
+                .update({ status: 'rejected' })
+                .eq('id', req.id)
+            if (reqErr) throw reqErr
+
+            setRequestsList((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: 'rejected' } : r)))
+            showStatus(`Declined request.`, 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to decline request.', 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    // ── Group Requests by Event / Camp ──
+    const groupedRequestsByEvent = useMemo(() => {
+        const map: Record<string, {
+            eventId: string
+            eventTitle: string
+            eventStartDate?: string
+            requesterName?: string
+            items: EventPantryRequest[]
+            pendingCount: number
+            approvedCount: number
+        }> = {}
+
+        requestsList.forEach((req) => {
+            if (requestStatusFilter === 'pending' && req.status !== 'requested') return
+            if (requestStatusFilter === 'approved' && req.status !== 'approved' && req.status !== 'received') return
+
+            const eventId = req.event_id || 'unassigned'
+            const eventTitle = req.events?.title || 'Camp Activity'
+            const eventStartDate = req.events?.start_time
+            const requesterName = req.profiles?.full_name || 'Leader'
+
+            if (!map[eventId]) {
+                map[eventId] = {
+                    eventId,
+                    eventTitle,
+                    eventStartDate,
+                    requesterName,
+                    items: [],
+                    pendingCount: 0,
+                    approvedCount: 0,
+                }
+            }
+
+            map[eventId].items.push(req)
+            if (req.status === 'requested') {
+                map[eventId].pendingCount += 1
+            } else {
+                map[eventId].approvedCount += 1
+            }
+        })
+
+        return Object.values(map)
+    }, [requestsList, requestStatusFilter])
+
+    const pendingRequestsCount = useMemo(
+        () => requestsList.filter((r) => r.status === 'requested').length,
+        [requestsList]
+    )
+
     // ── Filtered Inventory List ──
     const filteredPantry = useMemo(() => {
         return pantryList.filter((item) => {
@@ -643,257 +738,411 @@ export default function PantryManagement({
                     </div>
                 </div>
 
-                {/* ── SUMMARY KPIS ── */}
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 shadow-2xs text-center">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase block">Total Stock</span>
-                        <span className="text-sm sm:text-base font-black text-slate-900">{totalPackagesCount} pkgs</span>
-                    </div>
-
-                    <button
-                        onClick={() => {
-                            setFilterLowStockOnly(!filterLowStockOnly)
-                            setFilterExpiringSoonOnly(false)
-                        }}
-                        className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xs text-center transition-all ${
-                            filterLowStockOnly
-                                ? 'bg-amber-500 text-white border-amber-600'
-                                : 'bg-white text-slate-900 border-slate-200/90 hover:border-amber-400'
-                        }`}
-                    >
-                        <span className={`text-[10px] font-bold uppercase block ${filterLowStockOnly ? 'text-amber-100' : 'text-slate-500'}`}>
-                            Low Stock
-                        </span>
-                        <span className="text-sm sm:text-base font-black">
-                            {lowStockCount} items
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            setFilterExpiringSoonOnly(!filterExpiringSoonOnly)
-                            setFilterLowStockOnly(false)
-                        }}
-                        className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xs text-center transition-all ${
-                            filterExpiringSoonOnly
-                                ? 'bg-rose-600 text-white border-rose-700'
-                                : 'bg-white text-slate-900 border-slate-200/90 hover:border-rose-400'
-                        }`}
-                    >
-                        <span className={`text-[10px] font-bold uppercase block ${filterExpiringSoonOnly ? 'text-rose-100' : 'text-slate-500'}`}>
-                            Expiring Soon
-                        </span>
-                        <span className="text-sm sm:text-base font-black">
-                            {expiringSoonCount} items
-                        </span>
-                    </button>
-                </div>
-
-                {/* ── SEARCH & DYNAMIC CATEGORY FILTER BAR ── */}
-                <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs space-y-2">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search by name, brand (Nido, Klim, Bahar), size (400g, 900g), shelf…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
-                        />
-                    </div>
-
-                    {/* Dynamic Category Chips (Mobile Horizontal Scrollable) */}
-                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+                {/* ── SEGMENTED VIEW BAR: INVENTORY vs CAMP REQUESTS ── */}
+                {requestsList.length > 0 && (
+                    <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-2xs">
                         <button
-                            onClick={() => setSelectedCategory('all')}
-                            className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
-                                selectedCategory === 'all'
-                                    ? 'bg-teal-800 text-white shadow-2xs'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            onClick={() => setActiveView('inventory')}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                activeView === 'inventory'
+                                    ? 'bg-white text-teal-900 shadow-xs font-black'
+                                    : 'text-slate-600 hover:text-slate-900'
                             }`}
                         >
-                            All ({pantryList.length})
+                            <Package className="h-3.5 w-3.5" />
+                            <span>Central Inventory ({pantryList.length})</span>
                         </button>
-                        {allCategories.map((cat) => {
-                            const count = pantryList.filter((i) => i.category === cat.id).length
-                            if (count === 0 && selectedCategory !== cat.id) return null // Hide empty category pills on filter bar
-                            return (
+
+                        <button
+                            onClick={() => setActiveView('requests')}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                activeView === 'requests'
+                                    ? 'bg-white text-teal-900 shadow-xs font-black'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <span>⛺ Camp Requests</span>
+                            {pendingRequestsCount > 0 && (
+                                <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black animate-pulse">
+                                    {pendingRequestsCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
+                    VIEW 1: CENTRAL PANTRY INVENTORY
+                ══════════════════════════════════════════════════════════ */}
+                {activeView === 'inventory' && (
+                    <>
+                        {/* ── SUMMARY KPIS ── */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 shadow-2xs text-center">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Total Stock</span>
+                                <span className="text-sm sm:text-base font-black text-slate-900">{totalPackagesCount} pkgs</span>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setFilterLowStockOnly(!filterLowStockOnly)
+                                    setFilterExpiringSoonOnly(false)
+                                }}
+                                className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xs text-center transition-all ${
+                                    filterLowStockOnly
+                                        ? 'bg-amber-500 text-white border-amber-600'
+                                        : 'bg-white text-slate-900 border-slate-200/90 hover:border-amber-400'
+                                }`}
+                            >
+                                <span className={`text-[10px] font-bold uppercase block ${filterLowStockOnly ? 'text-amber-100' : 'text-slate-500'}`}>
+                                    Low Stock
+                                </span>
+                                <span className="text-sm sm:text-base font-black">
+                                    {lowStockCount} items
+                                </span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setFilterExpiringSoonOnly(!filterExpiringSoonOnly)
+                                    setFilterLowStockOnly(false)
+                                }}
+                                className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xs text-center transition-all ${
+                                    filterExpiringSoonOnly
+                                        ? 'bg-rose-600 text-white border-rose-700'
+                                        : 'bg-white text-slate-900 border-slate-200/90 hover:border-rose-400'
+                                }`}
+                            >
+                                <span className={`text-[10px] font-bold uppercase block ${filterExpiringSoonOnly ? 'text-rose-100' : 'text-slate-500'}`}>
+                                    Expiring Soon
+                                </span>
+                                <span className="text-sm sm:text-base font-black">
+                                    {expiringSoonCount} items
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* ── SEARCH & DYNAMIC CATEGORY FILTER BAR ── */}
+                        <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs space-y-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search by name, brand (Nido, Klim, Bahar), size (400g, 900g), shelf…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Dynamic Category Chips (Mobile Horizontal Scrollable) */}
+                            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
                                 <button
-                                    key={cat.id}
-                                    onClick={() => setSelectedCategory(cat.id)}
-                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
-                                        selectedCategory === cat.id
+                                    onClick={() => setSelectedCategory('all')}
+                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                                        selectedCategory === 'all'
                                             ? 'bg-teal-800 text-white shadow-2xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
-                                    <span>{cat.label}</span>
-                                    <span className="opacity-75">({count})</span>
+                                    All ({pantryList.length})
                                 </button>
-                            )
-                        })}
-                    </div>
-                </div>
-
-                {/* ── PANTRY ITEMS GRID / LIST ── */}
-                {filteredPantry.length === 0 ? (
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-8 text-center space-y-3 shadow-2xs">
-                        <UtensilsCrossed className="h-10 w-10 text-slate-300 mx-auto" />
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-700">No pantry items found</h3>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                                Add your first provision item with brands, grammages, and expiry dates.
-                            </p>
+                                {allCategories.map((cat) => {
+                                    const count = pantryList.filter((i) => i.category === cat.id).length
+                                    if (count === 0 && selectedCategory !== cat.id) return null
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setSelectedCategory(cat.id)}
+                                            className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
+                                                selectedCategory === cat.id
+                                                    ? 'bg-teal-800 text-white shadow-2xs'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            <span>{cat.label}</span>
+                                            <span className="opacity-75">({count})</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
-                        {isProvisionsLeader && (
-                            <button
-                                onClick={handleOpenCreateModal}
-                                className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs inline-flex items-center gap-1.5 active:scale-95"
-                            >
-                                <Plus className="h-3.5 w-3.5" />
-                                <span>Add New Item</span>
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        {filteredPantry.map((item) => {
-                            const catCfg = getCategoryObj(item.category)
-                            const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
-                            const batches = item.expiry_batches || []
-                            const hasMultipleBatches = batches.length > 1 || (batches.length === 1 && (batches[0].brand || batches[0].package_size))
 
-                            return (
-                                <div
-                                    key={item.id}
-                                    className={`bg-white border rounded-2xl p-3.5 shadow-2xs transition-all space-y-2.5 flex flex-col justify-between ${
-                                        isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90'
-                                    }`}
-                                >
-                                    <div className="space-y-1.5">
-                                        {/* Top Category Badge + Shelf Location */}
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${catCfg.color}`}>
-                                                {catCfg.label}
-                                            </span>
-                                            {item.location_stored && (
-                                                <span className="text-[10px] text-slate-400 font-medium">
-                                                    📍 {item.location_stored}
+                        {/* ── PANTRY ITEMS GRID / LIST ── */}
+                        {filteredPantry.length === 0 ? (
+                            <div className="bg-white border border-slate-200/90 rounded-2xl p-8 text-center space-y-3 shadow-2xs">
+                                <UtensilsCrossed className="h-10 w-10 text-slate-300 mx-auto" />
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-700">No pantry items found</h3>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        Add your first provision item with brands, grammages, and expiry dates.
+                                    </p>
+                                </div>
+                                {isProvisionsLeader && (
+                                    <button
+                                        onClick={handleOpenCreateModal}
+                                        className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs inline-flex items-center gap-1.5 active:scale-95"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        <span>Add New Item</span>
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                {filteredPantry.map((item) => {
+                                    const catCfg = getCategoryObj(item.category)
+                                    const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
+                                    const batches = item.expiry_batches || []
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={`bg-white border rounded-2xl p-3.5 shadow-2xs transition-all space-y-2.5 flex flex-col justify-between ${
+                                                isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90'
+                                            }`}
+                                        >
+                                            <div className="space-y-1.5">
+                                                {/* Top Category Badge + Shelf Location */}
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${catCfg.color}`}>
+                                                        {catCfg.label}
+                                                    </span>
+                                                    {item.location_stored && (
+                                                        <span className="text-[10px] text-slate-400 font-medium">
+                                                            📍 {item.location_stored}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Item Title & Stock Counter */}
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                                                            {item.name}
+                                                        </h3>
+                                                        {item.notes && (
+                                                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                                                                {item.notes}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Quantity Badge */}
+                                                    <div className="text-right shrink-0">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-base sm:text-lg font-black text-teal-900">
+                                                                {item.quantity_available}
+                                                            </span>
+                                                            <span className="text-xs font-bold text-slate-500">
+                                                                {item.unit}
+                                                            </span>
+                                                        </div>
+                                                        {isLow && (
+                                                            <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded-md block">
+                                                                Low Stock
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* ── BATCHES & GRAMMAGE BREAKDOWN CHIPS ── */}
+                                                {batches.length > 0 && (
+                                                    <div className="space-y-1 pt-1">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
+                                                            Package Lots ({batches.length}):
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {batches.map((b, bIdx) => (
+                                                                <span
+                                                                    key={b.id || bIdx}
+                                                                    className="text-[10px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs"
+                                                                >
+                                                                    <span className="font-black text-teal-900">x{b.quantity}</span>
+                                                                    {b.brand && <span className="font-bold">{b.brand}</span>}
+                                                                    {b.package_size && (
+                                                                        <span className="bg-amber-100 text-amber-900 px-1 py-0.1 rounded font-black text-[9px]">
+                                                                            {b.package_size}
+                                                                        </span>
+                                                                    )}
+                                                                    {b.expiry_date && (
+                                                                        <span className="text-slate-500 font-mono text-[9px]">
+                                                                            ({formatExpiryShort(b.expiry_date)})
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Action Strip: Quick Stepper & Edit */}
+                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                                {/* Fast +/- Stepper */}
+                                                {isProvisionsLeader ? (
+                                                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                                                        <button
+                                                            onClick={() => handleAdjustQuantity(item, -1)}
+                                                            className="w-6 h-6 rounded-lg bg-white hover:bg-slate-200 font-black text-slate-700 text-xs flex items-center justify-center transition-colors shadow-2xs active:scale-95"
+                                                            title="Decrease 1"
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <span className="text-[11px] font-black text-slate-800 px-1 min-w-6 text-center">
+                                                            {item.quantity_available}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => handleAdjustQuantity(item, 1)}
+                                                            className="w-6 h-6 rounded-lg bg-teal-800 hover:bg-teal-700 font-black text-white text-xs flex items-center justify-center transition-colors shadow-2xs active:scale-95"
+                                                            title="Increase 1"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div />
+                                                )}
+
+                                                {isProvisionsLeader && (
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(item)}
+                                                            className="p-1.5 text-slate-600 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
+                                                            title="Edit item & batches"
+                                                        >
+                                                            <Edit className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeletePantryItem(item.id, item.name)}
+                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                            title="Delete item"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
+                    VIEW 2: CAMP PANTRY REQUESTS
+                ══════════════════════════════════════════════════════════ */}
+                {activeView === 'requests' && (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+                            <button
+                                onClick={() => setRequestStatusFilter('all')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    requestStatusFilter === 'all'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                All ({requestsList.length})
+                            </button>
+                            <button
+                                onClick={() => setRequestStatusFilter('pending')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    requestStatusFilter === 'pending'
+                                        ? 'bg-amber-600 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                Pending ({pendingRequestsCount})
+                            </button>
+                            <button
+                                onClick={() => setRequestStatusFilter('approved')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    requestStatusFilter === 'approved'
+                                        ? 'bg-emerald-700 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                Approved ({requestsList.length - pendingRequestsCount})
+                            </button>
+                        </div>
+
+                        {groupedRequestsByEvent.length === 0 ? (
+                            <div className="bg-white p-8 text-center text-slate-400 space-y-2 rounded-2xl border border-slate-200 shadow-2xs">
+                                <Send className="h-8 w-8 mx-auto opacity-40" />
+                                <p className="font-bold text-slate-700 text-sm">No transfer requests match this filter.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {groupedRequestsByEvent.map((group) => (
+                                    <div
+                                        key={group.eventId}
+                                        className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden"
+                                    >
+                                        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate">
+                                                    ⛺ {group.eventTitle}
+                                                </h4>
+                                                <p className="text-[10px] text-slate-500 truncate">
+                                                    By {group.requesterName} • {group.items.length} requested items
+                                                </p>
+                                            </div>
+                                            {group.pendingCount > 0 ? (
+                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                                                    {group.pendingCount} Pending
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200 shrink-0">
+                                                    ✓ Approved
                                                 </span>
                                             )}
                                         </div>
 
-                                        {/* Item Title & Stock Counter */}
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
-                                                    {item.name}
-                                                </h3>
-                                                {item.notes && (
-                                                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
-                                                        {item.notes}
-                                                    </p>
-                                                )}
-                                            </div>
+                                        <div className="divide-y divide-slate-100 p-2 space-y-1">
+                                            {group.items.map((req) => (
+                                                <div
+                                                    key={req.id}
+                                                    className="p-2.5 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-50"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-black text-slate-800 truncate">
+                                                            {req.group_pantry_items?.name || 'Item'}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-500">
+                                                            Requested: <strong>{req.quantity} {req.unit}</strong>
+                                                        </p>
+                                                    </div>
 
-                                            {/* Quantity Badge */}
-                                            <div className="text-right shrink-0">
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-base sm:text-lg font-black text-teal-900">
-                                                        {item.quantity_available}
-                                                    </span>
-                                                    <span className="text-xs font-bold text-slate-500">
-                                                        {item.unit}
-                                                    </span>
-                                                </div>
-                                                {isLow && (
-                                                    <span className="text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded-md block">
-                                                        Low Stock
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* ── BATCHES & GRAMMAGE BREAKDOWN CHIPS ── */}
-                                        {batches.length > 0 && (
-                                            <div className="space-y-1 pt-1">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
-                                                    Package Lots ({batches.length}):
-                                                </span>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {batches.map((b, bIdx) => (
-                                                        <span
-                                                            key={b.id || bIdx}
-                                                            className="text-[10px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs"
-                                                        >
-                                                            <span className="font-black text-teal-900">x{b.quantity}</span>
-                                                            {b.brand && <span className="font-bold">{b.brand}</span>}
-                                                            {b.package_size && (
-                                                                <span className="bg-amber-100 text-amber-900 px-1 py-0.1 rounded font-black text-[9px]">
-                                                                    {b.package_size}
-                                                                </span>
-                                                            )}
-                                                            {b.expiry_date && (
-                                                                <span className="text-slate-500 font-mono text-[9px]">
-                                                                    ({formatExpiryShort(b.expiry_date)})
-                                                                </span>
-                                                            )}
+                                                    {req.status === 'requested' && isProvisionsLeader ? (
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <button
+                                                                onClick={() => handleRejectRequest(req)}
+                                                                className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-xs font-bold transition-all"
+                                                            >
+                                                                Decline
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleApproveRequest(req)}
+                                                                className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 capitalize">
+                                                            {req.status}
                                                         </span>
-                                                    ))}
+                                                    )}
                                                 </div>
-                                            </div>
-                                        )}
+                                            ))}
+                                        </div>
                                     </div>
-
-                                    {/* Action Strip: Quick Stepper & Edit */}
-                                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                                        {/* Fast +/- Stepper */}
-                                        {isProvisionsLeader ? (
-                                            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
-                                                <button
-                                                    onClick={() => handleAdjustQuantity(item, -1)}
-                                                    className="w-6 h-6 rounded-lg bg-white hover:bg-slate-200 font-black text-slate-700 text-xs flex items-center justify-center transition-colors shadow-2xs active:scale-95"
-                                                    title="Decrease 1"
-                                                >
-                                                    -
-                                                </button>
-                                                <span className="text-[11px] font-black text-slate-800 px-1 min-w-6 text-center">
-                                                    {item.quantity_available}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleAdjustQuantity(item, 1)}
-                                                    className="w-6 h-6 rounded-lg bg-teal-800 hover:bg-teal-700 font-black text-white text-xs flex items-center justify-center transition-colors shadow-2xs active:scale-95"
-                                                    title="Increase 1"
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div />
-                                        )}
-
-                                        {isProvisionsLeader && (
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => handleOpenEditModal(item)}
-                                                    className="p-1.5 text-slate-600 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
-                                                    title="Edit item & batches"
-                                                >
-                                                    <Edit className="h-3.5 w-3.5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeletePantryItem(item.id, item.name)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                    title="Delete item"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )
-                        })}
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
