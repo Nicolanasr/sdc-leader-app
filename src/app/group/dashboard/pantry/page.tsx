@@ -10,25 +10,33 @@ export default async function PantryPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
-  const groupId = user?.app_metadata?.group_id
-
-  if (!user || !role || !groupId) {
-    redirect('/login?message=Unauthorized. Leader access only.')
+  if (!user) {
+    redirect('/login')
   }
 
-  const strictlyAllowedRoles = [
+  const groupId = user?.app_metadata?.group_id || user?.user_metadata?.group_id || null
+  const role = user?.app_metadata?.role_scope || user?.app_metadata?.role || user?.user_metadata?.role || 'leader'
+
+  if (!groupId) {
+    redirect('/login?message=Unauthorized. Group access required.')
+  }
+
+  const allowedRoles = [
     'chef_groupe',
     'assistant_chef_groupe',
+    'amin_serr_group',
+    'amin_sandou2_group',
     'amin_mounet_group',
     'mas2oul_mounet',
+    'ka2ed_fer2a',
+    'mouse3ed_ka2ed_fer2a',
     'configurator',
   ]
 
-  const hasAccess = strictlyAllowedRoles.includes(role)
+  const hasAccess = allowedRoles.includes(role)
 
   if (!hasAccess) {
-    redirect('/group/dashboard?message=Access to Central Group Pantry is restricted to Group Leaders and the Pantry Master.')
+    redirect('/group/dashboard?message=Access to Central Group Pantry is restricted.')
   }
 
   // 2. Fetch Group details
