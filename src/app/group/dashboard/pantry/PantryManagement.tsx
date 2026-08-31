@@ -81,7 +81,7 @@ interface Props {
     initialRequests?: EventPantryRequest[]
 }
 
-// ── Smart Aggregator for Total Weight (kg/g) or Volume (L/ml) ──
+// ── Smart Aggregator for Total Weight (kg/g), Volume (L/ml), Sachets, Pieces ──
 export function computeTotalWeightOrVolume(batches?: PantryBatch[] | null): string | null {
     if (!batches || batches.length === 0) return null
 
@@ -89,44 +89,69 @@ export function computeTotalWeightOrVolume(batches?: PantryBatch[] | null): stri
     let hasGrams = false
     let totalLiters = 0
     let hasLiters = false
+    let totalSachets = 0
+    let hasSachets = false
+    let totalPieces = 0
+    let hasPieces = false
 
     batches.forEach((b) => {
         const qty = Number(b.quantity) || 1
-        const sizeStr = (b.package_size || '').trim().toLowerCase()
-        if (!sizeStr) return
+        const raw = (b.package_size || '').trim().toLowerCase()
+        if (!raw) return
 
-        // 1. Check for kg: e.g. "1kg", "1.5kg", "2 kg"
-        const kgMatch = sizeStr.match(/^([\d\.]+)\s*kg$/)
+        // 1. Check for sachets / bags / tea bags (e.g. "25 sachets", "60 sachets", "100 bags")
+        const sachetMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:sachet|sachets|bag|bags|tea\s*bag|tea\s*bags|enveloppe|enveloppes)/i)
+        if (sachetMatch) {
+            totalSachets += parseFloat(sachetMatch[1]) * qty
+            hasSachets = true
+            return
+        }
+
+        // 2. Check for kg (e.g. "1kg", "1.5kg", "2 kg (Indian Basmati)", "5kg (American)", "1kg (Fine)")
+        const kgMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilogram|kilograms|kilos)\b/i)
         if (kgMatch) {
             totalGrams += parseFloat(kgMatch[1]) * 1000 * qty
             hasGrams = true
             return
         }
 
-        // 2. Check for grams: e.g. "500g", "185g", "400 g", "750g"
-        const gMatch = sizeStr.match(/^([\d\.]+)\s*g$/)
+        // 3. Check for grams (e.g. "500g Strawberry", "900g (Fine)", "500g (Coarse)", "185g", "750g Mango", "400g")
+        const gMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/i)
         if (gMatch) {
             totalGrams += parseFloat(gMatch[1]) * qty
             hasGrams = true
             return
         }
 
-        // 3. Check for liters: e.g. "3l", "1.8l", "0.85l", "5 l"
-        const lMatch = sizeStr.match(/^([\d\.]+)\s*l$/)
+        // 4. Check for liters (e.g. "3l", "1.8l", "0.85l", "5 l", "1.5 liters")
+        const lMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:l|liter|liters|litre|litres)\b/i)
         if (lMatch) {
             totalLiters += parseFloat(lMatch[1]) * qty
             hasLiters = true
             return
         }
 
-        // 4. Check for ml: e.g. "750ml", "500ml", "250 ml"
-        const mlMatch = sizeStr.match(/^([\d\.]+)\s*ml$/)
+        // 5. Check for ml (e.g. "750ml", "500ml", "250 ml")
+        const mlMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:ml|milliliter|milliliters)\b/i)
         if (mlMatch) {
             totalLiters += (parseFloat(mlMatch[1]) / 1000) * qty
             hasLiters = true
             return
         }
+
+        // 6. Check for pieces / portions (e.g. "12 pieces", "6 portions")
+        const pcsMatch = raw.match(/(\d+(?:\.\d+)?)\s*(?:pcs|piece|pieces|portion|portions)\b/i)
+        if (pcsMatch) {
+            totalPieces += parseFloat(pcsMatch[1]) * qty
+            hasPieces = true
+            return
+        }
     })
+
+    if (hasSachets && totalSachets > 0) {
+        const formatted = Number.isInteger(totalSachets) ? totalSachets.toLocaleString() : totalSachets.toFixed(1)
+        return `${formatted} sachets`
+    }
 
     if (hasGrams && totalGrams > 0) {
         if (totalGrams >= 1000) {
@@ -140,6 +165,11 @@ export function computeTotalWeightOrVolume(batches?: PantryBatch[] | null): stri
     if (hasLiters && totalLiters > 0) {
         const formatted = Number.isInteger(totalLiters) ? totalLiters.toString() : totalLiters.toFixed(2).replace(/\.?0+$/, '')
         return `${formatted} L`
+    }
+
+    if (hasPieces && totalPieces > 0) {
+        const formatted = Number.isInteger(totalPieces) ? totalPieces.toLocaleString() : totalPieces.toFixed(1)
+        return `${formatted} pcs`
     }
 
     return null
