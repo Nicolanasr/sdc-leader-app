@@ -7,7 +7,7 @@ import {
     UtensilsCrossed, Plus, Search, AlertTriangle, Check, Trash2, Edit, Loader2,
     Package, ShoppingBag, ArrowUpDown, ChevronRight, Apple, Minus, Layers, Clock,
     Calendar, CheckCircle2, XCircle, Send, Sparkles, Filter, X, ChevronDown, Tag,
-    Scale, Info, Download, FileSpreadsheet, FileText
+    Scale, Info, Download, FileSpreadsheet, FileText, SlidersHorizontal, RotateCcw
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -261,10 +261,15 @@ export default function PantryManagement({
     const [activeView, setActiveView] = useState<'inventory' | 'requests'>('inventory')
     const [pantryList, setPantryList] = useState<PantryItem[]>(() => initialPantry.map(normalizePantryItem))
     const [requestsList, setRequestsList] = useState<EventPantryRequest[]>(initialRequests)
+    
+    // ── Search & Filter States ──
     const [search, setSearch] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
-    const [filterLowStockOnly, setFilterLowStockOnly] = useState(false)
-    const [filterExpiringSoonOnly, setFilterExpiringSoonOnly] = useState(false)
+    const [selectedBrand, setSelectedBrand] = useState<string>('all')
+    const [selectedLocation, setSelectedLocation] = useState<string>('all')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'low_stock' | 'expiring_soon' | 'expired'>('all')
+    const [sortBy, setSortBy] = useState<'name_asc' | 'name_desc' | 'expiry_asc' | 'qty_desc' | 'qty_asc' | 'category'>('name_asc')
+    
     const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
     // Dynamic Categories State
@@ -320,9 +325,7 @@ export default function PantryManagement({
     // ── Derive All Available Categories ──
     const allCategories = useMemo(() => {
         const map = new Map<string, { id: string; label: string; ar?: string; color: string }>()
-
         DEFAULT_PANTRY_CATEGORIES.forEach((c) => map.set(c.id, c))
-
         pantryList.forEach((item) => {
             if (item.category && !map.has(item.category)) {
                 const cleanLabel = item.category
@@ -336,11 +339,33 @@ export default function PantryManagement({
                 })
             }
         })
-
         customCategories.forEach((c) => map.set(c.id, c))
-
         return Array.from(map.values())
     }, [pantryList, customCategories])
+
+    // ── Derive All Available Brands ──
+    const allBrands = useMemo(() => {
+        const brands = new Set<string>()
+        pantryList.forEach((item) => {
+            (item.expiry_batches || []).forEach((b) => {
+                if (b.brand && b.brand.trim()) {
+                    brands.add(b.brand.trim())
+                }
+            })
+        })
+        return Array.from(brands).sort((a, b) => a.localeCompare(b))
+    }, [pantryList])
+
+    // ── Derive All Available Storage Locations ──
+    const allLocations = useMemo(() => {
+        const locs = new Set<string>()
+        pantryList.forEach((item) => {
+            if (item.location_stored && item.location_stored.trim()) {
+                locs.add(item.location_stored.trim())
+            }
+        })
+        return Array.from(locs).sort((a, b) => a.localeCompare(b))
+    }, [pantryList])
 
     const filteredCategoryOptions = useMemo(() => {
         if (!categorySearchQuery.trim()) return allCategories
@@ -858,22 +883,46 @@ export default function PantryManagement({
         [requestsList]
     )
 
-    // ── Filtered Inventory List ──
+    // ── Filtered & Sorted Inventory List ──
     const filteredPantry = useMemo(() => {
-        return pantryList.filter((item) => {
+        const now = new Date()
+
+        const list = pantryList.filter((item) => {
+            // 1. Category Filter
             if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
 
-            const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
-            if (filterLowStockOnly && !isLow) return false
+            // 2. Storage Location Filter
+            if (selectedLocation !== 'all' && (item.location_stored || '').trim() !== selectedLocation) return false
 
-            if (filterExpiringSoonOnly) {
-                if (!item.expiry_date) return false
-                const expDate = new Date(item.expiry_date)
-                const now = new Date()
-                const daysDiff = (expDate.getTime() - now.getTime()) / (1000 * 3600 * 24)
-                if (daysDiff > 45) return false
+            // 3. Brand Filter
+            if (selectedBrand !== 'all') {
+                const hasBrand = (item.expiry_batches || []).some(
+                    (b) => (b.brand || '').trim().toLowerCase() === selectedBrand.toLowerCase()
+                )
+                if (!hasBrand) return false
             }
 
+            // 4. Status Filter
+            const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
+            if (statusFilter === 'low_stock' && !isLow) return false
+
+            const hasExpiringSoon = (item.expiry_batches || []).some((b) => {
+                if (!b.expiry_date) return false
+                const days = (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                return days >= 0 && days <= 45
+            }) || (item.expiry_date ? ((new Date(item.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24) >= 0 && (new Date(item.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24) <= 45) : false)
+
+            if (statusFilter === 'expiring_soon' && !hasExpiringSoon) return false
+
+            const hasExpired = (item.expiry_batches || []).some((b) => {
+                if (!b.expiry_date) return false
+                const days = (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                return days < 0
+            }) || (item.expiry_date ? (new Date(item.expiry_date).getTime() - now.getTime()) < 0 : false)
+
+            if (statusFilter === 'expired' && !hasExpired) return false
+
+            // 5. Search Query (across name, location, notes, brands, sizes, lot notes)
             if (search.trim()) {
                 const q = search.toLowerCase()
                 const matchName = (item.name || '').toLowerCase().includes(q)
@@ -883,14 +932,31 @@ export default function PantryManagement({
                     (b) =>
                         (b.brand && b.brand.toLowerCase().includes(q)) ||
                         (b.package_size && b.package_size.toLowerCase().includes(q)) ||
-                        (b.lot_number && b.lot_number.toLowerCase().includes(q))
+                        (b.lot_number && b.lot_number.toLowerCase().includes(q)) ||
+                        (b.expiry_date && b.expiry_date.toLowerCase().includes(q)) ||
+                        (b.notes && b.notes.toLowerCase().includes(q))
                 )
                 if (!matchName && !matchLocation && !matchNotes && !matchBatches) return false
             }
 
             return true
         })
-    }, [pantryList, selectedCategory, filterLowStockOnly, filterExpiringSoonOnly, search])
+
+        // Sorting Logic
+        return list.sort((a, b) => {
+            if (sortBy === 'name_asc') return a.name.localeCompare(b.name)
+            if (sortBy === 'name_desc') return b.name.localeCompare(a.name)
+            if (sortBy === 'qty_desc') return (Number(b.quantity_available) || 0) - (Number(a.quantity_available) || 0)
+            if (sortBy === 'qty_asc') return (Number(a.quantity_available) || 0) - (Number(b.quantity_available) || 0)
+            if (sortBy === 'category') return a.category.localeCompare(b.category)
+            if (sortBy === 'expiry_asc') {
+                if (!a.expiry_date) return 1
+                if (!b.expiry_date) return -1
+                return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+            }
+            return 0
+        })
+    }, [pantryList, selectedCategory, selectedBrand, selectedLocation, statusFilter, search, sortBy])
 
     const lowStockCount = useMemo(
         () => pantryList.filter((i) => (i.quantity_available || 0) <= (i.min_threshold || 0)).length,
@@ -900,9 +966,29 @@ export default function PantryManagement({
     const expiringSoonCount = useMemo(() => {
         const now = new Date()
         return pantryList.filter((i) => {
+            const hasBatch = (i.expiry_batches || []).some((b) => {
+                if (!b.expiry_date) return false
+                const days = (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                return days >= 0 && days <= 45
+            })
+            if (hasBatch) return true
             if (!i.expiry_date) return false
-            const exp = new Date(i.expiry_date)
-            return (exp.getTime() - now.getTime()) / (1000 * 3600 * 24) <= 45
+            const days = (new Date(i.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+            return days >= 0 && days <= 45
+        }).length
+    }, [pantryList])
+
+    const expiredCount = useMemo(() => {
+        const now = new Date()
+        return pantryList.filter((i) => {
+            const hasBatch = (i.expiry_batches || []).some((b) => {
+                if (!b.expiry_date) return false
+                const days = (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                return days < 0
+            })
+            if (hasBatch) return true
+            if (!i.expiry_date) return false
+            return new Date(i.expiry_date).getTime() - now.getTime() < 0
         }).length
     }, [pantryList])
 
@@ -916,6 +1002,16 @@ export default function PantryManagement({
             label: catId.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             color: 'bg-slate-100 text-slate-800 border-slate-200',
         }
+    }
+
+    const hasActiveFilters = selectedCategory !== 'all' || selectedBrand !== 'all' || selectedLocation !== 'all' || statusFilter !== 'all' || search.trim() !== ''
+
+    const handleClearAllFilters = () => {
+        setSelectedCategory('all')
+        setSelectedBrand('all')
+        setSelectedLocation('all')
+        setStatusFilter('all')
+        setSearch('')
     }
 
     return (
@@ -1060,25 +1156,33 @@ export default function PantryManagement({
                 ══════════════════════════════════════════════════════════ */}
                 {activeView === 'inventory' && (
                     <>
-                        {/* ── SUMMARY KPIS ── */}
-                        <div className="grid grid-cols-3 gap-2">
-                            <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 shadow-2xs text-center">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Total Stock</span>
-                                <span className="text-sm sm:text-base font-black text-slate-900">{totalPackagesCount} pkgs</span>
-                            </div>
-
+                        {/* ── SUMMARY & STATUS PILL SELECTORS ── */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <button
-                                onClick={() => {
-                                    setFilterLowStockOnly(!filterLowStockOnly)
-                                    setFilterExpiringSoonOnly(false)
-                                }}
-                                className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xs text-center transition-all ${
-                                    filterLowStockOnly
-                                        ? 'bg-amber-500 text-white border-amber-600'
-                                        : 'bg-white text-slate-900 border-slate-200/90 hover:border-amber-400'
+                                onClick={() => setStatusFilter('all')}
+                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                    statusFilter === 'all'
+                                        ? 'bg-teal-900 text-white border-teal-950 font-black ring-2 ring-teal-700/50'
+                                        : 'bg-white text-slate-800 border-slate-200 hover:border-teal-700'
                                 }`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block ${filterLowStockOnly ? 'text-amber-100' : 'text-slate-500'}`}>
+                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'all' ? 'text-teal-200' : 'text-slate-400'}`}>
+                                    All Stock
+                                </span>
+                                <span className="text-sm sm:text-base font-black">
+                                    {totalPackagesCount} pkgs
+                                </span>
+                            </button>
+
+                            <button
+                                onClick={() => setStatusFilter(statusFilter === 'low_stock' ? 'all' : 'low_stock')}
+                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                    statusFilter === 'low_stock'
+                                        ? 'bg-amber-600 text-white border-amber-700 font-black ring-2 ring-amber-400/50'
+                                        : 'bg-white text-slate-800 border-slate-200 hover:border-amber-400'
+                                }`}
+                            >
+                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'low_stock' ? 'text-amber-100' : 'text-slate-400'}`}>
                                     Low Stock
                                 </span>
                                 <span className="text-sm sm:text-base font-black">
@@ -1087,40 +1191,127 @@ export default function PantryManagement({
                             </button>
 
                             <button
-                                onClick={() => {
-                                    setFilterExpiringSoonOnly(!filterExpiringSoonOnly)
-                                    setFilterLowStockOnly(false)
-                                }}
-                                className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xs text-center transition-all ${
-                                    filterExpiringSoonOnly
-                                        ? 'bg-rose-600 text-white border-rose-700'
-                                        : 'bg-white text-slate-900 border-slate-200/90 hover:border-rose-400'
+                                onClick={() => setStatusFilter(statusFilter === 'expiring_soon' ? 'all' : 'expiring_soon')}
+                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                    statusFilter === 'expiring_soon'
+                                        ? 'bg-amber-500 text-white border-amber-600 font-black ring-2 ring-amber-300/50'
+                                        : 'bg-white text-slate-800 border-slate-200 hover:border-amber-400'
                                 }`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block ${filterExpiringSoonOnly ? 'text-rose-100' : 'text-slate-500'}`}>
-                                    Expiring Soon
+                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'expiring_soon' ? 'text-amber-100' : 'text-slate-400'}`}>
+                                    Expiring &lt;45d
                                 </span>
                                 <span className="text-sm sm:text-base font-black">
                                     {expiringSoonCount} items
                                 </span>
                             </button>
+
+                            <button
+                                onClick={() => setStatusFilter(statusFilter === 'expired' ? 'all' : 'expired')}
+                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                    statusFilter === 'expired'
+                                        ? 'bg-rose-600 text-white border-rose-700 font-black ring-2 ring-rose-300/50'
+                                        : 'bg-white text-slate-800 border-slate-200 hover:border-rose-400'
+                                }`}
+                            >
+                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'expired' ? 'text-rose-100' : 'text-slate-400'}`}>
+                                    Expired
+                                </span>
+                                <span className="text-sm sm:text-base font-black">
+                                    {expiredCount} items
+                                </span>
+                            </button>
                         </div>
 
-                        {/* ── SEARCH & DYNAMIC CATEGORY FILTER BAR ── */}
-                        <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs space-y-2">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search by name, brand (Nido, Klim, Bahar), size (400g, 900g, 1kg), shelf…"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
-                                />
+                        {/* ── SEARCH, FILTER & SORT CONTROLS BAR ── */}
+                        <div className="bg-white border border-slate-200/90 p-3 rounded-2xl shadow-2xs space-y-2.5">
+                            {/* Search bar + Sort Selector */}
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                                <div className="relative flex-1 min-w-[200px]">
+                                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by product, brand (Lipton, Darina, Nido), size, shelf…"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="pl-8 pr-7 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
+                                    />
+                                    {search && (
+                                        <button
+                                            onClick={() => setSearch('')}
+                                            className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {/* Sort Dropdown */}
+                                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl">
+                                        <ArrowUpDown className="h-3 w-3 text-slate-500 shrink-0" />
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value as any)}
+                                            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                                        >
+                                            <option value="name_asc">Name (A → Z)</option>
+                                            <option value="name_desc">Name (Z → A)</option>
+                                            <option value="expiry_asc">⏰ Earliest Expiry</option>
+                                            <option value="qty_desc">📦 Stock (High → Low)</option>
+                                            <option value="qty_asc">⚠️ Stock (Low → High)</option>
+                                            <option value="category">Category</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Brand Dropdown */}
+                                    {allBrands.length > 0 && (
+                                        <select
+                                            value={selectedBrand}
+                                            onChange={(e) => setSelectedBrand(e.target.value)}
+                                            className="bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[130px] truncate"
+                                        >
+                                            <option value="all">🏷️ All Brands</option>
+                                            {allBrands.map((b) => (
+                                                <option key={b} value={b}>
+                                                    {b}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+
+                                    {/* Location / Shelf Dropdown */}
+                                    {allLocations.length > 0 && (
+                                        <select
+                                            value={selectedLocation}
+                                            onChange={(e) => setSelectedLocation(e.target.value)}
+                                            className="bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[130px] truncate"
+                                        >
+                                            <option value="all">📍 All Shelves</option>
+                                            {allLocations.map((loc) => (
+                                                <option key={loc} value={loc}>
+                                                    {loc}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+
+                                    {/* Clear All Filters Button */}
+                                    {hasActiveFilters && (
+                                        <button
+                                            onClick={handleClearAllFilters}
+                                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 text-xs font-bold flex items-center gap-1 shrink-0"
+                                            title="Clear all filters"
+                                        >
+                                            <RotateCcw className="h-3 w-3" />
+                                            <span className="hidden sm:inline text-[10px]">Reset</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Dynamic Category Chips (Mobile Horizontal Scrollable) */}
-                            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+                            {/* Dynamic Category Filter Chips */}
+                            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5 pt-1 border-t border-slate-100">
                                 <button
                                     onClick={() => setSelectedCategory('all')}
                                     className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
@@ -1157,18 +1348,18 @@ export default function PantryManagement({
                             <div className="bg-white border border-slate-200/90 rounded-2xl p-8 text-center space-y-3 shadow-2xs">
                                 <UtensilsCrossed className="h-10 w-10 text-slate-300 mx-auto" />
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-700">No pantry items found</h3>
+                                    <h3 className="text-sm font-bold text-slate-700">No matching pantry items found</h3>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Add your first provision item with brands, sizes, and expiry dates.
+                                        Try adjusting your search query, brand, or status filter.
                                     </p>
                                 </div>
-                                {isProvisionsLeader && (
+                                {hasActiveFilters && (
                                     <button
-                                        onClick={handleOpenCreateModal}
-                                        className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs inline-flex items-center gap-1.5 active:scale-95"
+                                        onClick={handleClearAllFilters}
+                                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs inline-flex items-center gap-1.5 active:scale-95"
                                     >
-                                        <Plus className="h-3.5 w-3.5" />
-                                        <span>Add New Item</span>
+                                        <RotateCcw className="h-3.5 w-3.5 text-teal-800" />
+                                        <span>Reset All Filters</span>
                                     </button>
                                 )}
                             </div>
@@ -1178,7 +1369,51 @@ export default function PantryManagement({
                                     const catCfg = getCategoryObj(item.category)
                                     const isLow = (item.quantity_available || 0) <= (item.min_threshold || 0)
                                     const batches = item.expiry_batches || []
-                                    const computedTotal = computeTotalWeightOrVolume(batches)
+                                    const now = new Date()
+
+                                    // Filter the lot badges displayed on this card if a specific search/brand/status filter is active
+                                    let displayedBatches = batches
+                                    const q = search.trim().toLowerCase()
+                                    const isSpecificSearch = q !== '' && !item.name.toLowerCase().includes(q)
+
+                                    if (selectedBrand !== 'all') {
+                                        displayedBatches = displayedBatches.filter(
+                                            (b) => (b.brand || '').trim().toLowerCase() === selectedBrand.toLowerCase()
+                                        )
+                                    }
+
+                                    if (isSpecificSearch) {
+                                        displayedBatches = displayedBatches.filter(
+                                            (b) =>
+                                                (b.brand && b.brand.toLowerCase().includes(q)) ||
+                                                (b.package_size && b.package_size.toLowerCase().includes(q)) ||
+                                                (b.lot_number && b.lot_number.toLowerCase().includes(q)) ||
+                                                (b.expiry_date && b.expiry_date.toLowerCase().includes(q)) ||
+                                                (b.notes && b.notes.toLowerCase().includes(q))
+                                        )
+                                    }
+
+                                    if (statusFilter === 'expiring_soon') {
+                                        displayedBatches = displayedBatches.filter((b) => {
+                                            if (!b.expiry_date) return false
+                                            const days = (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                                            return days >= 0 && days <= 45
+                                        })
+                                    }
+
+                                    if (statusFilter === 'expired') {
+                                        displayedBatches = displayedBatches.filter((b) => {
+                                            if (!b.expiry_date) return false
+                                            const days = (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                                            return days < 0
+                                        })
+                                    }
+
+                                    // Compute total for displayed batches or total item
+                                    const computedTotal = computeTotalWeightOrVolume(
+                                        displayedBatches.length > 0 ? displayedBatches : batches
+                                    )
+                                    const isBatchFiltered = displayedBatches.length < batches.length
 
                                     return (
                                         <div
@@ -1217,7 +1452,10 @@ export default function PantryManagement({
                                                     <div className="text-right shrink-0">
                                                         <div className="flex items-baseline justify-end gap-1.5 flex-wrap">
                                                             <span className="text-sm sm:text-base font-black text-teal-950">
-                                                                {item.quantity_available} {item.unit}
+                                                                {isBatchFiltered
+                                                                    ? displayedBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+                                                                    : item.quantity_available}{' '}
+                                                                {item.unit}
                                                             </span>
                                                             {computedTotal && (
                                                                 <span className="text-[11px] sm:text-xs font-black px-2 py-0.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200/80">
@@ -1233,38 +1471,60 @@ export default function PantryManagement({
                                                     </div>
                                                 </div>
 
-                                                {/* ── BATCHES & GRAMMAGE BREAKDOWN CHIPS ── */}
-                                                {batches.length > 0 && (
+                                                {/* ── BATCHES & GRAMMAGE BREAKDOWN CHIPS (FILTER-AWARE) ── */}
+                                                {displayedBatches.length > 0 && (
                                                     <div className="space-y-1 pt-1">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
-                                                            Package Lots ({batches.length}):
-                                                        </span>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {batches.map((b, bIdx) => (
-                                                                <span
-                                                                    key={b.id || bIdx}
-                                                                    className="text-[10px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs"
-                                                                >
-                                                                    <span className="font-black text-teal-900">x{b.quantity}</span>
-                                                                    {b.brand && <span className="font-bold">{b.brand}</span>}
-                                                                    {b.package_size && (
-                                                                        <span className="bg-amber-100 text-amber-900 px-1 py-0.1 rounded font-black text-[9px]">
-                                                                            {b.package_size}
-                                                                        </span>
-                                                                    )}
-                                                                    {b.expiry_date && (
-                                                                        <span className="text-slate-500 font-mono text-[9px]">
-                                                                            ({formatExpiryShort(b.expiry_date)})
-                                                                        </span>
-                                                                    )}
+                                                        <div className="flex items-center justify-between gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
+                                                                Package Lots ({displayedBatches.length}
+                                                                {isBatchFiltered && ` of ${batches.length}`}):
+                                                            </span>
+                                                            {isBatchFiltered && (
+                                                                <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-200">
+                                                                    Filtered
                                                                 </span>
-                                                            ))}
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {displayedBatches.map((b, bIdx) => {
+                                                                const daysToExp = b.expiry_date
+                                                                    ? (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
+                                                                    : null
+                                                                const isExpired = daysToExp !== null && daysToExp < 0
+                                                                const isExpSoon = daysToExp !== null && daysToExp >= 0 && daysToExp <= 45
+
+                                                                return (
+                                                                    <span
+                                                                        key={b.id || bIdx}
+                                                                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs border ${
+                                                                            isExpired
+                                                                                ? 'bg-rose-50 text-rose-900 border-rose-300'
+                                                                                : isExpSoon
+                                                                                ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                                                                : 'bg-slate-100 text-slate-800 border-slate-200'
+                                                                        }`}
+                                                                    >
+                                                                        <span className="font-black text-teal-900">x{b.quantity}</span>
+                                                                        {b.brand && <span className="font-bold">{b.brand}</span>}
+                                                                        {b.package_size && (
+                                                                            <span className="bg-amber-100 text-amber-900 px-1 py-0.1 rounded font-black text-[9px]">
+                                                                                {b.package_size}
+                                                                            </span>
+                                                                        )}
+                                                                        {b.expiry_date && (
+                                                                            <span className={`font-mono text-[9px] ${isExpired ? 'text-rose-700 font-bold' : isExpSoon ? 'text-amber-700 font-bold' : 'text-slate-500'}`}>
+                                                                                ({formatExpiryShort(b.expiry_date)})
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                )
+                                                            })}
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Action Strip: Edit & Delete (No +- stepper) */}
+                                            {/* Action Strip: Edit & Delete */}
                                             <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-1.5">
                                                 {isProvisionsLeader && (
                                                     <>
