@@ -640,8 +640,56 @@ export default function PantryManagement({
         }
     }
 
-    // ── Requests Approvals ──
-    const handleApproveRequest = async (req: EventPantryRequest) => {
+    // ── Requests Approvals & FIFO Lot Fulfillment ──
+    const [fulfillingRequest, setFulfillingRequest] = useState<{
+        request: EventPantryRequest
+        pantryItem: PantryItem
+        batchAllocations: Record<string, number>
+    } | null>(null)
+
+    const handleStartApproveRequest = (req: EventPantryRequest) => {
+        if (!isProvisionsLeader) return
+        const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
+        if (!pantryItem) {
+            handleApproveRequestDirect(req)
+            return
+        }
+
+        const batches = pantryItem.expiry_batches || []
+        if (batches.length <= 1) {
+            handleApproveRequestDirect(req, pantryItem)
+            return
+        }
+
+        // Auto-calculate FIFO allocation (earliest expiry date first)
+        const sortedBatches = [...batches].sort((a, b) => {
+            if (!a.expiry_date) return 1
+            if (!b.expiry_date) return -1
+            return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+        })
+
+        let remainingToAllocate = Number(req.quantity) || 0
+        const allocations: Record<string, number> = {}
+
+        sortedBatches.forEach((b) => {
+            if (remainingToAllocate <= 0) {
+                allocations[b.id] = 0
+                return
+            }
+            const availableInBatch = Number(b.quantity) || 0
+            const take = Math.min(availableInBatch, remainingToAllocate)
+            allocations[b.id] = take
+            remainingToAllocate -= take
+        })
+
+        setFulfillingRequest({
+            request: req,
+            pantryItem,
+            batchAllocations: allocations,
+        })
+    }
+
+    const handleApproveRequestDirect = async (req: EventPantryRequest, targetItem?: PantryItem) => {
         if (!isProvisionsLeader) return
         setIsSubmitting(true)
         try {
@@ -651,7 +699,7 @@ export default function PantryManagement({
                 .eq('id', req.id)
             if (reqErr) throw reqErr
 
-            const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
+            const pantryItem = targetItem || pantryList.find((p) => p.id === req.pantry_item_id)
             if (pantryItem) {
                 const newQty = Math.max(0, (pantryItem.quantity_available || 0) - req.quantity)
                 await supabase.from('group_pantry_items').update({ quantity_available: newQty }).eq('id', pantryItem.id)
@@ -662,6 +710,89 @@ export default function PantryManagement({
             showStatus(`Approved provision transfer for ${req.events?.title || 'Camp'}.`, 'success')
         } catch (err: any) {
             showStatus(err.message || 'Failed to approve request.', 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleConfirmFulfillment = async () => {
+        if (!fulfillingRequest) return
+        setIsSubmitting(true)
+        const { request, pantryItem, batchAllocations } = fulfillingRequest
+
+        try {
+            const updatedBatches: PantryBatch[] = []
+            let totalDeducted = 0
+
+            ;(pantryItem.expiry_batches || []).forEach((b) => {
+                const deducted = batchAllocations[b.id] || 0
+                totalDeducted += deducted
+                const remainingQty = Math.max(0, (Number(b.quantity) || 0) - deducted)
+                if (remainingQty > 0) {
+                    updatedBatches.push({
+                        ...b,
+                        quantity: remainingQty,
+                    })
+                }
+            })
+
+            const newTotalQty = Math.max(0, (pantryItem.quantity_available || 0) - totalDeducted)
+
+            const sortedDates = updatedBatches
+                .map((b) => b.expiry_date)
+                .filter(Boolean)
+                .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+            const newExpiryDate = sortedDates.length > 0 ? sortedDates[0] : null
+
+            const { error: itemErr } = await supabase
+                .from('group_pantry_items')
+                .update({
+                    quantity_available: newTotalQty,
+                    expiry_batches: updatedBatches.length > 0 ? updatedBatches : null,
+                    expiry_date: newExpiryDate,
+                })
+                .eq('id', pantryItem.id)
+
+            if (itemErr) throw itemErr
+
+            const { error: reqErr } = await supabase
+                .from('event_pantry_requests')
+                .update({
+                    status: 'approved',
+                    approved_by: userId,
+                    notes: `[Fulfilled lots: ${Object.entries(batchAllocations)
+                        .filter(([_, q]) => q > 0)
+                        .map(([bId, q]) => {
+                            const found = (pantryItem.expiry_batches || []).find((b) => b.id === bId)
+                            return `${q}x ${found?.brand || ''} ${found?.package_size || ''}`
+                        })
+                        .join(', ')}]`,
+                })
+                .eq('id', request.id)
+
+            if (reqErr) throw reqErr
+
+            setPantryList((prev) =>
+                prev.map((p) =>
+                    p.id === pantryItem.id
+                        ? {
+                              ...p,
+                              quantity_available: newTotalQty,
+                              expiry_batches: updatedBatches,
+                              expiry_date: newExpiryDate,
+                          }
+                        : p
+                )
+            )
+
+            setRequestsList((prev) =>
+                prev.map((r) => (r.id === request.id ? { ...r, status: 'approved' } : r))
+            )
+
+            setFulfillingRequest(null)
+            showStatus(`Approved and deducted ${totalDeducted} ${pantryItem.unit} of "${pantryItem.name}" from lots!`, 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to fulfill request.', 'error')
         } finally {
             setIsSubmitting(false)
         }
@@ -1787,10 +1918,11 @@ export default function PantryManagement({
                                                                 Decline
                                                             </button>
                                                             <button
-                                                                onClick={() => handleApproveRequest(req)}
-                                                                className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs"
+                                                                onClick={() => handleStartApproveRequest(req)}
+                                                                className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1"
                                                             >
-                                                                Approve
+                                                                <Check className="h-3 w-3" />
+                                                                <span>Approve & Deduct</span>
                                                             </button>
                                                         </div>
                                                     ) : (
@@ -2121,6 +2253,147 @@ export default function PantryManagement({
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
+                    MODAL: FULFILL CAMP REQUEST & FIFO LOT DEDUCTION
+                ══════════════════════════════════════════════════════════ */}
+                {fulfillingRequest && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                        <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <div className="flex items-center gap-2">
+                                    <Package className="h-4 w-4 text-teal-800" />
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900 leading-tight">
+                                            Fulfill Request: {fulfillingRequest.request.quantity} {fulfillingRequest.request.unit} {fulfillingRequest.pantryItem.name}
+                                        </h3>
+                                        <p className="text-[10px] text-slate-500">
+                                            {fulfillingRequest.request.events?.title || 'Camp Activity'} • By {fulfillingRequest.request.profiles?.full_name || 'Leader'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setFulfillingRequest(null)}
+                                    className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
+                                <Clock className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                                <div>
+                                    <strong>Suggested FIFO Pick (First In, First Out):</strong>
+                                    <p className="text-[10px] opacity-90 mt-0.5">
+                                        Oldest expiration lots are auto-selected to prevent waste. Adjust the amounts below if you picked different lots from the depot.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Lots allocation breakdown */}
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                                {(fulfillingRequest.pantryItem.expiry_batches || []).map((batch) => {
+                                    const allocated = fulfillingRequest.batchAllocations[batch.id] || 0
+                                    const maxQty = Number(batch.quantity) || 0
+                                    return (
+                                        <div
+                                            key={batch.id}
+                                            className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                                                allocated > 0
+                                                    ? 'bg-teal-50/70 border-teal-300 shadow-2xs'
+                                                    : 'bg-slate-50 border-slate-200 opacity-60'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="text-xs font-black text-slate-900">
+                                                        {batch.brand || 'Standard'}
+                                                    </span>
+                                                    {batch.package_size && (
+                                                        <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded">
+                                                            {batch.package_size}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                                    <span>Stock: <strong>{batch.quantity}</strong></span>
+                                                    {batch.expiry_date && (
+                                                        <span className="font-mono text-emerald-700 font-bold">
+                                                            Exp: {formatExpiryShort(batch.expiry_date)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Take Qty Stepper */}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Deduct:</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max={maxQty}
+                                                    step="any"
+                                                    value={allocated}
+                                                    onChange={(e) => {
+                                                        const val = Math.max(0, Math.min(maxQty, parseFloat(e.target.value) || 0))
+                                                        setFulfillingRequest((prev) => {
+                                                            if (!prev) return null
+                                                            return {
+                                                                ...prev,
+                                                                batchAllocations: {
+                                                                    ...prev.batchAllocations,
+                                                                    [batch.id]: val,
+                                                                },
+                                                            }
+                                                        })
+                                                    }}
+                                                    className="w-16 px-2 py-1 text-xs font-black rounded-lg border border-slate-300 bg-white text-center focus:border-teal-700 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Total Allocated Summary */}
+                            {(() => {
+                                const totalAllocated = Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0)
+                                const requestedQty = Number(fulfillingRequest.request.quantity) || 0
+                                const isExact = totalAllocated === requestedQty
+                                return (
+                                    <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-black ${
+                                        isExact ? 'bg-emerald-50 text-emerald-900 border-emerald-300' : 'bg-amber-50 text-amber-900 border-amber-300'
+                                    }`}>
+                                        <span>Total Deducted:</span>
+                                        <span>
+                                            {totalAllocated} / {requestedQty} {fulfillingRequest.request.unit}
+                                            {!isExact && <span className="text-[10px] font-normal block text-right text-amber-800">Must equal requested qty</span>}
+                                        </span>
+                                    </div>
+                                )
+                            })()}
+
+                            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setFulfillingRequest(null)}
+                                    className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isSubmitting || Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0) <= 0}
+                                    onClick={handleConfirmFulfillment}
+                                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1 disabled:opacity-50"
+                                >
+                                    <Check className="h-3.5 w-3.5" />
+                                    <span>{isSubmitting ? 'Deducting…' : 'Confirm & Deduct Lots'}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
