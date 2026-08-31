@@ -7,7 +7,8 @@ import {
     UtensilsCrossed, Plus, Search, AlertTriangle, Check, Trash2, Edit, Loader2,
     Package, ShoppingBag, ArrowUpDown, ChevronRight, Apple, Minus, Layers, Clock,
     Calendar, CheckCircle2, XCircle, Send, Sparkles, Filter, X, ChevronDown, Tag,
-    Scale, Info, Download, FileSpreadsheet, FileText, SlidersHorizontal, RotateCcw
+    Scale, Info, Download, FileSpreadsheet, FileText, SlidersHorizontal, RotateCcw,
+    ChevronUp
 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -265,11 +266,18 @@ export default function PantryManagement({
     // ── Search & Filter States ──
     const [search, setSearch] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
-    const [selectedBrand, setSelectedBrand] = useState<string>('all')
+    const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+    const [brandSearchQuery, setBrandSearchQuery] = useState('')
+    const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false)
+    const brandDropdownRef = useRef<HTMLDivElement>(null)
+
     const [selectedLocation, setSelectedLocation] = useState<string>('all')
     const [statusFilter, setStatusFilter] = useState<'all' | 'low_stock' | 'expiring_soon' | 'expired'>('all')
     const [sortBy, setSortBy] = useState<'name_asc' | 'name_desc' | 'expiry_asc' | 'qty_desc' | 'qty_asc' | 'category'>('name_asc')
     
+    // Collapsible lot states for compact minimalism
+    const [expandedLots, setExpandedLots] = useState<Record<string, boolean>>({})
+
     const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
     // Dynamic Categories State
@@ -303,7 +311,7 @@ export default function PantryManagement({
     const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
     const isProvisionsLeader = currentRole === 'amin_mounet_group' || currentRole === 'mas2oul_mounet' || isGroupAdmin
 
-    // Close category and export dropdowns on outside click
+    // Close popovers on outside click
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
@@ -311,6 +319,9 @@ export default function PantryManagement({
             }
             if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
                 setIsExportDropdownOpen(false)
+            }
+            if (brandDropdownRef.current && !brandDropdownRef.current.contains(event.target as Node)) {
+                setIsBrandDropdownOpen(false)
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
@@ -320,6 +331,10 @@ export default function PantryManagement({
     const showStatus = (text: string, type: 'success' | 'error') => {
         setStatusMessage({ text, type })
         setTimeout(() => setStatusMessage(null), 6000)
+    }
+
+    const toggleExpandLots = (itemId: string) => {
+        setExpandedLots((prev) => ({ ...prev, [itemId]: !prev[itemId] }))
     }
 
     // ── Derive All Available Categories ──
@@ -343,18 +358,33 @@ export default function PantryManagement({
         return Array.from(map.values())
     }, [pantryList, customCategories])
 
-    // ── Derive All Available Brands ──
-    const allBrands = useMemo(() => {
-        const brands = new Set<string>()
+    // ── Derive All Available Brands with Counts ──
+    const allBrandsWithCounts = useMemo(() => {
+        const map = new Map<string, number>()
         pantryList.forEach((item) => {
             (item.expiry_batches || []).forEach((b) => {
-                if (b.brand && b.brand.trim()) {
-                    brands.add(b.brand.trim())
+                const bName = (b.brand || '').trim()
+                if (bName) {
+                    map.set(bName, (map.get(bName) || 0) + (Number(b.quantity) || 1))
                 }
             })
         })
-        return Array.from(brands).sort((a, b) => a.localeCompare(b))
+        return Array.from(map.entries())
+            .map(([brand, count]) => ({ brand, count }))
+            .sort((a, b) => a.brand.localeCompare(b.brand))
     }, [pantryList])
+
+    const filteredBrandList = useMemo(() => {
+        if (!brandSearchQuery.trim()) return allBrandsWithCounts
+        const q = brandSearchQuery.toLowerCase()
+        return allBrandsWithCounts.filter((b) => b.brand.toLowerCase().includes(q))
+    }, [allBrandsWithCounts, brandSearchQuery])
+
+    const toggleBrandSelection = (brandName: string) => {
+        setSelectedBrands((prev) =>
+            prev.includes(brandName) ? prev.filter((b) => b !== brandName) : [...prev, brandName]
+        )
+    }
 
     // ── Derive All Available Storage Locations ──
     const allLocations = useMemo(() => {
@@ -894,12 +924,12 @@ export default function PantryManagement({
             // 2. Storage Location Filter
             if (selectedLocation !== 'all' && (item.location_stored || '').trim() !== selectedLocation) return false
 
-            // 3. Brand Filter
-            if (selectedBrand !== 'all') {
-                const hasBrand = (item.expiry_batches || []).some(
-                    (b) => (b.brand || '').trim().toLowerCase() === selectedBrand.toLowerCase()
+            // 3. Multi-Select Brand Filter
+            if (selectedBrands.length > 0) {
+                const hasAnySelectedBrand = (item.expiry_batches || []).some(
+                    (b) => b.brand && selectedBrands.includes(b.brand.trim())
                 )
-                if (!hasBrand) return false
+                if (!hasAnySelectedBrand) return false
             }
 
             // 4. Status Filter
@@ -956,7 +986,7 @@ export default function PantryManagement({
             }
             return 0
         })
-    }, [pantryList, selectedCategory, selectedBrand, selectedLocation, statusFilter, search, sortBy])
+    }, [pantryList, selectedCategory, selectedBrands, selectedLocation, statusFilter, search, sortBy])
 
     const lowStockCount = useMemo(
         () => pantryList.filter((i) => (i.quantity_available || 0) <= (i.min_threshold || 0)).length,
@@ -1004,11 +1034,11 @@ export default function PantryManagement({
         }
     }
 
-    const hasActiveFilters = selectedCategory !== 'all' || selectedBrand !== 'all' || selectedLocation !== 'all' || statusFilter !== 'all' || search.trim() !== ''
+    const hasActiveFilters = selectedCategory !== 'all' || selectedBrands.length > 0 || selectedLocation !== 'all' || statusFilter !== 'all' || search.trim() !== ''
 
     const handleClearAllFilters = () => {
         setSelectedCategory('all')
-        setSelectedBrand('all')
+        setSelectedBrands([])
         setSelectedLocation('all')
         setStatusFilter('all')
         setSearch('')
@@ -1020,7 +1050,7 @@ export default function PantryManagement({
             currentRole={currentRole}
             userName={userName}
         >
-            <div className="w-full pb-24 space-y-3">
+            <div className="w-full pb-24 space-y-2.5 sm:space-y-3">
                 {/* Status Toast */}
                 {statusMessage && (
                     <div
@@ -1047,7 +1077,7 @@ export default function PantryManagement({
                     </div>
                 )}
 
-                {/* ── TOP HEADER CARD (Unified Minimalist Standard) ── */}
+                {/* ── TOP HEADER CARD (Minimalist Clean Standard) ── */}
                 <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-row items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800 shrink-0 shadow-2xs">
@@ -1058,7 +1088,7 @@ export default function PantryManagement({
                                 Provisions & Central Pantry (المؤونة)
                             </h1>
                             <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
-                                {totalPackagesCount} items stocked • {pantryList.length} unique products
+                                {totalPackagesCount} items stocked • {pantryList.length} products
                             </p>
                         </div>
                     </div>
@@ -1156,165 +1186,248 @@ export default function PantryManagement({
                 ══════════════════════════════════════════════════════════ */}
                 {activeView === 'inventory' && (
                     <>
-                        {/* ── SUMMARY & STATUS PILL SELECTORS ── */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {/* ── SUMMARY & STATUS PILL SELECTORS (COMPACT MINIMALIST) ── */}
+                        <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                             <button
                                 onClick={() => setStatusFilter('all')}
-                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border shadow-2xs text-center transition-all ${
                                     statusFilter === 'all'
-                                        ? 'bg-teal-900 text-white border-teal-950 font-black ring-2 ring-teal-700/50'
+                                        ? 'bg-teal-900 text-white border-teal-950 font-black'
                                         : 'bg-white text-slate-800 border-slate-200 hover:border-teal-700'
                                 }`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'all' ? 'text-teal-200' : 'text-slate-400'}`}>
+                                <span className={`text-[9px] sm:text-[10px] font-bold uppercase block ${statusFilter === 'all' ? 'text-teal-200' : 'text-slate-400'}`}>
                                     All Stock
                                 </span>
-                                <span className="text-sm sm:text-base font-black">
-                                    {totalPackagesCount} pkgs
+                                <span className="text-xs sm:text-sm font-black">
+                                    {totalPackagesCount}
                                 </span>
                             </button>
 
                             <button
                                 onClick={() => setStatusFilter(statusFilter === 'low_stock' ? 'all' : 'low_stock')}
-                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border shadow-2xs text-center transition-all ${
                                     statusFilter === 'low_stock'
-                                        ? 'bg-amber-600 text-white border-amber-700 font-black ring-2 ring-amber-400/50'
+                                        ? 'bg-amber-600 text-white border-amber-700 font-black'
                                         : 'bg-white text-slate-800 border-slate-200 hover:border-amber-400'
                                 }`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'low_stock' ? 'text-amber-100' : 'text-slate-400'}`}>
+                                <span className={`text-[9px] sm:text-[10px] font-bold uppercase block ${statusFilter === 'low_stock' ? 'text-amber-100' : 'text-slate-400'}`}>
                                     Low Stock
                                 </span>
-                                <span className="text-sm sm:text-base font-black">
-                                    {lowStockCount} items
+                                <span className="text-xs sm:text-sm font-black">
+                                    {lowStockCount}
                                 </span>
                             </button>
 
                             <button
                                 onClick={() => setStatusFilter(statusFilter === 'expiring_soon' ? 'all' : 'expiring_soon')}
-                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border shadow-2xs text-center transition-all ${
                                     statusFilter === 'expiring_soon'
-                                        ? 'bg-amber-500 text-white border-amber-600 font-black ring-2 ring-amber-300/50'
+                                        ? 'bg-amber-500 text-white border-amber-600 font-black'
                                         : 'bg-white text-slate-800 border-slate-200 hover:border-amber-400'
                                 }`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'expiring_soon' ? 'text-amber-100' : 'text-slate-400'}`}>
-                                    Expiring &lt;45d
+                                <span className={`text-[9px] sm:text-[10px] font-bold uppercase block ${statusFilter === 'expiring_soon' ? 'text-amber-100' : 'text-slate-400'}`}>
+                                    Exp &lt;45d
                                 </span>
-                                <span className="text-sm sm:text-base font-black">
-                                    {expiringSoonCount} items
+                                <span className="text-xs sm:text-sm font-black">
+                                    {expiringSoonCount}
                                 </span>
                             </button>
 
                             <button
                                 onClick={() => setStatusFilter(statusFilter === 'expired' ? 'all' : 'expired')}
-                                className={`p-2.5 rounded-2xl border shadow-2xs text-center transition-all ${
+                                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border shadow-2xs text-center transition-all ${
                                     statusFilter === 'expired'
-                                        ? 'bg-rose-600 text-white border-rose-700 font-black ring-2 ring-rose-300/50'
+                                        ? 'bg-rose-600 text-white border-rose-700 font-black'
                                         : 'bg-white text-slate-800 border-slate-200 hover:border-rose-400'
                                 }`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block ${statusFilter === 'expired' ? 'text-rose-100' : 'text-slate-400'}`}>
+                                <span className={`text-[9px] sm:text-[10px] font-bold uppercase block ${statusFilter === 'expired' ? 'text-rose-100' : 'text-slate-400'}`}>
                                     Expired
                                 </span>
-                                <span className="text-sm sm:text-base font-black">
-                                    {expiredCount} items
+                                <span className="text-xs sm:text-sm font-black">
+                                    {expiredCount}
                                 </span>
                             </button>
                         </div>
 
                         {/* ── SEARCH, FILTER & SORT CONTROLS BAR ── */}
-                        <div className="bg-white border border-slate-200/90 p-3 rounded-2xl shadow-2xs space-y-2.5">
-                            {/* Search bar + Sort Selector */}
-                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                                <div className="relative flex-1 min-w-[200px]">
-                                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by product, brand (Lipton, Darina, Nido), size, shelf…"
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="pl-8 pr-7 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
-                                    />
-                                    {search && (
-                                        <button
-                                            onClick={() => setSearch('')}
-                                            className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    {/* Sort Dropdown */}
-                                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl">
-                                        <ArrowUpDown className="h-3 w-3 text-slate-500 shrink-0" />
-                                        <select
-                                            value={sortBy}
-                                            onChange={(e) => setSortBy(e.target.value as any)}
-                                            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-                                        >
-                                            <option value="name_asc">Name (A → Z)</option>
-                                            <option value="name_desc">Name (Z → A)</option>
-                                            <option value="expiry_asc">⏰ Earliest Expiry</option>
-                                            <option value="qty_desc">📦 Stock (High → Low)</option>
-                                            <option value="qty_asc">⚠️ Stock (Low → High)</option>
-                                            <option value="category">Category</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Brand Dropdown */}
-                                    {allBrands.length > 0 && (
-                                        <select
-                                            value={selectedBrand}
-                                            onChange={(e) => setSelectedBrand(e.target.value)}
-                                            className="bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[130px] truncate"
-                                        >
-                                            <option value="all">🏷️ All Brands</option>
-                                            {allBrands.map((b) => (
-                                                <option key={b} value={b}>
-                                                    {b}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-
-                                    {/* Location / Shelf Dropdown */}
-                                    {allLocations.length > 0 && (
-                                        <select
-                                            value={selectedLocation}
-                                            onChange={(e) => setSelectedLocation(e.target.value)}
-                                            className="bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[130px] truncate"
-                                        >
-                                            <option value="all">📍 All Shelves</option>
-                                            {allLocations.map((loc) => (
-                                                <option key={loc} value={loc}>
-                                                    {loc}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-
-                                    {/* Clear All Filters Button */}
-                                    {hasActiveFilters && (
-                                        <button
-                                            onClick={handleClearAllFilters}
-                                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 text-xs font-bold flex items-center gap-1 shrink-0"
-                                            title="Clear all filters"
-                                        >
-                                            <RotateCcw className="h-3 w-3" />
-                                            <span className="hidden sm:inline text-[10px]">Reset</span>
-                                        </button>
-                                    )}
-                                </div>
+                        <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs space-y-2">
+                            {/* Search bar */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search product, brand (Lipton, Darina), size, shelf…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="pl-8 pr-7 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
+                                />
+                                {search && (
+                                    <button
+                                        onClick={() => setSearch('')}
+                                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
                             </div>
 
-                            {/* Dynamic Category Filter Chips */}
+                            {/* Dropdown Filters Row */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {/* Searchable Multi-Select Brand Popover */}
+                                <div className="relative" ref={brandDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBrandDropdownOpen(!isBrandDropdownOpen)}
+                                        className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 shadow-2xs ${
+                                            selectedBrands.length > 0
+                                                ? 'bg-teal-800 text-white border-teal-900 font-black'
+                                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                                        }`}
+                                    >
+                                        <span>🏷️ Brands</span>
+                                        {selectedBrands.length > 0 && (
+                                            <span className="bg-white text-teal-950 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                                                {selectedBrands.length}
+                                            </span>
+                                        )}
+                                        <ChevronDown className="h-3 w-3 opacity-60" />
+                                    </button>
+
+                                    {isBrandDropdownOpen && (
+                                        <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2.5 space-y-2 animate-in fade-in">
+                                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                                <span className="text-xs font-black text-slate-800">Select Brands</span>
+                                                {selectedBrands.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedBrands([])}
+                                                        className="text-[10px] text-rose-600 hover:underline font-bold"
+                                                    >
+                                                        Clear ({selectedBrands.length})
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="relative">
+                                                <Search className="absolute left-2.5 top-2 h-3 w-3 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    placeholder="Search brands…"
+                                                    value={brandSearchQuery}
+                                                    onChange={(e) => setBrandSearchQuery(e.target.value)}
+                                                    className="w-full pl-7 pr-2 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-700 font-medium"
+                                                />
+                                            </div>
+
+                                            <div className="max-h-48 overflow-y-auto space-y-0.5 pr-0.5">
+                                                {filteredBrandList.length === 0 ? (
+                                                    <p className="text-[11px] text-slate-400 text-center py-2">No brands found</p>
+                                                ) : (
+                                                    filteredBrandList.map((item) => {
+                                                        const isChecked = selectedBrands.includes(item.brand)
+                                                        return (
+                                                            <label
+                                                                key={item.brand}
+                                                                className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer text-xs transition-colors ${
+                                                                    isChecked
+                                                                        ? 'bg-teal-50 text-teal-900 font-bold'
+                                                                        : 'hover:bg-slate-50 text-slate-700'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2 min-w-0">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isChecked}
+                                                                        onChange={() => toggleBrandSelection(item.brand)}
+                                                                        className="rounded text-teal-800 focus:ring-teal-700 h-3.5 w-3.5 shrink-0"
+                                                                    />
+                                                                    <span className="truncate">{item.brand}</span>
+                                                                </div>
+                                                                <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                                                    x{item.count}
+                                                                </span>
+                                                            </label>
+                                                        )
+                                                    })
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Sort Selector */}
+                                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs">
+                                    <ArrowUpDown className="h-3 w-3 text-slate-500 shrink-0" />
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value as any)}
+                                        className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value="name_asc">Name (A → Z)</option>
+                                        <option value="name_desc">Name (Z → A)</option>
+                                        <option value="expiry_asc">⏰ Earliest Expiry</option>
+                                        <option value="qty_desc">📦 Stock (High → Low)</option>
+                                        <option value="qty_asc">⚠️ Stock (Low → High)</option>
+                                        <option value="category">Category</option>
+                                    </select>
+                                </div>
+
+                                {/* Storage Shelf Selector */}
+                                {allLocations.length > 0 && (
+                                    <select
+                                        value={selectedLocation}
+                                        onChange={(e) => setSelectedLocation(e.target.value)}
+                                        className="bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[120px] truncate"
+                                    >
+                                        <option value="all">📍 All Shelves</option>
+                                        {allLocations.map((loc) => (
+                                            <option key={loc} value={loc}>
+                                                {loc}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                {/* Reset All Filters */}
+                                {hasActiveFilters && (
+                                    <button
+                                        onClick={handleClearAllFilters}
+                                        className="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 text-xs font-bold flex items-center gap-1 transition-colors ml-auto"
+                                        title="Clear all active filters"
+                                    >
+                                        <RotateCcw className="h-3 w-3" />
+                                        <span className="text-[10px]">Reset</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Active Brand Badges Strip (1-tap remove) */}
+                            {selectedBrands.length > 0 && (
+                                <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-0.5">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase shrink-0">Selected:</span>
+                                    {selectedBrands.map((b) => (
+                                        <button
+                                            key={b}
+                                            onClick={() => toggleBrandSelection(b)}
+                                            className="px-1.5 py-0.2 rounded-md bg-teal-100 text-teal-900 text-[10px] font-bold flex items-center gap-1 shrink-0 hover:bg-rose-100 hover:text-rose-900 transition-colors"
+                                        >
+                                            <span>{b}</span>
+                                            <span>✕</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Category Filter Chips */}
                             <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5 pt-1 border-t border-slate-100">
                                 <button
                                     onClick={() => setSelectedCategory('all')}
-                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                                    className={`px-2.5 py-0.8 rounded-xl text-xs font-bold shrink-0 transition-all ${
                                         selectedCategory === 'all'
                                             ? 'bg-teal-800 text-white shadow-2xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1329,7 +1442,7 @@ export default function PantryManagement({
                                         <button
                                             key={cat.id}
                                             onClick={() => setSelectedCategory(cat.id)}
-                                            className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
+                                            className={`px-2.5 py-0.8 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
                                                 selectedCategory === cat.id
                                                     ? 'bg-teal-800 text-white shadow-2xs'
                                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1343,7 +1456,7 @@ export default function PantryManagement({
                             </div>
                         </div>
 
-                        {/* ── PANTRY ITEMS GRID / LIST ── */}
+                        {/* ── PANTRY ITEMS GRID / LIST (COMPACT MINIMALIST) ── */}
                         {filteredPantry.length === 0 ? (
                             <div className="bg-white border border-slate-200/90 rounded-2xl p-8 text-center space-y-3 shadow-2xs">
                                 <UtensilsCrossed className="h-10 w-10 text-slate-300 mx-auto" />
@@ -1371,14 +1484,14 @@ export default function PantryManagement({
                                     const batches = item.expiry_batches || []
                                     const now = new Date()
 
-                                    // Filter the lot badges displayed on this card if a specific search/brand/status filter is active
+                                    // Filter the lots displayed on this card if a specific search/brand/status filter is active
                                     let displayedBatches = batches
                                     const q = search.trim().toLowerCase()
                                     const isSpecificSearch = q !== '' && !item.name.toLowerCase().includes(q)
 
-                                    if (selectedBrand !== 'all') {
+                                    if (selectedBrands.length > 0) {
                                         displayedBatches = displayedBatches.filter(
-                                            (b) => (b.brand || '').trim().toLowerCase() === selectedBrand.toLowerCase()
+                                            (b) => b.brand && selectedBrands.includes(b.brand.trim())
                                         )
                                     }
 
@@ -1415,11 +1528,16 @@ export default function PantryManagement({
                                     )
                                     const isBatchFiltered = displayedBatches.length < batches.length
 
+                                    // Collapse lots if there are > 4 lots to keep mobile clean
+                                    const isExpanded = expandedLots[item.id] || hasActiveFilters
+                                    const visibleBatches = isExpanded ? displayedBatches : displayedBatches.slice(0, 4)
+                                    const hiddenCount = displayedBatches.length - visibleBatches.length
+
                                     return (
                                         <div
                                             key={item.id}
-                                            className={`bg-white border rounded-2xl p-3.5 shadow-2xs transition-all space-y-2.5 flex flex-col justify-between ${
-                                                isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90'
+                                            className={`bg-white border rounded-2xl p-3 sm:p-3.5 shadow-2xs transition-all space-y-2 flex flex-col justify-between ${
+                                                isLow ? 'border-amber-300 bg-amber-50/15' : 'border-slate-200/90'
                                             }`}
                                         >
                                             <div className="space-y-1.5">
@@ -1436,13 +1554,13 @@ export default function PantryManagement({
                                                 </div>
 
                                                 {/* Item Title & Stock Display (Dual Unit: Count + Weight/Volume) */}
-                                                <div className="flex items-start justify-between gap-3">
+                                                <div className="flex items-start justify-between gap-2">
                                                     <div className="min-w-0">
-                                                        <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                                                        <h3 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
                                                             {item.name}
                                                         </h3>
                                                         {item.notes && (
-                                                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                                                            <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
                                                                 {item.notes}
                                                             </p>
                                                         )}
@@ -1450,15 +1568,15 @@ export default function PantryManagement({
 
                                                     {/* Quantity + Weight / Volume Badge */}
                                                     <div className="text-right shrink-0">
-                                                        <div className="flex items-baseline justify-end gap-1.5 flex-wrap">
-                                                            <span className="text-sm sm:text-base font-black text-teal-950">
+                                                        <div className="flex items-baseline justify-end gap-1 flex-wrap">
+                                                            <span className="text-xs sm:text-sm font-black text-teal-950">
                                                                 {isBatchFiltered
                                                                     ? displayedBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
                                                                     : item.quantity_available}{' '}
                                                                 {item.unit}
                                                             </span>
                                                             {computedTotal && (
-                                                                <span className="text-[11px] sm:text-xs font-black px-2 py-0.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200/80">
+                                                                <span className="text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-200/80">
                                                                     {computedTotal}
                                                                 </span>
                                                             )}
@@ -1471,22 +1589,23 @@ export default function PantryManagement({
                                                     </div>
                                                 </div>
 
-                                                {/* ── BATCHES & GRAMMAGE BREAKDOWN CHIPS (FILTER-AWARE) ── */}
+                                                {/* ── BATCHES & GRAMMAGE BREAKDOWN (COLLAPSIBLE & MINIMALIST) ── */}
                                                 {displayedBatches.length > 0 && (
-                                                    <div className="space-y-1 pt-1">
+                                                    <div className="space-y-1 pt-0.5">
                                                         <div className="flex items-center justify-between gap-1">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
-                                                                Package Lots ({displayedBatches.length}
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block">
+                                                                Lots ({displayedBatches.length}
                                                                 {isBatchFiltered && ` of ${batches.length}`}):
                                                             </span>
                                                             {isBatchFiltered && (
-                                                                <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-200">
+                                                                <span className="text-[9px] font-black px-1 py-0.1 rounded bg-teal-100 text-teal-900 border border-teal-200">
                                                                     Filtered
                                                                 </span>
                                                             )}
                                                         </div>
+
                                                         <div className="flex flex-wrap gap-1">
-                                                            {displayedBatches.map((b, bIdx) => {
+                                                            {visibleBatches.map((b, bIdx) => {
                                                                 const daysToExp = b.expiry_date
                                                                     ? (new Date(b.expiry_date).getTime() - now.getTime()) / (1000 * 3600 * 24)
                                                                     : null
@@ -1496,51 +1615,72 @@ export default function PantryManagement({
                                                                 return (
                                                                     <span
                                                                         key={b.id || bIdx}
-                                                                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs border ${
+                                                                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1 border ${
                                                                             isExpired
                                                                                 ? 'bg-rose-50 text-rose-900 border-rose-300'
                                                                                 : isExpSoon
                                                                                 ? 'bg-amber-50 text-amber-900 border-amber-300'
-                                                                                : 'bg-slate-100 text-slate-800 border-slate-200'
+                                                                                : 'bg-slate-50 text-slate-700 border-slate-200'
                                                                         }`}
                                                                     >
                                                                         <span className="font-black text-teal-900">x{b.quantity}</span>
-                                                                        {b.brand && <span className="font-bold">{b.brand}</span>}
+                                                                        {b.brand && <span className="font-bold text-slate-800">{b.brand}</span>}
                                                                         {b.package_size && (
-                                                                            <span className="bg-amber-100 text-amber-900 px-1 py-0.1 rounded font-black text-[9px]">
+                                                                            <span className="bg-amber-100/70 text-amber-900 px-1 py-0.1 rounded font-bold text-[9px]">
                                                                                 {b.package_size}
                                                                             </span>
                                                                         )}
                                                                         {b.expiry_date && (
-                                                                            <span className={`font-mono text-[9px] ${isExpired ? 'text-rose-700 font-bold' : isExpSoon ? 'text-amber-700 font-bold' : 'text-slate-500'}`}>
+                                                                            <span className={`font-mono text-[9px] ${isExpired ? 'text-rose-700 font-bold' : isExpSoon ? 'text-amber-700 font-bold' : 'text-slate-400'}`}>
                                                                                 ({formatExpiryShort(b.expiry_date)})
                                                                             </span>
                                                                         )}
                                                                     </span>
                                                                 )
                                                             })}
+
+                                                            {/* Expand / Collapse Button */}
+                                                            {hiddenCount > 0 && !hasActiveFilters && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleExpandLots(item.id)}
+                                                                    className="text-[9px] font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-1.5 py-0.5 rounded-md transition-colors"
+                                                                >
+                                                                    +{hiddenCount} more lots ▾
+                                                                </button>
+                                                            )}
+
+                                                            {isExpanded && displayedBatches.length > 4 && !hasActiveFilters && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleExpandLots(item.id)}
+                                                                    className="text-[9px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded-md transition-colors"
+                                                                >
+                                                                    Show less ▴
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Action Strip: Edit & Delete */}
-                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-1.5">
+                                            {/* Action Strip: Edit & Delete (Subtle Minimalist) */}
+                                            <div className="pt-1.5 border-t border-slate-100 flex items-center justify-end gap-1">
                                                 {isProvisionsLeader && (
                                                     <>
                                                         <button
                                                             onClick={() => handleOpenEditModal(item)}
-                                                            className="p-1.5 text-slate-600 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
+                                                            className="p-1 text-slate-400 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
                                                             title="Edit item & batches"
                                                         >
-                                                            <Edit className="h-4 w-4" />
+                                                            <Edit className="h-3.5 w-3.5" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeletePantryItem(item.id, item.name)}
-                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                            className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                                             title="Delete item"
                                                         >
-                                                            <Trash2 className="h-4 w-4" />
+                                                            <Trash2 className="h-3.5 w-3.5" />
                                                         </button>
                                                     </>
                                                 )}
