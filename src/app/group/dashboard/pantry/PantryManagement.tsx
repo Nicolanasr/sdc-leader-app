@@ -1316,10 +1316,10 @@ export default function PantryManagement({
                                             <Layers className="h-4 w-4 text-amber-800 shrink-0" />
                                             <div>
                                                 <h4 className="text-xs font-black text-slate-900 leading-tight">
-                                                    Package Lots & Grammage ({formBatches.length})
+                                                    Package Lots & Formats ({formBatches.length})
                                                 </h4>
                                                 <span className="text-[10px] text-amber-900">
-                                                    Different brands, weights (e.g. 400g, 900g), and expiry dates
+                                                    Track different brands, sizes (e.g. 1kg, 400g, sachet, 5L), and expiry dates
                                                 </span>
                                             </div>
                                         </div>
@@ -1334,9 +1334,29 @@ export default function PantryManagement({
                                         </button>
                                     </div>
 
+                                    {/* Quick format suggestion chips */}
+                                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5 pt-0.5">
+                                        <span className="text-[9px] font-bold text-amber-800 uppercase shrink-0">Quick sizes:</span>
+                                        {['1kg', '400g', '750g', '900g', '500g', '300g', 'sachet', '1L', '5L'].map((sz) => (
+                                            <button
+                                                key={sz}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (formBatches.length > 0) {
+                                                        const lastIdx = formBatches.length - 1
+                                                        handleUpdateBatch(formBatches[lastIdx].id, 'package_size', sz)
+                                                    }
+                                                }}
+                                                className="px-1.5 py-0.2 rounded-md bg-amber-100/80 hover:bg-amber-200 text-amber-900 text-[10px] font-black border border-amber-300/60 shrink-0 transition-colors"
+                                            >
+                                                +{sz}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     {formBatches.length === 0 ? (
                                         <p className="text-[11px] text-amber-900/80 bg-amber-100/60 p-2 rounded-xl">
-                                            Tap <strong>Add Lot</strong> to enter quantities with specific brands (e.g. Nido, Klim), sizes (400g, 900g, 1kg), and expiry dates (e.g. 6/27).
+                                            Tap <strong>Add Lot</strong> to enter quantities with specific brands (e.g. Nido, Klim), formats (1kg, 400g, sachet, 5L), and expiry dates (e.g. 6/27).
                                         </p>
                                     ) : (
                                         <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
@@ -1345,11 +1365,11 @@ export default function PantryManagement({
                                                     key={batch.id}
                                                     className="bg-white p-2.5 rounded-xl border border-amber-200/90 shadow-2xs space-y-2"
                                                 >
-                                                    {/* Row 1: Brand / Subtype + Grammage / Size + Delete */}
+                                                    {/* Row 1: Brand / Subtype + Format / Size + Delete */}
                                                     <div className="flex items-center gap-2">
                                                         <input
                                                             type="text"
-                                                            placeholder="Brand (e.g. Nido, Klim, Bahar, Carry)…"
+                                                            placeholder="Brand / Type (Nido, Carry, Farfalle)…"
                                                             value={batch.brand || ''}
                                                             onChange={(e) =>
                                                                 handleUpdateBatch(batch.id, 'brand', e.target.value)
@@ -1359,12 +1379,12 @@ export default function PantryManagement({
 
                                                         <input
                                                             type="text"
-                                                            placeholder="Size (400g, 900g, 1kg)…"
+                                                            placeholder="Size (1kg, 400g, sachet, 5L)…"
                                                             value={batch.package_size || ''}
                                                             onChange={(e) =>
                                                                 handleUpdateBatch(batch.id, 'package_size', e.target.value)
                                                             }
-                                                            className="w-24 sm:w-28 px-2 py-1 text-xs font-bold text-center rounded-lg border border-slate-200 bg-amber-50/50 text-amber-900 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                                            className="w-28 sm:w-32 px-2 py-1 text-xs font-bold text-center rounded-lg border border-slate-200 bg-amber-50/50 text-amber-900 focus:bg-white focus:border-teal-700 focus:outline-none"
                                                         />
 
                                                         <button
