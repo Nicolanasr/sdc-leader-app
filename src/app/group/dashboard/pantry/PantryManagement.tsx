@@ -960,7 +960,7 @@ export default function PantryManagement({
                     approved_by: userId,
                     notes: noteText,
                 })
-                .select('*, events(id, title, start_time), profiles(full_name), group_pantry_items(name, unit)')
+                .select('*, events(id, title, start_time), profiles:requested_by(full_name), group_pantry_items(name, unit)')
                 .single()
 
             if (reqErr) throw reqErr
@@ -1016,6 +1016,7 @@ export default function PantryManagement({
             brand: string
             package_size: string
             quantity: number
+            originalGiven: number
             expiry_date: string
         }>
         returnNotes: string
@@ -1028,28 +1029,106 @@ export default function PantryManagement({
             return
         }
 
-        const initialReturnBatches = (pantryItem.expiry_batches && pantryItem.expiry_batches.length > 0)
-            ? pantryItem.expiry_batches.map((b) => ({
-                id: b.id,
-                brand: b.brand || '',
-                package_size: b.package_size || '',
-                quantity: 0,
-                expiry_date: b.expiry_date || '',
-            }))
-            : [
-                {
-                    id: 'ret_' + Date.now(),
-                    brand: '',
-                    package_size: '',
-                    quantity: 1,
-                    expiry_date: pantryItem.expiry_date || '',
+        const noteText = req.notes || ''
+        const batches = pantryItem.expiry_batches || []
+        
+        // Construct returnBatches prefilled with the EXACT quantities given out!
+        const returnBatchesList: Array<{
+            id: string
+            brand: string
+            package_size: string
+            quantity: number
+            originalGiven: number
+            expiry_date: string
+        }> = []
+
+        let totalParsedFromBatches = 0
+
+        // 1. Match specific lots recorded in notes: e.g. "5x Kiane 185g", "30x Standard Stock"
+        batches.forEach((b) => {
+            let givenForThisBatch = 0
+            if (noteText) {
+                const brandEscaped = (b.brand || 'Standard').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                const regex = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*x\\s*${brandEscaped}`, 'i')
+                const match = noteText.match(regex)
+                if (match && match[1]) {
+                    givenForThisBatch = parseFloat(match[1]) || 0
                 }
-            ]
+            }
+
+            if (givenForThisBatch > 0) {
+                totalParsedFromBatches += givenForThisBatch
+                returnBatchesList.push({
+                    id: b.id,
+                    brand: b.brand || 'Standard',
+                    package_size: b.package_size || '',
+                    quantity: givenForThisBatch,
+                    originalGiven: givenForThisBatch,
+                    expiry_date: b.expiry_date || '',
+                })
+            }
+        })
+
+        // Check if Standard Stock was given in notes: e.g. "30x Standard Stock"
+        let stdGivenInNote = 0
+        if (noteText) {
+            const stdMatch = noteText.match(/(\d+(?:\.\d+)?)\s*x\s*Standard(?:\s+Depot)?\s*Stock/i)
+            if (stdMatch && stdMatch[1]) {
+                stdGivenInNote = parseFloat(stdMatch[1]) || 0
+            }
+        }
+
+        // If no lots were found in note, build FIFO allocation up to req.quantity
+        if (returnBatchesList.length === 0) {
+            const sorted = [...batches].sort((a, b) => {
+                if (!a.expiry_date) return 1
+                if (!b.expiry_date) return -1
+                return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+            })
+            let rem = Number(req.quantity) || 0
+            sorted.forEach((b) => {
+                if (rem <= 0) return
+                const take = Math.min(Number(b.quantity) || 0, rem)
+                if (take > 0) {
+                    returnBatchesList.push({
+                        id: b.id,
+                        brand: b.brand || 'Standard',
+                        package_size: b.package_size || '',
+                        quantity: take,
+                        originalGiven: take,
+                        expiry_date: b.expiry_date || '',
+                    })
+                    rem -= take
+                }
+            })
+            if (rem > 0) {
+                returnBatchesList.push({
+                    id: 'std_stock_' + Date.now(),
+                    brand: 'Standard Depot Stock',
+                    package_size: '',
+                    quantity: rem,
+                    originalGiven: rem,
+                    expiry_date: pantryItem.expiry_date || '',
+                })
+            }
+        } else {
+            const remainingGiven = stdGivenInNote > 0 ? stdGivenInNote : Math.max(0, (Number(req.quantity) || 0) - totalParsedFromBatches)
+            if (remainingGiven > 0) {
+                returnBatchesList.push({
+                    id: 'std_stock_' + Date.now(),
+                    brand: 'Standard Depot Stock',
+                    package_size: '',
+                    quantity: remainingGiven,
+                    originalGiven: remainingGiven,
+                    expiry_date: pantryItem.expiry_date || '',
+                })
+            }
+        }
 
         setReturningRequest({
             request: req,
             pantryItem,
-            returnBatches: initialReturnBatches,
+            returnBatches: returnBatchesList,
             returnNotes: '',
         })
     }
@@ -1067,6 +1146,11 @@ export default function PantryManagement({
             let updatedBatches = [...(pantryItem.expiry_batches || [])]
 
             returnBatches.filter((b) => Number(b.quantity) > 0).forEach((ret) => {
+                // If it is standard depot stock (unbatched), we just increment total stock
+                if (ret.brand === 'Standard Depot Stock' || !ret.brand) {
+                    return
+                }
+
                 const existingIdx = updatedBatches.findIndex(
                     (b) => b.id === ret.id || (b.brand === ret.brand && b.package_size === ret.package_size && b.expiry_date === ret.expiry_date)
                 )
@@ -1098,7 +1182,7 @@ export default function PantryManagement({
                 .from('group_pantry_items')
                 .update({
                     quantity_available: newTotalQty,
-                    expiry_batches: updatedBatches,
+                    expiry_batches: updatedBatches.length > 0 ? updatedBatches : null,
                     expiry_date: newExpiryDate,
                 })
                 .eq('id', pantryItem.id)
@@ -3220,16 +3304,54 @@ export default function PantryManagement({
                                     </p>
                                 </div>
 
-                                {/* Return lots list */}
+                                {/* Return lots list with quick fill controls */}
                                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">
-                                        Returned Packages by Lot / Expiry:
-                                    </span>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">
+                                            Returned Packages by Lot / Expiry:
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setReturningRequest((prev) => {
+                                                        if (!prev) return null
+                                                        const updated = prev.returnBatches.map((b) => ({
+                                                            ...b,
+                                                            quantity: b.originalGiven || 0,
+                                                        }))
+                                                        return { ...prev, returnBatches: updated }
+                                                    })
+                                                }}
+                                                className="text-[9px] font-bold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded-md transition-colors"
+                                                title="Prefill all lots with full original given amounts"
+                                            >
+                                                ⚡ All Given
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setReturningRequest((prev) => {
+                                                        if (!prev) return null
+                                                        const updated = prev.returnBatches.map((b) => ({
+                                                            ...b,
+                                                            quantity: 0,
+                                                        }))
+                                                        return { ...prev, returnBatches: updated }
+                                                    })
+                                                }}
+                                                className="text-[9px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded-md transition-colors"
+                                                title="Zero out all returned lots"
+                                            >
+                                                0️⃣ Clear All
+                                            </button>
+                                        </div>
+                                    </div>
                                     {returningRequest.returnBatches.map((batch, bIdx) => (
                                         <div
                                             key={batch.id || bIdx}
                                             className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 ${
-                                                batch.quantity > 0 ? 'bg-teal-50/80 border-teal-300 shadow-2xs' : 'bg-slate-50 border-slate-200'
+                                                batch.quantity > 0 ? 'bg-teal-50/80 border-teal-300 shadow-2xs' : 'bg-slate-50 border-slate-200 opacity-60'
                                             }`}
                                         >
                                             <div className="min-w-0">
@@ -3243,11 +3365,14 @@ export default function PantryManagement({
                                                         </span>
                                                     )}
                                                 </div>
-                                                {batch.expiry_date && (
-                                                    <span className="font-mono text-[10px] text-slate-500 block mt-0.5">
-                                                        Exp: {formatExpiryShort(batch.expiry_date)}
-                                                    </span>
-                                                )}
+                                                <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                                    <span>Given: <strong>{batch.originalGiven || 0}</strong></span>
+                                                    {batch.expiry_date && (
+                                                        <span className="font-mono text-slate-400">
+                                                            Exp: {formatExpiryShort(batch.expiry_date)}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center gap-1.5 shrink-0">
@@ -3255,6 +3380,7 @@ export default function PantryManagement({
                                                 <input
                                                     type="number"
                                                     min="0"
+                                                    max={batch.originalGiven || undefined}
                                                     step="any"
                                                     value={batch.quantity}
                                                     onChange={(e) => {

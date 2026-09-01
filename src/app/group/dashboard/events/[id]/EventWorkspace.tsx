@@ -1280,11 +1280,31 @@ export default function EventWorkspace({
 
                 const key = `${ing.name.toLowerCase().trim()}_${finalUnit}`
                 if (!map[key]) {
-                    const matchedPantry = groupPantryList.find(
-                        (p) =>
-                            p.name.toLowerCase().trim().includes(ing.name.toLowerCase().trim()) ||
-                            ing.name.toLowerCase().trim().includes(p.name.toLowerCase().trim())
+                    const ingNameLower = ing.name.toLowerCase().trim()
+                    const cleanIngName = ing.name.replace(/\s*\((copy|\d+)\)\s*/gi, '').toLowerCase().trim()
+
+                    // 1. Exact match on full name (e.g. if Central Pantry has "Canned Tuna (تونة) (Copy)")
+                    let matchedPantry = groupPantryList.find(
+                        (p) => p.name.toLowerCase().trim() === ingNameLower
                     )
+
+                    // 2. If not found, match on clean name without (Copy)
+                    if (!matchedPantry) {
+                        matchedPantry = groupPantryList.find(
+                            (p) => p.name.toLowerCase().trim() === cleanIngName
+                        )
+                    }
+
+                    // 3. If still not found, check substring matches
+                    if (!matchedPantry) {
+                        matchedPantry = groupPantryList.find(
+                            (p) =>
+                                p.name.toLowerCase().trim().includes(cleanIngName) ||
+                                cleanIngName.includes(p.name.toLowerCase().trim()) ||
+                                p.name.toLowerCase().trim().includes(ingNameLower) ||
+                                ingNameLower.includes(p.name.toLowerCase().trim())
+                        )
+                    }
 
                     const activeReq = pantryRequests.find(
                         (pr) => pr.pantry_item_id === matchedPantry?.id && pr.status !== 'rejected'
@@ -1841,14 +1861,21 @@ export default function EventWorkspace({
         }
     }
 
-    const handleRequestPantryItem = async (pantryItem: any, requestedQuantity: number, unit: string) => {
+    const handleRequestPantryItem = async (pantryItem: any, requestedQuantity: number, unit: string, recipeIngredientName?: string) => {
         if (!pantryItem || requestedQuantity <= 0) return
         setIsSubmittingProvisions(true)
 
         try {
             const existingReq = pantryRequests.find((pr) => pr.pantry_item_id === pantryItem.id)
+            const noteForRecipe = recipeIngredientName && recipeIngredientName.toLowerCase().trim() !== pantryItem.name.toLowerCase().trim()
+                ? `[For Camp Recipe: ${recipeIngredientName}]`
+                : null
 
             if (existingReq) {
+                const updatedNotes = noteForRecipe
+                    ? existingReq.notes ? `${existingReq.notes} | ${noteForRecipe}` : noteForRecipe
+                    : existingReq.notes
+
                 const { data, error } = await supabase
                     .from('event_pantry_requests')
                     .update({
@@ -1856,6 +1883,7 @@ export default function EventWorkspace({
                         unit: unit,
                         status: 'requested',
                         requested_by: userProfileId,
+                        notes: updatedNotes,
                     })
                     .eq('id', existingReq.id)
                     .select('*, group_pantry_items(name, unit)')
@@ -1875,6 +1903,7 @@ export default function EventWorkspace({
                         unit: unit,
                         status: 'requested',
                         requested_by: userProfileId,
+                        notes: noteForRecipe,
                     })
                     .select('*, group_pantry_items(name, unit)')
                     .single()
@@ -3676,7 +3705,7 @@ export default function EventWorkspace({
                                                             ) : item.pantryRequestStatus === 'rejected' ? (
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => handleRequestPantryItem(item.matchedPantryItem, Math.min(pantryStock, item.totalAmount), item.unit)}
+                                                                    onClick={() => handleRequestPantryItem(item.matchedPantryItem, Math.min(pantryStock, item.totalAmount), item.unit, item.name)}
                                                                     className="flex-1 py-1.5 px-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold text-xs border border-rose-200 transition-all flex items-center justify-center gap-1 active:scale-95"
                                                                     title="Declined by Pantry Master. Click to re-request"
                                                                 >
@@ -3687,7 +3716,7 @@ export default function EventWorkspace({
                                                                 <button
                                                                     type="button"
                                                                     disabled={pantryStock <= 0}
-                                                                    onClick={() => handleRequestPantryItem(item.matchedPantryItem, Math.min(pantryStock, item.totalAmount), item.unit)}
+                                                                    onClick={() => handleRequestPantryItem(item.matchedPantryItem, Math.min(pantryStock, item.totalAmount), item.unit, item.name)}
                                                                     className="flex-1 py-1.5 px-2 rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-all flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 >
                                                                     <Package className="h-3.5 w-3.5" />
