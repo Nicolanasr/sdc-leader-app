@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { getEmailAliases } from '@/utils/emailDelivery'
 import Link from 'next/link'
 
 export default function ForgotPasswordPage() {
@@ -19,13 +20,25 @@ export default function ForgotPasswordPage() {
     setStatusMessage(null)
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/change-password`,
-      })
+      const candidates = getEmailAliases(email)
+      let lastError: any = null
+      let succeeded = false
+
+      for (const candidateEmail of candidates) {
+        const { error } = await supabase.auth.resetPasswordForEmail(candidateEmail, {
+          redirectTo: `${window.location.origin}/change-password`,
+        })
+
+        if (!error) {
+          succeeded = true
+          break
+        }
+        lastError = error
+      }
 
       setLoading(false)
-      if (error) {
-        setStatusMessage({ text: error.message, type: 'error' })
+      if (!succeeded && lastError) {
+        setStatusMessage({ text: lastError.message, type: 'error' })
       } else {
         setEmail('')
         setStatusMessage({

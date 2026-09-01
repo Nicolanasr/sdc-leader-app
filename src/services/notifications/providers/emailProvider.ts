@@ -1,4 +1,5 @@
 import { NotificationProvider, RecipientProfile, NotificationPayload, ChannelResult } from '../types'
+import { resolveDeliverableEmail } from '@/utils/emailDelivery'
 
 export const emailProvider: NotificationProvider = {
   name: 'Email Notification Provider',
@@ -6,8 +7,9 @@ export const emailProvider: NotificationProvider = {
 
   async send(recipient: RecipientProfile, payload: NotificationPayload): Promise<ChannelResult> {
     try {
-      if (!recipient.email) {
-        return { channel: 'email', success: false, error: 'Recipient has no email address' }
+      const deliverableEmail = resolveDeliverableEmail(recipient.email)
+      if (!deliverableEmail) {
+        return { channel: 'email', success: false, error: 'Recipient has no valid email address' }
       }
 
       const portalBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portal.sdcsaintjeanmarc.org'
@@ -72,7 +74,7 @@ export const emailProvider: NotificationProvider = {
           },
           body: JSON.stringify({
             from: process.env.EMAIL_FROM || 'Scouts des Cèdres <portal@sdcsaintjeanmarc.org>',
-            to: [recipient.email],
+            to: [deliverableEmail],
             subject: `[SDC] ${payload.title}`,
             html: emailHtml,
           }),
@@ -85,7 +87,7 @@ export const emailProvider: NotificationProvider = {
         }
       } else {
         // Fallback logger in environments without external API key configured
-        console.log(`[EmailNotificationProvider - Simulated] To: ${recipient.email} | Subject: ${payload.title}`)
+        console.log(`[EmailNotificationProvider - Simulated] To: ${deliverableEmail} (resolved from: ${recipient.email}) | Subject: ${payload.title}`)
       }
 
       return { channel: 'email', success: true }

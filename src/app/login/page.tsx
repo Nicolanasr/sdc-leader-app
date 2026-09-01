@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { getEmailAliases } from '@/utils/emailDelivery'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -24,19 +25,33 @@ export default async function LoginPage({
   async function signIn(formData: FormData) {
     'use server'
 
-    const email = formData.get('email') as string
+    const rawEmail = formData.get('email') as string
     const password = formData.get('password') as string
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       return redirect('/login?message=Email and password are required')
     }
 
     const supabase = await createClient()
+    const candidateEmails = getEmailAliases(rawEmail)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+    let authResult = await supabase.auth.signInWithPassword({
+      email: candidateEmails[0],
       password,
     })
+
+    // If initial attempt failed, try the alternate domain alias (@sdcsjm.org <-> @sdcsaintjeanmarc.org)
+    if (authResult.error && candidateEmails.length > 1) {
+      const secondAttempt = await supabase.auth.signInWithPassword({
+        email: candidateEmails[1],
+        password,
+      })
+      if (!secondAttempt.error) {
+        authResult = secondAttempt
+      }
+    }
+
+    const { data, error } = authResult
 
     if (error) {
       console.error('Login error:', error)
