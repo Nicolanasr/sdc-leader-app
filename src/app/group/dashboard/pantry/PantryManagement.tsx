@@ -1023,6 +1023,11 @@ export default function PantryManagement({
     } | null>(null)
 
     const handleOpenReturnModal = (req: EventPantryRequest) => {
+        if (req.notes?.includes('[Returned')) {
+            showStatus('This provision item has already been processed for return.', 'error')
+            return
+        }
+
         const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
         if (!pantryItem) {
             showStatus('Pantry item not found in database', 'error')
@@ -2500,19 +2505,35 @@ export default function PantryManagement({
                                                             </div>
                                                         )}
 
-                                                        {/* If approved: Show Return Unused Food Button */}
-                                                        {req.status === 'approved' && isProvisionsLeader && (
-                                                            <div className="pt-1 flex items-center justify-end">
-                                                                <button
-                                                                    onClick={() => handleOpenReturnModal(req)}
-                                                                    className="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 text-teal-900 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1 active:scale-95"
-                                                                    title="Return unused food & lots from this camp back to Central Pantry"
-                                                                >
-                                                                    <RotateCcw className="h-3 w-3 text-teal-700" />
-                                                                    <span>🔄 Return Unused Food / Lots</span>
-                                                                </button>
-                                                            </div>
-                                                        )}
+                                                        {/* If approved: Show Return Unused Food Button (Disabled if already returned) */}
+                                                        {req.status === 'approved' && isProvisionsLeader && (() => {
+                                                            const isAlreadyReturned = req.notes?.includes('[Returned')
+                                                            return (
+                                                                <div className="pt-1 flex items-center justify-end">
+                                                                    {isAlreadyReturned ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled
+                                                                            className="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-xs font-bold cursor-not-allowed opacity-80 flex items-center gap-1"
+                                                                            title="Unused provisions have already been returned to Central Pantry"
+                                                                        >
+                                                                            <Check className="h-3 w-3 text-emerald-700" />
+                                                                            <span>Returned to Depot ✓</span>
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleOpenReturnModal(req)}
+                                                                            className="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 text-teal-900 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1 active:scale-95"
+                                                                            title="Return unused food & lots from this camp back to Central Pantry"
+                                                                        >
+                                                                            <RotateCcw className="h-3 w-3 text-teal-700" />
+                                                                            <span>🔄 Return Unused Food / Lots</span>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })()}
                                                     </div>
                                                 )
                                             })}
