@@ -305,7 +305,7 @@ export default function PantryManagement({
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Request filters
-    const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'approved'>('all')
+    const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
 
     // Permissions
     const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
@@ -1332,11 +1332,13 @@ export default function PantryManagement({
             items: EventPantryRequest[]
             pendingCount: number
             approvedCount: number
+            rejectedCount: number
         }> = {}
 
         requestsList.forEach((req) => {
             if (requestStatusFilter === 'pending' && req.status !== 'requested') return
             if (requestStatusFilter === 'approved' && req.status !== 'approved' && req.status !== 'received') return
+            if (requestStatusFilter === 'rejected' && req.status !== 'rejected') return
 
             const eventId = req.event_id || 'unassigned'
             const eventTitle = req.events?.title || 'Camp Activity'
@@ -1352,14 +1354,17 @@ export default function PantryManagement({
                     items: [],
                     pendingCount: 0,
                     approvedCount: 0,
+                    rejectedCount: 0,
                 }
             }
 
             map[eventId].items.push(req)
             if (req.status === 'requested') {
                 map[eventId].pendingCount += 1
-            } else {
+            } else if (req.status === 'approved' || req.status === 'received') {
                 map[eventId].approvedCount += 1
+            } else if (req.status === 'rejected') {
+                map[eventId].rejectedCount += 1
             }
         })
 
@@ -1368,6 +1373,14 @@ export default function PantryManagement({
 
     const pendingRequestsCount = useMemo(
         () => requestsList.filter((r) => r.status === 'requested').length,
+        [requestsList]
+    )
+    const approvedRequestsCount = useMemo(
+        () => requestsList.filter((r) => r.status === 'approved' || r.status === 'received').length,
+        [requestsList]
+    )
+    const rejectedRequestsCount = useMemo(
+        () => requestsList.filter((r) => r.status === 'rejected').length,
         [requestsList]
     )
 
@@ -2185,7 +2198,17 @@ export default function PantryManagement({
                                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                             >
-                                Approved ({requestsList.length - pendingRequestsCount})
+                                Approved ({approvedRequestsCount})
+                            </button>
+                            <button
+                                onClick={() => setRequestStatusFilter('rejected')}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    requestStatusFilter === 'rejected'
+                                        ? 'bg-rose-700 text-white shadow-2xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                Declined ({rejectedRequestsCount})
                             </button>
                         </div>
 
@@ -2227,7 +2250,7 @@ export default function PantryManagement({
                                                         {group.pendingCount} Pending
                                                     </span>
                                                 </div>
-                                            ) : (
+                                            ) : group.approvedCount > 0 ? (
                                                 <div className="flex items-center gap-1.5 shrink-0">
                                                     {isProvisionsLeader && (
                                                         <button
@@ -2242,6 +2265,12 @@ export default function PantryManagement({
                                                     )}
                                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200 shrink-0">
                                                         ✓ Approved
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
+                                                        ✕ Declined
                                                     </span>
                                                 </div>
                                             )}
@@ -2318,13 +2347,19 @@ export default function PantryManagement({
                                                             </div>
 
                                                             <div className="shrink-0 text-right">
-                                                                {req.status === 'requested' ? (
+                                                                {req.status === 'requested' && (
                                                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
                                                                         ⏳ Pending Pickup
                                                                     </span>
-                                                                ) : (
+                                                                )}
+                                                                {(req.status === 'approved' || req.status === 'received') && (
                                                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200">
                                                                         ✓ Approved / Given
+                                                                    </span>
+                                                                )}
+                                                                {req.status === 'rejected' && (
+                                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200">
+                                                                        ✕ Declined
                                                                     </span>
                                                                 )}
                                                             </div>
