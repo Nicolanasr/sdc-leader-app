@@ -1001,6 +1001,143 @@ export default function PantryManagement({
         }
     }
 
+    // ── Returning Unused Food / Lots after Camp ──
+    const [returningRequest, setReturningRequest] = useState<{
+        request: EventPantryRequest
+        pantryItem: PantryItem
+        returnBatches: Array<{
+            id: string
+            brand: string
+            package_size: string
+            quantity: number
+            expiry_date: string
+        }>
+        returnNotes: string
+    } | null>(null)
+
+    const handleOpenReturnModal = (req: EventPantryRequest) => {
+        const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
+        if (!pantryItem) {
+            showStatus('Pantry item not found in database', 'error')
+            return
+        }
+
+        const initialReturnBatches = (pantryItem.expiry_batches && pantryItem.expiry_batches.length > 0)
+            ? pantryItem.expiry_batches.map((b) => ({
+                id: b.id,
+                brand: b.brand || '',
+                package_size: b.package_size || '',
+                quantity: 0,
+                expiry_date: b.expiry_date || '',
+            }))
+            : [
+                {
+                    id: 'ret_' + Date.now(),
+                    brand: '',
+                    package_size: '',
+                    quantity: 1,
+                    expiry_date: pantryItem.expiry_date || '',
+                }
+            ]
+
+        setReturningRequest({
+            request: req,
+            pantryItem,
+            returnBatches: initialReturnBatches,
+            returnNotes: '',
+        })
+    }
+
+    const handleConfirmReturn = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!returningRequest) return
+        setIsSubmitting(true)
+        const { request, pantryItem, returnBatches, returnNotes } = returningRequest
+
+        try {
+            const totalReturning = returnBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+            if (totalReturning <= 0) throw new Error('Please enter at least 1 returned package quantity')
+
+            let updatedBatches = [...(pantryItem.expiry_batches || [])]
+
+            returnBatches.filter((b) => Number(b.quantity) > 0).forEach((ret) => {
+                const existingIdx = updatedBatches.findIndex(
+                    (b) => b.id === ret.id || (b.brand === ret.brand && b.package_size === ret.package_size && b.expiry_date === ret.expiry_date)
+                )
+                if (existingIdx >= 0) {
+                    updatedBatches[existingIdx] = {
+                        ...updatedBatches[existingIdx],
+                        quantity: (Number(updatedBatches[existingIdx].quantity) || 0) + Number(ret.quantity),
+                    }
+                } else {
+                    updatedBatches.push({
+                        id: 'lot_ret_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        quantity: Number(ret.quantity),
+                        brand: ret.brand || '',
+                        package_size: ret.package_size || '',
+                        expiry_date: ret.expiry_date || '',
+                        notes: `[Returned from ${request.events?.title || 'Camp'}]`,
+                    })
+                }
+            })
+
+            const newTotalQty = (Number(pantryItem.quantity_available) || 0) + totalReturning
+            const sortedDates = updatedBatches
+                .map((b) => b.expiry_date)
+                .filter(Boolean)
+                .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+            const newExpiryDate = sortedDates.length > 0 ? sortedDates[0] : null
+
+            const { error: itemErr } = await supabase
+                .from('group_pantry_items')
+                .update({
+                    quantity_available: newTotalQty,
+                    expiry_batches: updatedBatches,
+                    expiry_date: newExpiryDate,
+                })
+                .eq('id', pantryItem.id)
+
+            if (itemErr) throw itemErr
+
+            const returnDateStr = new Date().toLocaleDateString('en-GB')
+            const returnNote = `[Returned ${totalReturning} ${pantryItem.unit} on ${returnDateStr}${returnNotes ? ': ' + returnNotes : ''}]`
+            const updatedNotes = request.notes ? `${request.notes} | ${returnNote}` : returnNote
+
+            const { error: reqErr } = await supabase
+                .from('event_pantry_requests')
+                .update({
+                    notes: updatedNotes,
+                })
+                .eq('id', request.id)
+
+            if (reqErr) throw reqErr
+
+            setPantryList((prev) =>
+                prev.map((p) =>
+                    p.id === pantryItem.id
+                        ? {
+                              ...p,
+                              quantity_available: newTotalQty,
+                              expiry_batches: updatedBatches,
+                              expiry_date: newExpiryDate,
+                          }
+                        : p
+                )
+            )
+
+            setRequestsList((prev) =>
+                prev.map((r) => (r.id === request.id ? { ...r, notes: updatedNotes } : r))
+            )
+
+            setReturningRequest(null)
+            showStatus(`Returned ${totalReturning} ${pantryItem.unit} of "${pantryItem.name}" to Central Pantry!`, 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to return items', 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     // ── Excel (.xlsx) Multi-Sheet Export ──
     const handleExportExcel = () => {
         try {
@@ -2104,44 +2241,141 @@ export default function PantryManagement({
                                             )}
                                         </div>
 
-                                        <div className="divide-y divide-slate-100 p-2 space-y-1">
-                                            {group.items.map((req) => (
-                                                <div
-                                                    key={req.id}
-                                                    className="p-2.5 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-50"
-                                                >
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-black text-slate-800 truncate">
-                                                            {req.group_pantry_items?.name || 'Item'}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-500">
-                                                            Requested: <strong>{req.quantity} {req.unit}</strong>
-                                                        </p>
-                                                    </div>
+                                        <div className="divide-y divide-slate-100 p-2 space-y-2">
+                                            {group.items.map((req) => {
+                                                const pantryItem = pantryList.find((p) => p.id === req.pantry_item_id)
+                                                const batches = pantryItem?.expiry_batches || []
 
-                                                    {req.status === 'requested' && isProvisionsLeader ? (
-                                                        <div className="flex items-center gap-1 shrink-0">
-                                                            <button
-                                                                onClick={() => handleRejectRequest(req)}
-                                                                className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-xs font-bold transition-all"
-                                                            >
-                                                                Decline
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleStartApproveRequest(req)}
-                                                                className="px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1"
-                                                            >
-                                                                <Check className="h-3 w-3" />
-                                                                <span>Approve & Deduct</span>
-                                                            </button>
+                                                // Suggested FIFO lots preview
+                                                const sortedBatches = [...batches].sort((a, b) => {
+                                                    if (!a.expiry_date) return 1
+                                                    if (!b.expiry_date) return -1
+                                                    return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+                                                })
+                                                let remainingToPick = Number(req.quantity) || 1
+                                                const suggestedLots: Array<{ brand: string; size: string; exp: string; qty: number }> = []
+                                                sortedBatches.forEach((b) => {
+                                                    if (remainingToPick <= 0) return
+                                                    const avail = Number(b.quantity) || 0
+                                                    const take = Math.min(avail, remainingToPick)
+                                                    if (take > 0) {
+                                                        suggestedLots.push({
+                                                            brand: b.brand || 'Standard',
+                                                            size: b.package_size || '',
+                                                            exp: b.expiry_date || '',
+                                                            qty: take,
+                                                        })
+                                                        remainingToPick -= take
+                                                    }
+                                                })
+
+                                                return (
+                                                    <div
+                                                        key={req.id}
+                                                        className="p-3 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 transition-all space-y-2"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="min-w-0">
+                                                                <h5 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+                                                                    {req.group_pantry_items?.name || pantryItem?.name || 'Item'}
+                                                                </h5>
+                                                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                                                    Requested: <strong>{req.quantity} {req.unit}</strong>
+                                                                    {pantryItem && (
+                                                                        <span className="text-slate-400 ml-1.5">
+                                                                            (In Depot: {pantryItem.quantity_available} {pantryItem.unit})
+                                                                        </span>
+                                                                    )}
+                                                                </p>
+                                                                {req.notes && (
+                                                                    <p className="text-[10px] text-teal-800 font-medium mt-1 bg-teal-50/70 p-1 rounded-md border border-teal-100">
+                                                                        {req.notes}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="shrink-0 text-right">
+                                                                {req.status === 'requested' ? (
+                                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
+                                                                        ⏳ Pending Pickup
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200">
+                                                                        ✓ Approved / Given
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 capitalize">
-                                                            {req.status}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))}
+
+                                                        {/* If requested: Show Suggested Lots to Hand Out (FIFO) & Change Lots button */}
+                                                        {req.status === 'requested' && isProvisionsLeader && (
+                                                            <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-2.5 space-y-1.5">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-[10px] font-bold text-amber-950 uppercase tracking-wide flex items-center gap-1">
+                                                                        <Clock className="h-3 w-3 text-amber-700" />
+                                                                        <span>Suggested Pick by Expiry Date (FIFO):</span>
+                                                                    </span>
+                                                                    {suggestedLots.length > 0 && (
+                                                                        <span className="text-[9px] text-amber-800 font-bold">
+                                                                            {suggestedLots.reduce((acc, l) => acc + l.qty, 0)} / {req.quantity} {req.unit}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                {suggestedLots.length > 0 ? (
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {suggestedLots.map((lot, lIdx) => (
+                                                                            <span
+                                                                                key={lIdx}
+                                                                                className="text-[10px] bg-white border border-amber-200 px-1.5 py-0.5 rounded-md text-slate-800 font-medium shadow-2xs flex items-center gap-1"
+                                                                            >
+                                                                                <span className="font-black text-teal-900">x{lot.qty}</span>
+                                                                                <span>{lot.brand}</span>
+                                                                                {lot.size && <span className="text-amber-900 font-bold">{lot.size}</span>}
+                                                                                {lot.exp && <span className="font-mono text-[9px] text-slate-400">({formatExpiryShort(lot.exp)})</span>}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-[10px] text-amber-800 font-medium">
+                                                                        Standard single lot will be deducted from central stock.
+                                                                    </p>
+                                                                )}
+
+                                                                <div className="pt-1.5 flex items-center justify-end gap-1.5 border-t border-amber-200/50">
+                                                                    <button
+                                                                        onClick={() => handleRejectRequest(req)}
+                                                                        className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all"
+                                                                    >
+                                                                        Decline
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleStartApproveRequest(req)}
+                                                                        className="px-3 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1 active:scale-95"
+                                                                    >
+                                                                        <Edit className="h-3 w-3" />
+                                                                        <span>Review & Change Lots / Qty</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* If approved: Show Return Unused Food Button */}
+                                                        {req.status === 'approved' && isProvisionsLeader && (
+                                                            <div className="pt-1 flex items-center justify-end">
+                                                                <button
+                                                                    onClick={() => handleOpenReturnModal(req)}
+                                                                    className="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 text-teal-900 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1 active:scale-95"
+                                                                    title="Return unused food & lots from this camp back to Central Pantry"
+                                                                >
+                                                                    <RotateCcw className="h-3 w-3 text-teal-700" />
+                                                                    <span>🔄 Return Unused Food / Lots</span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 ))}
@@ -2829,6 +3063,145 @@ export default function PantryManagement({
                                     >
                                         <Check className="h-3.5 w-3.5" />
                                         <span>{isSubmitting ? 'Allocating…' : 'Allocate & Deduct Stock'}</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
+                    MODAL: RETURN UNUSED FOOD / LOTS TO CENTRAL PANTRY
+                ══════════════════════════════════════════════════════════ */}
+                {returningRequest && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                        <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <div className="flex items-center gap-2">
+                                    <RotateCcw className="h-4 w-4 text-teal-800" />
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900 leading-tight">
+                                            Return Unused Food to Central Pantry
+                                        </h3>
+                                        <p className="text-[10px] text-slate-500">
+                                            {returningRequest.pantryItem.name} • From: <strong>⛺ {returningRequest.request.events?.title || 'Camp'}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setReturningRequest(null)}
+                                    className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleConfirmReturn} className="space-y-3">
+                                <div className="bg-teal-50/60 p-2.5 rounded-xl border border-teal-200/80 text-[11px] text-teal-950 space-y-1">
+                                    <div className="flex items-center justify-between font-bold">
+                                        <span>Original Handed Out:</span>
+                                        <span className="text-teal-900 font-black">{returningRequest.request.quantity} {returningRequest.request.unit}</span>
+                                    </div>
+                                    <p className="text-[10px] text-teal-800 opacity-90">
+                                        Specify how many packages/cans were returned unopened. The returned amounts will be merged directly back into the matching lot batches and central stock.
+                                    </p>
+                                </div>
+
+                                {/* Return lots list */}
+                                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">
+                                        Returned Packages by Lot / Expiry:
+                                    </span>
+                                    {returningRequest.returnBatches.map((batch, bIdx) => (
+                                        <div
+                                            key={batch.id || bIdx}
+                                            className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                                                batch.quantity > 0 ? 'bg-teal-50/80 border-teal-300 shadow-2xs' : 'bg-slate-50 border-slate-200'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="text-xs font-black text-slate-900">
+                                                        {batch.brand || 'Standard'}
+                                                    </span>
+                                                    {batch.package_size && (
+                                                        <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded">
+                                                            {batch.package_size}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {batch.expiry_date && (
+                                                    <span className="font-mono text-[10px] text-slate-500 block mt-0.5">
+                                                        Exp: {formatExpiryShort(batch.expiry_date)}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Return:</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    value={batch.quantity}
+                                                    onChange={(e) => {
+                                                        const val = Math.max(0, parseFloat(e.target.value) || 0)
+                                                        setReturningRequest((prev) => {
+                                                            if (!prev) return null
+                                                            const updated = [...prev.returnBatches]
+                                                            updated[bIdx] = { ...updated[bIdx], quantity: val }
+                                                            return { ...prev, returnBatches: updated }
+                                                        })
+                                                    }}
+                                                    className="w-16 px-2 py-1 text-xs font-black rounded-lg border border-slate-300 bg-white text-center focus:border-teal-700 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Return Notes */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">
+                                        Return Reason / Condition Notes (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Unopened cans returned after 3-day camp, surplus dry goods…"
+                                        value={returningRequest.returnNotes}
+                                        onChange={(e) =>
+                                            setReturningRequest((prev) => (prev ? { ...prev, returnNotes: e.target.value } : null))
+                                        }
+                                        className="w-full px-3 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Total Returning Summary */}
+                                {(() => {
+                                    const totalReturning = returningRequest.returnBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+                                    return (
+                                        <div className="p-2.5 rounded-xl border bg-emerald-50 text-emerald-900 border-emerald-300 flex items-center justify-between text-xs font-black">
+                                            <span>Total Returning to Central Stock:</span>
+                                            <span className="text-sm font-black">{totalReturning} {returningRequest.request.unit}</span>
+                                        </div>
+                                    )
+                                })()}
+
+                                <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setReturningRequest(null)}
+                                        className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || returningRequest.returnBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0) <= 0}
+                                        className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        <Check className="h-3.5 w-3.5" />
+                                        <span>{isSubmitting ? 'Returning…' : 'Confirm Return to Central Stock'}</span>
                                     </button>
                                 </div>
                             </form>
