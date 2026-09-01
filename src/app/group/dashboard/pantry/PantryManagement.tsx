@@ -773,6 +773,29 @@ export default function PantryManagement({
 
             if (itemErr) throw itemErr
 
+            const fulfilledBatchesData = Object.entries(batchAllocations)
+                .filter(([_, q]) => q > 0)
+                .map(([bId, q]) => {
+                    const found = (pantryItem.expiry_batches || []).find((b) => b.id === bId)
+                    return {
+                        id: bId,
+                        brand: found?.brand || 'Standard',
+                        package_size: found?.package_size || '',
+                        expiry_date: found?.expiry_date || pantryItem.expiry_date || '',
+                        quantity: q,
+                    }
+                })
+
+            if (generalStockAllocated > 0) {
+                fulfilledBatchesData.push({
+                    id: 'std_stock_' + Date.now(),
+                    brand: 'Standard Depot Stock',
+                    package_size: '',
+                    expiry_date: pantryItem.expiry_date || '',
+                    quantity: generalStockAllocated,
+                })
+            }
+
             const lotSummary = Object.entries(batchAllocations)
                 .filter(([_, q]) => q > 0)
                 .map(([bId, q]) => {
@@ -789,6 +812,7 @@ export default function PantryManagement({
                 isDifferentQty ? `[Fulfilled: ${totalDeducted} ${pantryItem.unit} (Orig requested: ${request.quantity})]` : null,
                 allLotsGiven ? `[Lots: ${allLotsGiven}]` : null,
                 fulfillNotes ? `[Note: ${fulfillNotes}]` : null,
+                fulfilledBatchesData.length > 0 ? `[FulfilledLotsData:${JSON.stringify(fulfilledBatchesData)}]` : null,
             ].filter(Boolean).join(' ')
 
             const { error: reqErr } = await supabase
@@ -924,6 +948,19 @@ export default function PantryManagement({
                 .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
             const newExpiryDate = sortedDates.length > 0 ? sortedDates[0] : null
 
+            const extraBatchesData = Object.entries(extraBatchAllocations)
+                .filter(([_, q]) => q > 0)
+                .map(([bId, q]) => {
+                    const found = (pantryItem.expiry_batches || []).find((b) => b.id === bId)
+                    return {
+                        id: bId,
+                        brand: found?.brand || 'Standard',
+                        package_size: found?.package_size || '',
+                        expiry_date: found?.expiry_date || pantryItem.expiry_date || '',
+                        quantity: q,
+                    }
+                })
+
             await supabase
                 .from('group_pantry_items')
                 .update({
@@ -945,6 +982,7 @@ export default function PantryManagement({
                 extraNotes.trim() ? extraNotes.trim() : null,
                 lotSummary ? `[Lots: ${lotSummary}]` : null,
                 `[Given directly by Pantry Master]`,
+                extraBatchesData.length > 0 ? `[FulfilledLotsData:${JSON.stringify(extraBatchesData)}]` : null,
             ].filter(Boolean).join(' ')
 
             const { data: newReq, error: reqErr } = await supabase
@@ -980,9 +1018,9 @@ export default function PantryManagement({
 
             setRequestsList((prev) => [newReq, ...prev])
             setIsGiveExtraModalOpen(false)
-            showStatus(`Allocated ${qtyToGive} ${extraUnit} of "${pantryItem.name}" to ${giveExtraTargetEvent.eventTitle}!`, 'success')
+            showStatus(`Gave ${totalDeducted || qtyToGive} ${extraUnit || pantryItem.unit} of "${pantryItem.name}" directly to ${giveExtraTargetEvent.eventTitle}!`, 'success')
         } catch (err: any) {
-            showStatus(err.message || 'Failed to allocate item', 'error')
+            showStatus(err.message || 'Failed to give custom items.', 'error')
         } finally {
             setIsSubmitting(false)
         }
@@ -994,12 +1032,12 @@ export default function PantryManagement({
         try {
             const { error: reqErr } = await supabase
                 .from('event_pantry_requests')
-                .update({ status: 'rejected' })
+                .update({ status: 'rejected', approved_by: userId })
                 .eq('id', req.id)
             if (reqErr) throw reqErr
 
             setRequestsList((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: 'rejected' } : r)))
-            showStatus(`Declined request.`, 'success')
+            showStatus(`Declined provision transfer for ${req.events?.title || 'Camp'}.`, 'success')
         } catch (err: any) {
             showStatus(err.message || 'Failed to decline request.', 'error')
         } finally {
@@ -1037,8 +1075,7 @@ export default function PantryManagement({
         const noteText = req.notes || ''
         const batches = pantryItem.expiry_batches || []
         
-        // Construct returnBatches prefilled with the EXACT quantities given out!
-        const returnBatchesList: Array<{
+        let returnBatchesList: Array<{
             id: string
             brand: string
             package_size: string
@@ -1047,43 +1084,62 @@ export default function PantryManagement({
             expiry_date: string
         }> = []
 
-        let totalParsedFromBatches = 0
-
-        // 1. Match specific lots recorded in notes: e.g. "5x Kiane 185g", "30x Standard Stock"
-        batches.forEach((b) => {
-            let givenForThisBatch = 0
-            if (noteText) {
-                const brandEscaped = (b.brand || 'Standard').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                const regex = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*x\\s*${brandEscaped}`, 'i')
-                const match = noteText.match(regex)
-                if (match && match[1]) {
-                    givenForThisBatch = parseFloat(match[1]) || 0
+        // 1. First, check for structured [FulfilledLotsData:...] in notes
+        const jsonMatch = noteText.match(/\[FulfilledLotsData:(.*?)\]/)
+        if (jsonMatch && jsonMatch[1]) {
+            try {
+                const parsed = JSON.parse(jsonMatch[1])
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    returnBatchesList = parsed.map((b) => ({
+                        id: b.id || 'ret_' + Math.random().toString(36).substr(2, 6),
+                        brand: b.brand || 'Standard',
+                        package_size: b.package_size || '',
+                        quantity: Number(b.quantity) || 0,
+                        originalGiven: Number(b.quantity) || 0,
+                        expiry_date: b.expiry_date || '',
+                    }))
                 }
-            }
-
-            if (givenForThisBatch > 0) {
-                totalParsedFromBatches += givenForThisBatch
-                returnBatchesList.push({
-                    id: b.id,
-                    brand: b.brand || 'Standard',
-                    package_size: b.package_size || '',
-                    quantity: givenForThisBatch,
-                    originalGiven: givenForThisBatch,
-                    expiry_date: b.expiry_date || '',
-                })
-            }
-        })
-
-        // Check if Standard Stock was given in notes: e.g. "30x Standard Stock"
-        let stdGivenInNote = 0
-        if (noteText) {
-            const stdMatch = noteText.match(/(\d+(?:\.\d+)?)\s*x\s*Standard(?:\s+Depot)?\s*Stock/i)
-            if (stdMatch && stdMatch[1]) {
-                stdGivenInNote = parseFloat(stdMatch[1]) || 0
+            } catch (e) {
+                console.error('Failed to parse FulfilledLotsData', e)
             }
         }
 
-        // If no lots were found in note, build FIFO allocation up to req.quantity
+        // 2. If no JSON data, parse human-readable [Lots: 5x Kiane 185g, 1x Deli 185g + 30x Standard Stock]
+        if (returnBatchesList.length === 0 && noteText) {
+            const lotsMatch = noteText.match(/\[Lots:\s*(.*?)\]/)
+            if (lotsMatch && lotsMatch[1]) {
+                const rawParts = lotsMatch[1].split(/[+,]/).map((s) => s.trim()).filter(Boolean)
+                rawParts.forEach((part) => {
+                    const itemMatch = part.match(/^(\d+(?:\.\d+)?)\s*x\s*(.*)$/i)
+                    if (itemMatch) {
+                        const qty = parseFloat(itemMatch[1]) || 0
+                        const lotDesc = itemMatch[2].trim()
+                        if (qty > 0) {
+                            // Extract package size if at the end e.g. "185g", "1kg", "500g"
+                            const sizeMatch = lotDesc.match(/(\d+\s*(?:g|kg|ml|l|cans|packs|pieces|oz))\b/i)
+                            const size = sizeMatch ? sizeMatch[1] : ''
+                            const brandName = size ? lotDesc.replace(size, '').trim() : lotDesc
+
+                            const matchingBatch = batches.find(
+                                (b) => (b.brand && brandName.toLowerCase().includes(b.brand.toLowerCase())) ||
+                                       (b.brand && b.brand.toLowerCase().includes(brandName.toLowerCase()))
+                            )
+
+                            returnBatchesList.push({
+                                id: matchingBatch?.id || 'ret_' + Math.random().toString(36).substr(2, 6),
+                                brand: matchingBatch?.brand || brandName || 'Standard',
+                                package_size: matchingBatch?.package_size || size || '',
+                                quantity: qty,
+                                originalGiven: qty,
+                                expiry_date: matchingBatch?.expiry_date || pantryItem.expiry_date || '',
+                            })
+                        }
+                    }
+                })
+            }
+        }
+
+        // 3. Fallback: FIFO allocation from pantryItem batches or standard single lot
         if (returnBatchesList.length === 0) {
             const sorted = [...batches].sort((a, b) => {
                 if (!a.expiry_date) return 1
@@ -1113,18 +1169,6 @@ export default function PantryManagement({
                     package_size: '',
                     quantity: rem,
                     originalGiven: rem,
-                    expiry_date: pantryItem.expiry_date || '',
-                })
-            }
-        } else {
-            const remainingGiven = stdGivenInNote > 0 ? stdGivenInNote : Math.max(0, (Number(req.quantity) || 0) - totalParsedFromBatches)
-            if (remainingGiven > 0) {
-                returnBatchesList.push({
-                    id: 'std_stock_' + Date.now(),
-                    brand: 'Standard Depot Stock',
-                    package_size: '',
-                    quantity: remainingGiven,
-                    originalGiven: remainingGiven,
                     expiry_date: pantryItem.expiry_date || '',
                 })
             }
