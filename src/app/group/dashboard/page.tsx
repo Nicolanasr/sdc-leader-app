@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import GroupDashboardLayout from './GroupDashboardLayout'
+import GroupDashboardLayout, { UpcomingEvent } from './GroupDashboardLayout'
 
 export default async function GroupDashboardPage() {
   const supabase = await createClient()
@@ -41,10 +41,12 @@ export default async function GroupDashboardPage() {
     .eq('id', groupId)
     .single()
 
-  const groupName = groupData?.name || 'My Group'
-  const commissariatName = (groupData as any)?.commissariats?.name || 'Regional Scope'
+  const groupName = groupData?.name || 'Scouts des Cèdres'
+  const commissariatName = (groupData as any)?.commissariats?.name || 'Saint Jean Marc'
 
-  // 3. Fetch summary statistics
+  // 3. Fetch summary statistics (Generic & useful for all leaders)
+  const nowIso = new Date().toISOString()
+
   // A. Total Active Members (Scouts)
   const { count: scoutCount } = await supabase
     .from('members')
@@ -60,41 +62,80 @@ export default async function GroupDashboardPage() {
     .eq('group_id', groupId)
     .eq('is_deleted', false)
 
-  // C. Total Active Leaders (mapped via user_roles under this group)
+  // C. Total Active Leaders
   const { count: leaderCount } = await supabase
     .from('user_roles')
     .select('profile_id', { count: 'exact', head: true })
     .eq('group_id', groupId)
 
-  // D. Pending Expenses
-  const { count: pendingTransactions } = await supabase
-    .from('treasury_transactions')
+  // D. Total Upcoming Events
+  const { count: upcomingEventsCount } = await supabase
+    .from('events')
     .select('*', { count: 'exact', head: true })
     .eq('group_id', groupId)
-    .eq('status', 'pending')
+    .eq('is_deleted', false)
+    .gte('start_time', nowIso)
+
+  // E. Equipment count
+  const { count: equipmentCount } = await supabase
+    .from('inventory_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
     .eq('is_deleted', false)
 
-  // 4. Fetch dynamic section types for troop creation selection
-  const { data: sections } = await supabase
-    .from('section_types')
-    .select('id, name')
-    .order('name', { ascending: true })
+  // F. Pantry items count
+  const { count: pantryCount } = await supabase
+    .from('group_pantry_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .eq('is_deleted', false)
 
-  const stats = {
-    scoutCount: scoutCount || 0,
-    troopCount: troopCount || 0,
-    leaderCount: leaderCount || 0,
-    pendingTransactions: pendingTransactions || 0,
-  }
+  // 4. Fetch the next upcoming events (Next 3)
+  const { data: upcomingEventsData } = await supabase
+    .from('events')
+    .select('id, title, event_type, start_time, end_time, location_name, troops(name)')
+    .eq('group_id', groupId)
+    .eq('is_deleted', false)
+    .gte('start_time', nowIso)
+    .order('start_time', { ascending: true })
+    .limit(3)
 
-  // 5. Fetch logged in user full_name
+  // 5. Fetch logged in user full_name and assigned troop
   const { data: userProfile } = await supabase
     .from('profiles')
     .select('full_name')
     .eq('id', user.id)
     .single()
 
+  const { data: userRoleData } = await supabase
+    .from('user_roles')
+    .select('troop_id, troops(name)')
+    .eq('profile_id', user.id)
+    .eq('group_id', groupId)
+    .not('troop_id', 'is', null)
+    .maybeSingle()
+
   const userName = userProfile?.full_name || user.email || 'Leader'
+  const assignedTroopName = (userRoleData as any)?.troops?.name || null
+
+  const stats = {
+    scoutCount: scoutCount || 0,
+    troopCount: troopCount || 0,
+    leaderCount: leaderCount || 0,
+    upcomingEventsCount: upcomingEventsCount || 0,
+    equipmentCount: equipmentCount || 0,
+    pantryCount: pantryCount || 0,
+  }
+
+  const upcomingEvents: UpcomingEvent[] = (upcomingEventsData || []).map((ev: any) => ({
+    id: ev.id,
+    title: ev.title,
+    event_type: ev.event_type || 'Activity',
+    start_time: ev.start_time,
+    end_time: ev.end_time,
+    location_name: ev.location_name,
+    troops: Array.isArray(ev.troops) ? ev.troops[0] || null : ev.troops || null,
+  }))
 
   return (
     <GroupDashboardLayout
@@ -103,8 +144,9 @@ export default async function GroupDashboardPage() {
       role={role}
       groupId={groupId}
       stats={stats}
-      sections={sections || []}
       userName={userName}
+      assignedTroopName={assignedTroopName}
+      upcomingEvents={upcomingEvents}
     />
   )
 }
