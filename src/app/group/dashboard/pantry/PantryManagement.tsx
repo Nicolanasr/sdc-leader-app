@@ -645,6 +645,7 @@ export default function PantryManagement({
         request: EventPantryRequest
         pantryItem: PantryItem
         batchAllocations: Record<string, number>
+        generalStockAllocated: number
         fulfillNotes: string
     } | null>(null)
 
@@ -670,10 +671,6 @@ export default function PantryManagement({
         }
 
         const batches = pantryItem.expiry_batches || []
-        if (batches.length <= 1) {
-            handleApproveRequestDirect(req, pantryItem)
-            return
-        }
 
         // Auto-calculate FIFO allocation (earliest expiry date first)
         const sortedBatches = [...batches].sort((a, b) => {
@@ -696,10 +693,15 @@ export default function PantryManagement({
             remainingToAllocate -= take
         })
 
+        const batchSum = sortedBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+        const unbatchedStock = Math.max(0, (Number(pantryItem.quantity_available) || 0) - batchSum)
+        const generalAllocated = Math.min(unbatchedStock, Math.max(0, remainingToAllocate))
+
         setFulfillingRequest({
             request: req,
             pantryItem,
             batchAllocations: allocations,
+            generalStockAllocated: generalAllocated,
             fulfillNotes: '',
         })
     }
@@ -733,15 +735,15 @@ export default function PantryManagement({
     const handleConfirmFulfillment = async () => {
         if (!fulfillingRequest) return
         setIsSubmitting(true)
-        const { request, pantryItem, batchAllocations, fulfillNotes } = fulfillingRequest
+        const { request, pantryItem, batchAllocations, generalStockAllocated, fulfillNotes } = fulfillingRequest
 
         try {
             const updatedBatches: PantryBatch[] = []
-            let totalDeducted = 0
+            let lotsDeducted = 0
 
             ;(pantryItem.expiry_batches || []).forEach((b) => {
                 const deducted = batchAllocations[b.id] || 0
-                totalDeducted += deducted
+                lotsDeducted += deducted
                 const remainingQty = Math.max(0, (Number(b.quantity) || 0) - deducted)
                 if (remainingQty > 0) {
                     updatedBatches.push({
@@ -751,6 +753,7 @@ export default function PantryManagement({
                 }
             })
 
+            const totalDeducted = lotsDeducted + (Number(generalStockAllocated) || 0)
             const newTotalQty = Math.max(0, (pantryItem.quantity_available || 0) - totalDeducted)
 
             const sortedDates = updatedBatches
@@ -778,10 +781,13 @@ export default function PantryManagement({
                 })
                 .join(', ')
 
+            const generalSummary = generalStockAllocated > 0 ? `${generalStockAllocated}x Standard Stock` : null
+            const allLotsGiven = [lotSummary, generalSummary].filter(Boolean).join(' + ')
+
             const isDifferentQty = totalDeducted !== Number(request.quantity)
             const noteDetails = [
                 isDifferentQty ? `[Fulfilled: ${totalDeducted} ${pantryItem.unit} (Orig requested: ${request.quantity})]` : null,
-                lotSummary ? `[Lots: ${lotSummary}]` : null,
+                allLotsGiven ? `[Lots: ${allLotsGiven}]` : null,
                 fulfillNotes ? `[Note: ${fulfillNotes}]` : null,
             ].filter(Boolean).join(' ')
 
@@ -2269,6 +2275,23 @@ export default function PantryManagement({
                                                     }
                                                 })
 
+                                                // If there's still quantity needed and unbatched stock is available in depot:
+                                                const batchSum = sortedBatches.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+                                                const unbatchedStock = Math.max(0, (Number(pantryItem?.quantity_available) || 0) - batchSum)
+                                                const takeFromUnbatched = Math.min(unbatchedStock, Math.max(0, remainingToPick))
+                                                if (takeFromUnbatched > 0) {
+                                                    suggestedLots.push({
+                                                        brand: 'Standard Depot Stock',
+                                                        size: '',
+                                                        exp: '',
+                                                        qty: takeFromUnbatched,
+                                                    })
+                                                    remainingToPick -= takeFromUnbatched
+                                                }
+
+                                                const totalCovered = suggestedLots.reduce((acc, l) => acc + l.qty, 0)
+                                                const hasShortage = remainingToPick > 0
+
                                                 return (
                                                     <div
                                                         key={req.id}
@@ -2315,11 +2338,9 @@ export default function PantryManagement({
                                                                         <Clock className="h-3 w-3 text-amber-700" />
                                                                         <span>Suggested Pick by Expiry Date (FIFO):</span>
                                                                     </span>
-                                                                    {suggestedLots.length > 0 && (
-                                                                        <span className="text-[9px] text-amber-800 font-bold">
-                                                                            {suggestedLots.reduce((acc, l) => acc + l.qty, 0)} / {req.quantity} {req.unit}
-                                                                        </span>
-                                                                    )}
+                                                                    <span className={`text-[9px] font-black ${hasShortage ? 'text-rose-700' : 'text-emerald-800'}`}>
+                                                                        {totalCovered} / {req.quantity} {req.unit} {hasShortage ? `(${remainingToPick} short)` : 'Covered'}
+                                                                    </span>
                                                                 </div>
 
                                                                 {suggestedLots.length > 0 ? (
@@ -2338,7 +2359,7 @@ export default function PantryManagement({
                                                                     </div>
                                                                 ) : (
                                                                     <p className="text-[10px] text-amber-800 font-medium">
-                                                                        Standard single lot will be deducted from central stock.
+                                                                        Standard stock will be deducted from central stock.
                                                                     </p>
                                                                 )}
 
@@ -2800,6 +2821,56 @@ export default function PantryManagement({
                                         </div>
                                     )
                                 })}
+
+                                {/* Standard / Unbatched General Depot Stock Row */}
+                                {(() => {
+                                    const batchSum = (fulfillingRequest.pantryItem.expiry_batches || []).reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+                                    const maxGeneralStock = Math.max(0, (Number(fulfillingRequest.pantryItem.quantity_available) || 0) - batchSum)
+
+                                    if (maxGeneralStock <= 0 && (!fulfillingRequest.generalStockAllocated || fulfillingRequest.generalStockAllocated <= 0)) {
+                                        return null
+                                    }
+
+                                    return (
+                                        <div
+                                            className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                                                fulfillingRequest.generalStockAllocated > 0
+                                                    ? 'bg-teal-50/70 border-teal-300 shadow-2xs'
+                                                    : 'bg-slate-50 border-slate-200 opacity-60'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="text-xs font-black text-slate-900">
+                                                        Standard Depot Stock
+                                                    </span>
+                                                    <span className="text-[10px] font-bold bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded">
+                                                        General / Unbatched
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                                    <span>Available Depot Stock: <strong>{maxGeneralStock}</strong></span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Deduct:</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max={maxGeneralStock}
+                                                    step="any"
+                                                    value={fulfillingRequest.generalStockAllocated}
+                                                    onChange={(e) => {
+                                                        const val = Math.max(0, Math.min(maxGeneralStock, parseFloat(e.target.value) || 0))
+                                                        setFulfillingRequest((prev) => prev ? { ...prev, generalStockAllocated: val } : null)
+                                                    }}
+                                                    className="w-16 px-2 py-1 text-xs font-black rounded-lg border border-slate-300 bg-white text-center focus:border-teal-700 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </div>
 
                             {/* Optional Handout Note */}
@@ -2822,7 +2893,8 @@ export default function PantryManagement({
 
                             {/* Total Allocated Summary */}
                             {(() => {
-                                const totalAllocated = Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0)
+                                const lotsAllocated = Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0)
+                                const totalAllocated = lotsAllocated + (Number(fulfillingRequest.generalStockAllocated) || 0)
                                 const requestedQty = Number(fulfillingRequest.request.quantity) || 0
                                 const isExact = totalAllocated === requestedQty
                                 return (
@@ -2852,15 +2924,21 @@ export default function PantryManagement({
                                 >
                                     Cancel
                                 </button>
-                                <button
-                                    type="button"
-                                    disabled={isSubmitting || Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0) <= 0}
-                                    onClick={handleConfirmFulfillment}
-                                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1 disabled:opacity-50"
-                                >
-                                    <Check className="h-3.5 w-3.5" />
-                                    <span>{isSubmitting ? 'Deducting…' : 'Confirm & Deduct Lots'}</span>
-                                </button>
+                                {(() => {
+                                    const lotsAllocated = Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0)
+                                    const totalAllocated = lotsAllocated + (Number(fulfillingRequest.generalStockAllocated) || 0)
+                                    return (
+                                        <button
+                                            type="button"
+                                            disabled={isSubmitting || totalAllocated <= 0}
+                                            onClick={handleConfirmFulfillment}
+                                            className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1 disabled:opacity-50"
+                                        >
+                                            <Check className="h-3.5 w-3.5" />
+                                            <span>{isSubmitting ? 'Deducting…' : 'Confirm & Deduct Lots'}</span>
+                                        </button>
+                                    )
+                                })()}
                             </div>
                         </div>
                     </div>
