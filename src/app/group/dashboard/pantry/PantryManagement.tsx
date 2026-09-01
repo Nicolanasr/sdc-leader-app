@@ -640,12 +640,26 @@ export default function PantryManagement({
         }
     }
 
-    // ── Requests Approvals & FIFO Lot Fulfillment ──
+    // ── Requests Approvals & Dynamic FIFO Lot Fulfillment ──
     const [fulfillingRequest, setFulfillingRequest] = useState<{
         request: EventPantryRequest
         pantryItem: PantryItem
         batchAllocations: Record<string, number>
+        fulfillNotes: string
     } | null>(null)
+
+    // State for giving extra / custom items directly to a camp
+    const [isGiveExtraModalOpen, setIsGiveExtraModalOpen] = useState(false)
+    const [giveExtraTargetEvent, setGiveExtraTargetEvent] = useState<{
+        eventId: string
+        eventTitle: string
+    } | null>(null)
+    const [extraSelectedItemId, setExtraSelectedItemId] = useState<string>('')
+    const [extraQuantity, setExtraQuantity] = useState<string>('1')
+    const [extraUnit, setExtraUnit] = useState<string>('cans')
+    const [extraNotes, setExtraNotes] = useState<string>('')
+    const [extraBatchAllocations, setExtraBatchAllocations] = useState<Record<string, number>>({})
+    const [extraItemSearch, setExtraItemSearch] = useState('')
 
     const handleStartApproveRequest = (req: EventPantryRequest) => {
         if (!isProvisionsLeader) return
@@ -686,6 +700,7 @@ export default function PantryManagement({
             request: req,
             pantryItem,
             batchAllocations: allocations,
+            fulfillNotes: '',
         })
     }
 
@@ -718,7 +733,7 @@ export default function PantryManagement({
     const handleConfirmFulfillment = async () => {
         if (!fulfillingRequest) return
         setIsSubmitting(true)
-        const { request, pantryItem, batchAllocations } = fulfillingRequest
+        const { request, pantryItem, batchAllocations, fulfillNotes } = fulfillingRequest
 
         try {
             const updatedBatches: PantryBatch[] = []
@@ -755,18 +770,28 @@ export default function PantryManagement({
 
             if (itemErr) throw itemErr
 
+            const lotSummary = Object.entries(batchAllocations)
+                .filter(([_, q]) => q > 0)
+                .map(([bId, q]) => {
+                    const found = (pantryItem.expiry_batches || []).find((b) => b.id === bId)
+                    return `${q}x ${found?.brand || ''} ${found?.package_size || ''}`
+                })
+                .join(', ')
+
+            const isDifferentQty = totalDeducted !== Number(request.quantity)
+            const noteDetails = [
+                isDifferentQty ? `[Fulfilled: ${totalDeducted} ${pantryItem.unit} (Orig requested: ${request.quantity})]` : null,
+                lotSummary ? `[Lots: ${lotSummary}]` : null,
+                fulfillNotes ? `[Note: ${fulfillNotes}]` : null,
+            ].filter(Boolean).join(' ')
+
             const { error: reqErr } = await supabase
                 .from('event_pantry_requests')
                 .update({
                     status: 'approved',
                     approved_by: userId,
-                    notes: `[Fulfilled lots: ${Object.entries(batchAllocations)
-                        .filter(([_, q]) => q > 0)
-                        .map(([bId, q]) => {
-                            const found = (pantryItem.expiry_batches || []).find((b) => b.id === bId)
-                            return `${q}x ${found?.brand || ''} ${found?.package_size || ''}`
-                        })
-                        .join(', ')}]`,
+                    quantity: totalDeducted > 0 ? totalDeducted : request.quantity,
+                    notes: noteDetails || null,
                 })
                 .eq('id', request.id)
 
@@ -786,13 +811,172 @@ export default function PantryManagement({
             )
 
             setRequestsList((prev) =>
-                prev.map((r) => (r.id === request.id ? { ...r, status: 'approved' } : r))
+                prev.map((r) =>
+                    r.id === request.id
+                        ? {
+                              ...r,
+                              status: 'approved',
+                              quantity: totalDeducted > 0 ? totalDeducted : request.quantity,
+                              notes: noteDetails || null,
+                          }
+                        : r
+                )
             )
 
             setFulfillingRequest(null)
-            showStatus(`Approved and deducted ${totalDeducted} ${pantryItem.unit} of "${pantryItem.name}" from lots!`, 'success')
+            showStatus(`Approved and deducted ${totalDeducted} ${pantryItem.unit} of "${pantryItem.name}"!`, 'success')
         } catch (err: any) {
             showStatus(err.message || 'Failed to fulfill request.', 'error')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    // Handlers for Giving Extra / Custom Provisions Directly to Camp
+    const handleOpenGiveExtraModal = (eventId: string, eventTitle: string) => {
+        setGiveExtraTargetEvent({ eventId, eventTitle })
+        const firstItem = pantryList[0]
+        if (firstItem) {
+            setExtraSelectedItemId(firstItem.id)
+            setExtraUnit(firstItem.unit || 'cans')
+            setExtraQuantity('1')
+            const allocations: Record<string, number> = {}
+            const sortedBatches = [...(firstItem.expiry_batches || [])].sort((a, b) => {
+                if (!a.expiry_date) return 1
+                if (!b.expiry_date) return -1
+                return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+            })
+            let remaining = 1
+            sortedBatches.forEach((b) => {
+                const avail = Number(b.quantity) || 0
+                const take = Math.min(avail, remaining)
+                allocations[b.id] = take
+                remaining -= take
+            })
+            setExtraBatchAllocations(allocations)
+        }
+        setExtraNotes('')
+        setExtraItemSearch('')
+        setIsGiveExtraModalOpen(true)
+    }
+
+    const handleSelectExtraItem = (itemId: string) => {
+        setExtraSelectedItemId(itemId)
+        const item = pantryList.find((p) => p.id === itemId)
+        if (item) {
+            setExtraUnit(item.unit || 'cans')
+            const qtyNum = parseFloat(extraQuantity) || 1
+            const allocations: Record<string, number> = {}
+            const sortedBatches = [...(item.expiry_batches || [])].sort((a, b) => {
+                if (!a.expiry_date) return 1
+                if (!b.expiry_date) return -1
+                return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+            })
+            let remaining = qtyNum
+            sortedBatches.forEach((b) => {
+                const avail = Number(b.quantity) || 0
+                const take = Math.min(avail, remaining)
+                allocations[b.id] = take
+                remaining -= take
+            })
+            setExtraBatchAllocations(allocations)
+        }
+    }
+
+    const handleGiveExtraItemToCamp = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!giveExtraTargetEvent || !extraSelectedItemId) return
+        setIsSubmitting(true)
+        try {
+            const pantryItem = pantryList.find((p) => p.id === extraSelectedItemId)
+            if (!pantryItem) throw new Error('Pantry item not found')
+
+            const qtyToGive = parseFloat(extraQuantity) || 0
+            if (qtyToGive <= 0) throw new Error('Please enter a valid quantity')
+
+            // Calculate deducted batches
+            const updatedBatches: PantryBatch[] = []
+            let totalDeducted = 0
+
+            if (pantryItem.expiry_batches && pantryItem.expiry_batches.length > 0) {
+                pantryItem.expiry_batches.forEach((b) => {
+                    const deducted = extraBatchAllocations[b.id] || 0
+                    totalDeducted += deducted
+                    const remainingQty = Math.max(0, (Number(b.quantity) || 0) - deducted)
+                    if (remainingQty > 0) {
+                        updatedBatches.push({ ...b, quantity: remainingQty })
+                    }
+                })
+            } else {
+                totalDeducted = qtyToGive
+            }
+
+            const newTotalQty = Math.max(0, (pantryItem.quantity_available || 0) - (totalDeducted > 0 ? totalDeducted : qtyToGive))
+            const sortedDates = updatedBatches
+                .map((b) => b.expiry_date)
+                .filter(Boolean)
+                .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+            const newExpiryDate = sortedDates.length > 0 ? sortedDates[0] : null
+
+            await supabase
+                .from('group_pantry_items')
+                .update({
+                    quantity_available: newTotalQty,
+                    expiry_batches: updatedBatches.length > 0 ? updatedBatches : null,
+                    expiry_date: newExpiryDate,
+                })
+                .eq('id', pantryItem.id)
+
+            const lotSummary = Object.entries(extraBatchAllocations)
+                .filter(([_, q]) => q > 0)
+                .map(([bId, q]) => {
+                    const found = (pantryItem.expiry_batches || []).find((b) => b.id === bId)
+                    return `${q}x ${found?.brand || ''} ${found?.package_size || ''}`
+                })
+                .join(', ')
+
+            const noteText = [
+                extraNotes.trim() ? extraNotes.trim() : null,
+                lotSummary ? `[Lots: ${lotSummary}]` : null,
+                `[Given directly by Pantry Master]`,
+            ].filter(Boolean).join(' ')
+
+            const { data: newReq, error: reqErr } = await supabase
+                .from('event_pantry_requests')
+                .insert({
+                    event_id: giveExtraTargetEvent.eventId,
+                    group_id: groupId,
+                    pantry_item_id: pantryItem.id,
+                    quantity: totalDeducted > 0 ? totalDeducted : qtyToGive,
+                    unit: extraUnit || pantryItem.unit,
+                    status: 'approved',
+                    requested_by: userId,
+                    approved_by: userId,
+                    notes: noteText,
+                })
+                .select('*, events(id, title, start_time), profiles(full_name), group_pantry_items(name, unit)')
+                .single()
+
+            if (reqErr) throw reqErr
+
+            setPantryList((prev) =>
+                prev.map((p) =>
+                    p.id === pantryItem.id
+                        ? {
+                              ...p,
+                              quantity_available: newTotalQty,
+                              expiry_batches: updatedBatches,
+                              expiry_date: newExpiryDate,
+                          }
+                        : p
+                )
+            )
+
+            setRequestsList((prev) => [newReq, ...prev])
+            setIsGiveExtraModalOpen(false)
+            showStatus(`Allocated ${qtyToGive} ${extraUnit} of "${pantryItem.name}" to ${giveExtraTargetEvent.eventTitle}!`, 'success')
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to allocate item', 'error')
         } finally {
             setIsSubmitting(false)
         }
@@ -1884,13 +2068,39 @@ export default function PantryManagement({
                                                 </p>
                                             </div>
                                             {group.pendingCount > 0 ? (
-                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
-                                                    {group.pendingCount} Pending
-                                                </span>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {isProvisionsLeader && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenGiveExtraModal(group.eventId, group.eventTitle)}
+                                                            className="text-[10px] font-bold bg-white hover:bg-teal-50 text-teal-800 border border-teal-200 px-2 py-1 rounded-xl transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                                                            title="Give custom or extra pantry items to this camp"
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                            <span>+ Give Custom Item</span>
+                                                        </button>
+                                                    )}
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                                                        {group.pendingCount} Pending
+                                                    </span>
+                                                </div>
                                             ) : (
-                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200 shrink-0">
-                                                    ✓ Approved
-                                                </span>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {isProvisionsLeader && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenGiveExtraModal(group.eventId, group.eventTitle)}
+                                                            className="text-[10px] font-bold bg-white hover:bg-teal-50 text-teal-800 border border-teal-200 px-2 py-1 rounded-xl transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                                                            title="Give custom or extra pantry items to this camp"
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                            <span>+ Give Custom Item</span>
+                                                        </button>
+                                                    )}
+                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200 shrink-0">
+                                                        ✓ Approved
+                                                    </span>
+                                                </div>
                                             )}
                                         </div>
 
@@ -2288,13 +2498,13 @@ export default function PantryManagement({
                                 <div>
                                     <strong>Suggested FIFO Pick (First In, First Out):</strong>
                                     <p className="text-[10px] opacity-90 mt-0.5">
-                                        Oldest expiration lots are auto-selected to prevent waste. Adjust the amounts below if you picked different lots from the depot.
+                                        Oldest expiration lots are auto-selected. You can adjust the deducted amounts or fulfill custom quantities below.
                                     </p>
                                 </div>
                             </div>
 
                             {/* Lots allocation breakdown */}
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                            <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
                                 {(fulfillingRequest.pantryItem.expiry_batches || []).map((batch) => {
                                     const allocated = fulfillingRequest.batchAllocations[batch.id] || 0
                                     const maxQty = Number(batch.quantity) || 0
@@ -2358,6 +2568,24 @@ export default function PantryManagement({
                                 })}
                             </div>
 
+                            {/* Optional Handout Note */}
+                            <div>
+                                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">
+                                    Pantry Master Note (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Substituted brand, gave extra cans, partial fulfillment…"
+                                    value={fulfillingRequest.fulfillNotes}
+                                    onChange={(e) =>
+                                        setFulfillingRequest((prev) =>
+                                            prev ? { ...prev, fulfillNotes: e.target.value } : null
+                                        )
+                                    }
+                                    className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none font-medium"
+                                />
+                            </div>
+
                             {/* Total Allocated Summary */}
                             {(() => {
                                 const totalAllocated = Object.values(fulfillingRequest.batchAllocations).reduce((acc, q) => acc + q, 0)
@@ -2365,12 +2593,18 @@ export default function PantryManagement({
                                 const isExact = totalAllocated === requestedQty
                                 return (
                                     <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-black ${
-                                        isExact ? 'bg-emerald-50 text-emerald-900 border-emerald-300' : 'bg-amber-50 text-amber-900 border-amber-300'
+                                        isExact ? 'bg-emerald-50 text-emerald-900 border-emerald-300' : 'bg-teal-50 text-teal-900 border-teal-300'
                                     }`}>
-                                        <span>Total Deducted:</span>
-                                        <span>
-                                            {totalAllocated} / {requestedQty} {fulfillingRequest.request.unit}
-                                            {!isExact && <span className="text-[10px] font-normal block text-right text-amber-800">Must equal requested qty</span>}
+                                        <div>
+                                            <span>Total Deducted:</span>
+                                            {!isExact && (
+                                                <span className="text-[10px] font-medium block text-teal-800">
+                                                    Custom quantity: {totalAllocated} {fulfillingRequest.request.unit} (Requested: {requestedQty})
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-black">
+                                            {totalAllocated} {fulfillingRequest.request.unit}
                                         </span>
                                     </div>
                                 )
@@ -2394,6 +2628,210 @@ export default function PantryManagement({
                                     <span>{isSubmitting ? 'Deducting…' : 'Confirm & Deduct Lots'}</span>
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
+                    MODAL: GIVE EXTRA / CUSTOM PROVISION TO CAMP
+                ══════════════════════════════════════════════════════════ */}
+                {isGiveExtraModalOpen && giveExtraTargetEvent && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                        <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <div className="flex items-center gap-2">
+                                    <UtensilsCrossed className="h-4 w-4 text-teal-800" />
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900 leading-tight">
+                                            Give Custom Provision to Camp
+                                        </h3>
+                                        <p className="text-[10px] text-slate-500">
+                                            Target: <strong>⛺ {giveExtraTargetEvent.eventTitle}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsGiveExtraModalOpen(false)}
+                                    className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleGiveExtraItemToCamp} className="space-y-3">
+                                {/* Item Selector with Search */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">
+                                        Select Pantry Item *
+                                    </label>
+                                    <select
+                                        required
+                                        value={extraSelectedItemId}
+                                        onChange={(e) => handleSelectExtraItem(e.target.value)}
+                                        className="w-full px-3 py-2 text-xs font-black rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-teal-700 focus:outline-none cursor-pointer"
+                                    >
+                                        {pantryList.map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name} ({item.quantity_available} {item.unit} available)
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Quantity & Unit */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">
+                                            Quantity to Give *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0.1"
+                                            step="any"
+                                            required
+                                            value={extraQuantity}
+                                            onChange={(e) => {
+                                                const val = e.target.value
+                                                setExtraQuantity(val)
+                                                // Recalculate FIFO allocations
+                                                const item = pantryList.find((p) => p.id === extraSelectedItemId)
+                                                if (item) {
+                                                    const qtyNum = parseFloat(val) || 0
+                                                    const allocations: Record<string, number> = {}
+                                                    const sortedBatches = [...(item.expiry_batches || [])].sort((a, b) => {
+                                                        if (!a.expiry_date) return 1
+                                                        if (!b.expiry_date) return -1
+                                                        return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+                                                    })
+                                                    let remaining = qtyNum
+                                                    sortedBatches.forEach((b) => {
+                                                        const avail = Number(b.quantity) || 0
+                                                        const take = Math.min(avail, remaining)
+                                                        allocations[b.id] = take
+                                                        remaining -= take
+                                                    })
+                                                    setExtraBatchAllocations(allocations)
+                                                }
+                                            }}
+                                            className="w-full px-3 py-1.5 text-xs font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">
+                                            Unit
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={extraUnit}
+                                            onChange={(e) => setExtraUnit(e.target.value)}
+                                            className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Lot Allocations if item has lots */}
+                                {(() => {
+                                    const selectedItem = pantryList.find((p) => p.id === extraSelectedItemId)
+                                    const batches = selectedItem?.expiry_batches || []
+                                    if (batches.length === 0) return null
+
+                                    return (
+                                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
+                                                    Deduct from specific lots ({batches.length}):
+                                                </span>
+                                                <span className="text-[9px] text-teal-800 font-bold">
+                                                    FIFO Pre-calculated
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+                                                {batches.map((batch) => {
+                                                    const allocated = extraBatchAllocations[batch.id] || 0
+                                                    const maxQty = Number(batch.quantity) || 0
+                                                    return (
+                                                        <div
+                                                            key={batch.id}
+                                                            className={`p-2 rounded-xl border text-xs flex items-center justify-between gap-2 ${
+                                                                allocated > 0
+                                                                    ? 'bg-teal-50/70 border-teal-300'
+                                                                    : 'bg-white border-slate-200 opacity-70'
+                                                            }`}
+                                                        >
+                                                            <div className="min-w-0">
+                                                                <span className="font-black text-slate-800">
+                                                                    {batch.brand || 'Standard'}
+                                                                </span>
+                                                                {batch.package_size && (
+                                                                    <span className="ml-1 text-[10px] font-bold bg-amber-100 text-amber-900 px-1 py-0.1 rounded">
+                                                                        {batch.package_size}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-[10px] text-slate-400 block">
+                                                                    Avail: {batch.quantity} • Exp: {formatExpiryShort(batch.expiry_date)}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase">Take:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max={maxQty}
+                                                                    step="any"
+                                                                    value={allocated}
+                                                                    onChange={(e) => {
+                                                                        const val = Math.max(0, Math.min(maxQty, parseFloat(e.target.value) || 0))
+                                                                        setExtraBatchAllocations((prev) => ({
+                                                                            ...prev,
+                                                                            [batch.id]: val,
+                                                                        }))
+                                                                    }}
+                                                                    className="w-14 px-1.5 py-1 text-xs font-black rounded-lg border border-slate-300 bg-white text-center"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
+
+                                {/* Notes */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">
+                                        Handout Reason / Notes (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Extra breakfast ration, camp snack, requested verbally…"
+                                        value={extraNotes}
+                                        onChange={(e) => setExtraNotes(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsGiveExtraModalOpen(false)}
+                                        className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || parseFloat(extraQuantity) <= 0}
+                                        className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        <Check className="h-3.5 w-3.5" />
+                                        <span>{isSubmitting ? 'Allocating…' : 'Allocate & Deduct Stock'}</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}
