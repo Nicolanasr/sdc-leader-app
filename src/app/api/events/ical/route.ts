@@ -38,10 +38,9 @@ export async function GET(request: NextRequest) {
     console.error('iCal events fetch error:', error)
   }
 
-  // Initialize Calendar
+  // Initialize Calendar in standard UTC (iOS, Android, and Google Calendar will convert to device local timezone)
   const calendar = ical({
     name: `${groupName} — Scout Events`,
-    timezone: 'Asia/Beirut',
     url: request.url,
     ttl: 1800, // 30 minutes refresh interval on phone
   })
