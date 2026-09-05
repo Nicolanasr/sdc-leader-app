@@ -143,11 +143,10 @@ function SearchableIngredientCombobox({
                                     key={tab}
                                     type="button"
                                     onClick={() => setSelectedCategoryTab(tab)}
-                                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap capitalize transition-all ${
-                                        selectedCategoryTab === tab
+                                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap capitalize transition-all ${selectedCategoryTab === tab
                                             ? 'bg-teal-900 text-white shadow-2xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
+                                        }`}
                                 >
                                     {tab === 'all' ? 'All (70+)' : tab === 'pantry' ? `📦 In Depot (${matchingPantry.length})` : tab}
                                 </button>
@@ -2882,11 +2881,10 @@ export default function EventWorkspace({
                                 <button
                                     type="button"
                                     onClick={() => setDocUploadMode('upload')}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                        docUploadMode === 'upload'
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${docUploadMode === 'upload'
                                             ? 'bg-teal-800 text-white shadow-2xs'
                                             : 'text-slate-600 hover:text-slate-900'
-                                    }`}
+                                        }`}
                                 >
                                     <UploadCloud className="h-3.5 w-3.5" />
                                     <span>Upload File</span>
@@ -2894,11 +2892,10 @@ export default function EventWorkspace({
                                 <button
                                     type="button"
                                     onClick={() => setDocUploadMode('link')}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                        docUploadMode === 'link'
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${docUploadMode === 'link'
                                             ? 'bg-teal-800 text-white shadow-2xs'
                                             : 'text-slate-600 hover:text-slate-900'
-                                    }`}
+                                        }`}
                                 >
                                     <Link2 className="h-3.5 w-3.5" />
                                     <span>Link Drive Folder / Album</span>
@@ -2962,12 +2959,6 @@ export default function EventWorkspace({
                                     </div>
                                 </div>
 
-                                <div className="p-2.5 rounded-xl bg-teal-50/80 border border-teal-200/70 text-teal-900 text-xs flex items-start gap-2">
-                                    <FolderOpen className="h-4 w-4 text-teal-700 shrink-0 mt-0.5" />
-                                    <div>
-                                        <span className="font-bold">Bulk Media Tip:</span> Upload all photos, drone shots, or videos directly into a folder on your Google Drive app / website, set sharing to <em>&ldquo;Anyone with link can view&rdquo;</em>, and paste the folder link here. All leaders will have 1-click access!
-                                    </div>
-                                </div>
                             </div>
                         )}
 
@@ -3076,36 +3067,36 @@ export default function EventWorkspace({
                                                 </a>
                                             )}
 
-                                        {isCampSecretary && doc.id && editingDocId !== doc.id && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setEditingDocId(doc.id || null)
-                                                        setEditingDocTitle(doc.title)
-                                                    }}
-                                                    className="p-1.5 text-slate-300 hover:text-teal-600 transition-colors"
-                                                    title="Edit Document Name"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => doc.id && handleDeleteDocument(doc.id)}
-                                                    className="p-1.5 text-slate-300 hover:text-rose-600 transition-colors"
-                                                    title="Delete Document"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </>
-                                        )}
+                                            {isCampSecretary && doc.id && editingDocId !== doc.id && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditingDocId(doc.id || null)
+                                                            setEditingDocTitle(doc.title)
+                                                        }}
+                                                        className="p-1.5 text-slate-300 hover:text-teal-600 transition-colors"
+                                                        title="Edit Document Name"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => doc.id && handleDeleteDocument(doc.id)}
+                                                        className="p-1.5 text-slate-300 hover:text-rose-600 transition-colors"
+                                                        title="Delete Document"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )
-                        })
-                    )}
+                                )
+                            })
+                        )}
+                    </div>
                 </div>
-            </div>
             )}
 
             {/* ── TAB 5: EQUIPMENT & LOGISTICS WORKSPACE ───────────────────────── */}
@@ -4552,8 +4543,8 @@ export default function EventWorkspace({
                                     {loading
                                         ? 'Processing Gear…'
                                         : isQuartermaster
-                                        ? `Hand Out Gear (${eventCartItems.length} items)`
-                                        : `Submit Loan Request (${eventCartItems.length} items)`}
+                                            ? `Hand Out Gear (${eventCartItems.length} items)`
+                                            : `Submit Loan Request (${eventCartItems.length} items)`}
                                 </span>
                             </button>
                         </form>
