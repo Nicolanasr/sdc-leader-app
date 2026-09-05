@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -795,8 +795,129 @@ export default function MembersManagement({
                         </div>
                     </div>
 
-                    {/* Table Roster Directory */}
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+                    {/* ── MOBILE SCOUTS CARD LIST (< md) ── */}
+                    <div className="md:hidden space-y-2.5">
+                        {filteredMembers.length === 0 ? (
+                            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-400 italic">
+                                No scouts matching criteria.
+                            </div>
+                        ) : (
+                            filteredMembers.map((member) => {
+                                const getNestedName = (val: any) => {
+                                    if (!val) return null
+                                    if (Array.isArray(val)) return val[0]?.name || null
+                                    return val.name || null
+                                }
+                                const troopName = getNestedName(member.troops)
+                                const patrolName = getNestedName(member.patrols)
+                                const contactPhone = member.emergency_contact_phone || member.father_phone || member.mother_phone || member.member_phone
+                                const cleanPhone = contactPhone ? contactPhone.replace(/[^0-9+]/g, '') : null
+
+                                return (
+                                    <div
+                                        key={member.id}
+                                        onClick={() => setSelectedMember(member)}
+                                        className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs space-y-3 active:scale-[0.99] transition-all cursor-pointer"
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200/80 flex items-center justify-center font-black text-teal-800 text-sm shrink-0">
+                                                    {member.first_name[0]}{member.last_name[0]}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-sm font-black text-slate-900 leading-tight truncate">
+                                                        {member.first_name} {member.last_name}
+                                                    </h3>
+                                                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                                        <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.2 rounded-md border border-teal-200/60">
+                                                            {member.current_rank || 'Scout'}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-500 font-medium truncate">
+                                                            {troopName || 'General'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <span
+                                                className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${
+                                                    member.is_active
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : 'bg-slate-100 text-slate-500'
+                                                }`}
+                                            >
+                                                {member.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
+
+                                        {/* Patrol & Emergency snippet */}
+                                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                                            <div>
+                                                <span className="text-slate-400">Patrol: </span>
+                                                <span className="font-bold text-slate-700">{patrolName || 'None'}</span>
+                                                {member.patrol_role && (
+                                                    <span className="text-[10px] text-teal-700 ml-1">({member.patrol_role})</span>
+                                                )}
+                                            </div>
+                                            {member.blood_type && (
+                                                <span className="text-[10px] font-black px-1.5 py-0.2 bg-rose-50 text-rose-800 rounded border border-rose-200/60">
+                                                    🩸 {member.blood_type}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Mobile Action Buttons Bar */}
+                                        <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center gap-1">
+                                                {cleanPhone && (
+                                                    <>
+                                                        <a
+                                                            href={`tel:${cleanPhone}`}
+                                                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-50 text-teal-800 hover:bg-teal-100 text-xs font-bold border border-teal-200/60 active:scale-95"
+                                                        >
+                                                            <Phone className="h-3 w-3" />
+                                                            <span>Call</span>
+                                                        </a>
+                                                        <a
+                                                            href={`https://wa.me/${cleanPhone.replace('+', '')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-bold border border-emerald-200/60 active:scale-95"
+                                                        >
+                                                            <MessageCircle className="h-3 w-3" />
+                                                            <span>WhatsApp</span>
+                                                        </a>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => setSelectedMember(member)}
+                                                    className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95"
+                                                    title="View Profile"
+                                                >
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                </button>
+                                                {canWrite && (
+                                                    <button
+                                                        onClick={() => openEditModal(member)}
+                                                        className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95"
+                                                        title="Edit Scout"
+                                                    >
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+
+                    {/* ── DESKTOP TABLE ROSTER (>= md) ── */}
+                    <div className="hidden md:block bg-white border border-slate-200/90 rounded-2xl shadow-2xs overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[500px]">
                                 <thead>
@@ -884,10 +1005,11 @@ export default function MembersManagement({
                         </div>
                     </div>
 
-                    {/* Centered Member Profile Detail Modal */}
+                    {/* Centered Member Profile Detail Modal / Mobile Bottom Sheet */}
                     {selectedMember && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                            <div className="bg-white w-full max-w-xl p-5 sm:p-6 rounded-2xl shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto relative animate-in fade-in zoom-in-95 duration-150 my-auto">
+                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                            <div className="bg-white w-full max-w-xl p-5 sm:p-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto relative animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 my-0 sm:my-auto">
+                                <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-2 mb-2" />
                                 <button
                                     onClick={() => setSelectedMember(null)}
                                     className="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
@@ -1154,11 +1276,11 @@ export default function MembersManagement({
                         </div>
                     )}
 
-            {/* Add / Edit Modal Drawer */}
-            {/* Add / Edit Modal Drawer (Tabbed View) */}
+            {/* Add / Edit Modal Drawer (Tabbed View / Mobile Bottom Sheet) */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                    <div className="bg-white w-full max-w-2xl p-4 sm:p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4 max-h-[88vh] overflow-y-auto my-auto">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white w-full max-w-2xl p-4 sm:p-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                        <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                             <h3 className="text-lg font-bold text-slate-900">
                                 {isEdit ? 'Modify Scout Profile' : 'Register New Scout'}
@@ -1715,10 +1837,11 @@ export default function MembersManagement({
                 </div>
             )}
 
-            {/* Create Patrol Modal */}
+            {/* Create Patrol Modal / Mobile Bottom Sheet */}
             {showPatrolModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                    <div className="bg-white w-full max-w-md p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4 my-8">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white w-full max-w-md p-5 sm:p-6 border-t sm:border border-slate-200 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl shadow-2xl space-y-4 my-0 sm:my-8 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                        <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                             <h3 className="text-lg font-bold text-slate-900">Create New Patrol</h3>
                             <button onClick={() => setShowPatrolModal(false)} className="text-slate-400 hover:text-slate-600">

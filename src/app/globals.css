@@ -26,4 +26,43 @@ select,
 textarea,
 button {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS momentum smooth scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure inputs on mobile don't trigger iOS auto-zoom */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Custom scrollbars for clean mobile/desktop appearance */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.4);
 }

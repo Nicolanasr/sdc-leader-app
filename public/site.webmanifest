@@ -1,20 +1,25 @@
 {
   "name": "Scouts des Cèdres - Leader Portal",
   "short_name": "SdC Leaders",
+  "description": "Official management portal for Scouts des Cèdres Saint Jean Marc leaders.",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "theme_color": "#0f766e",
-  "background_color": "#ffffff",
+  "theme_color": "#134e4a",
+  "background_color": "#0f172a",
   "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
   "start_url": "/group/dashboard"
 }
