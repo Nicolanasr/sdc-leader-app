@@ -6,7 +6,7 @@ import {
   Calendar, ClipboardList, Users, CheckSquare, Award, Wrench,
   UtensilsCrossed, Radio, MapPin, Clock, ArrowRight, Sparkles,
   ShieldCheck, ArrowUpRight, Plus, FolderKanban, BookOpen,
-  DollarSign, Activity, Compass, ChevronRight, Tent
+  DollarSign, Activity, Compass, ChevronRight, Tent, Wallet, Layers
 } from 'lucide-react'
 import DashboardShell from './DashboardShell'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -48,6 +48,7 @@ const ROLE_LABELS: Record<string, { label: string; ar: string }> = {
   amin_sandou2_group: { label: 'Trésorier Général (أمين الصندوق)', ar: 'أمين الصندوق' },
   amin_tejhizet_group: { label: 'Quartier-Maître / Intendant (أمين التجهيزات)', ar: 'أمين التجهيزات' },
   mas2oul_mounet: { label: 'Responsable Mounet & Provisions (مسؤول المؤونة)', ar: 'مسؤول المؤونة' },
+  amin_mounet_group: { label: 'Responsable Mounet & Provisions (مسؤول المؤونة)', ar: 'مسؤول المؤونة' },
   mas2oul_toswir: { label: 'Responsable Média & Communication (مسؤول الإعلام)', ar: 'مسؤول الإعلام' },
   ka2ed_idare: { label: 'Chef Administratif (القائد الإداري)', ar: 'القائد الإداري' },
   ka2ed_fer2a: { label: 'Chef d’Unité (قائد الوحدة)', ar: 'قائد الوحدة' },
@@ -66,7 +67,17 @@ export default function GroupDashboardLayout({
 }: Props) {
   const roleInfo = ROLE_LABELS[role] || { label: 'Scout Leader', ar: 'قائد' }
 
-  // Core 8 Operational Modules accessible across all leader roles
+  // Role permissions per workspace
+  const canAccessBroadcast = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(role)
+  const canAccessLeaders = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
+  const canAccessTroops = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
+  const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
+  const canAccessAttendance = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
+  const canAccessFinances = ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
+  const canAccessInventory = ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
+  const canAccessPantry = ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(role)
+
+  // Dynamic Workspace Modules tailored to the active role
   const modules = [
     {
       title: 'Events & Camps',
@@ -77,6 +88,7 @@ export default function GroupDashboardLayout({
       color: 'bg-teal-50 text-teal-800 border-teal-200 hover:border-teal-400',
       badge: `${stats.upcomingEventsCount} Scheduled`,
       badgeColor: 'bg-teal-100 text-teal-900',
+      canAccess: true,
     },
     {
       title: 'Session Planner (Canevas)',
@@ -87,6 +99,7 @@ export default function GroupDashboardLayout({
       color: 'bg-blue-50 text-blue-800 border-blue-200 hover:border-blue-400',
       badge: 'Weekly Canevas',
       badgeColor: 'bg-blue-100 text-blue-900',
+      canAccess: true,
     },
     {
       title: 'Scout Members & Troops',
@@ -97,6 +110,7 @@ export default function GroupDashboardLayout({
       color: 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:border-indigo-400',
       badge: `${stats.scoutCount} Scouts`,
       badgeColor: 'bg-indigo-100 text-indigo-900',
+      canAccess: canAccessMembers,
     },
     {
       title: 'Attendance & Call-Sheet',
@@ -107,6 +121,7 @@ export default function GroupDashboardLayout({
       color: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400',
       badge: 'Live Call-Sheet',
       badgeColor: 'bg-emerald-100 text-emerald-900',
+      canAccess: canAccessAttendance,
     },
     {
       title: 'Progression & Badges',
@@ -117,6 +132,7 @@ export default function GroupDashboardLayout({
       color: 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-400',
       badge: 'Progression',
       badgeColor: 'bg-amber-100 text-amber-900',
+      canAccess: true,
     },
     {
       title: 'Quartermaster & Gear',
@@ -127,6 +143,7 @@ export default function GroupDashboardLayout({
       color: 'bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-400',
       badge: `${stats.equipmentCount} Items`,
       badgeColor: 'bg-slate-200 text-slate-900',
+      canAccess: canAccessInventory,
     },
     {
       title: 'Central Pantry & Mounet',
@@ -137,6 +154,40 @@ export default function GroupDashboardLayout({
       color: 'bg-orange-50 text-orange-800 border-orange-200 hover:border-orange-400',
       badge: `${stats.pantryCount} Stocked`,
       badgeColor: 'bg-orange-100 text-orange-900',
+      canAccess: canAccessPantry,
+    },
+    {
+      title: 'Treasury & Dues',
+      arTitle: 'الصندوق والاشتراكات',
+      desc: 'Master treasury, membership dues, camp budget & expense ledger',
+      href: '/group/dashboard/finances',
+      icon: Wallet,
+      color: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400',
+      badge: 'Treasury Ledger',
+      badgeColor: 'bg-emerald-100 text-emerald-900',
+      canAccess: canAccessFinances,
+    },
+    {
+      title: 'Leaders & Council',
+      arTitle: 'مجلس القيادة والقادة',
+      desc: 'Council directory, onboarding, ranks & passwords',
+      href: '/group/dashboard/leaders',
+      icon: ShieldCheck,
+      color: 'bg-teal-50 text-teal-800 border-teal-200 hover:border-teal-400',
+      badge: `${stats.leaderCount} Leaders`,
+      badgeColor: 'bg-teal-100 text-teal-900',
+      canAccess: canAccessLeaders,
+    },
+    {
+      title: 'Units & Troops',
+      arTitle: 'الوحدات والفرق',
+      desc: 'Troop age branches, patrols, leader assignments',
+      href: '/group/dashboard/troops',
+      icon: Layers,
+      color: 'bg-cyan-50 text-cyan-800 border-cyan-200 hover:border-cyan-400',
+      badge: `${stats.troopCount} Units`,
+      badgeColor: 'bg-cyan-100 text-cyan-900',
+      canAccess: canAccessTroops,
     },
     {
       title: 'Broadcast & Comms',
@@ -147,8 +198,20 @@ export default function GroupDashboardLayout({
       color: 'bg-purple-50 text-purple-800 border-purple-200 hover:border-purple-400',
       badge: 'WhatsApp Sync',
       badgeColor: 'bg-purple-100 text-purple-900',
+      canAccess: canAccessBroadcast,
     },
-  ]
+    {
+      title: 'Library & Archives',
+      arTitle: 'المكتبة والأرشيف',
+      desc: 'Ceremony guides, games, prayer books, songbooks & manuals',
+      href: '/group/dashboard/library',
+      icon: BookOpen,
+      color: 'bg-rose-50 text-rose-800 border-rose-200 hover:border-rose-400',
+      badge: 'Resource Archive',
+      badgeColor: 'bg-rose-100 text-rose-900',
+      canAccess: true,
+    },
+  ].filter((m) => m.canAccess)
 
   return (
     <DashboardShell groupName={groupName} currentRole={role} userName={userName}>
@@ -212,7 +275,7 @@ export default function GroupDashboardLayout({
           </Link>
 
           <Link
-            href="/group/dashboard/troops"
+            href={canAccessTroops ? '/group/dashboard/troops' : '/group/dashboard/members'}
             className="bg-white p-3 sm:p-3.5 border border-slate-200/90 hover:border-teal-600 rounded-2xl shadow-2xs transition-all group"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-teal-700">
@@ -240,7 +303,7 @@ export default function GroupDashboardLayout({
           </Link>
 
           <Link
-            href="/group/dashboard/leaders"
+            href={canAccessLeaders ? '/group/dashboard/leaders' : '/group/dashboard/events'}
             className="bg-white p-3 sm:p-3.5 border border-slate-200/90 hover:border-teal-600 rounded-2xl shadow-2xs transition-all group"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-teal-700">
@@ -325,13 +388,15 @@ export default function GroupDashboardLayout({
           )}
         </div>
 
-        {/* ── 4. OPERATIONAL COMMAND WORKSPACES (8 CORE MODULES) ── */}
+        {/* ── 4. OPERATIONAL COMMAND WORKSPACES (DYNAMIC ACCESSIBLE MODULES) ── */}
         <div className="space-y-2">
           <div className="flex items-center justify-between px-0.5">
             <h2 className="text-xs font-black text-slate-900 uppercase tracking-wider">
               Scout Operations & Command Centers
             </h2>
-            <span className="text-[10px] text-slate-400 font-medium">8 active modules</span>
+            <span className="text-[10px] text-slate-400 font-medium">
+              {modules.length} accessible {modules.length === 1 ? 'workspace' : 'workspaces'}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
