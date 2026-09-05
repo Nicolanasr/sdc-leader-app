@@ -7,7 +7,8 @@ import { createClient } from '@/utils/supabase/client'
 import {
     Menu, X, ArrowLeft, Calendar, MapPin, DollarSign, Users, FileText,
     CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit, Edit3, Loader2, UploadCloud, FileSpreadsheet, Paperclip,
-    Package, ShoppingCart, Send, Minus, RefreshCw, Search, UtensilsCrossed, Apple, ShoppingBag, Check, CheckSquare, Square, ChefHat, Sparkles, BookOpen, History, ChevronRight, UserPlus, Key, Copy
+    Package, ShoppingCart, Send, Minus, RefreshCw, Search, UtensilsCrossed, Apple, ShoppingBag, Check, CheckSquare, Square, ChefHat, Sparkles, BookOpen, History, ChevronRight, UserPlus, Key, Copy,
+    Link2, FolderOpen, Image as ImageIcon
 } from 'lucide-react'
 import DashboardShell from '../../DashboardShell'
 import DashboardSidebar from '../../DashboardSidebar'
@@ -1930,6 +1931,7 @@ export default function EventWorkspace({
     }
 
     // ── Documents & Direct Storage Upload ──────────────────────────────────────
+    const [docUploadMode, setDocUploadMode] = useState<'upload' | 'link'>('upload')
     const [docTitle, setDocTitle] = useState('')
     const [docUrl, setDocUrl] = useState('')
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -1955,47 +1957,66 @@ export default function EventWorkspace({
 
     const handleAddDocument = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!selectedFile) return showStatus('Please select a file from your device to upload.', 'error')
-
-        const titleToUse = docTitle.trim() || selectedFile.name.replace(/\.[^/.]+$/, '')
-
-        setIsUploadingFile(true)
-        const uploadFormData = new FormData()
-        uploadFormData.append('file', selectedFile)
-
-        const eventYear = eventItem.start_time ? new Date(eventItem.start_time).getFullYear() : new Date().getFullYear()
-        const assignedTroopObj = troops.find((t) => t.id === eventItem.troop_id)
-        const assignedTroopName = assignedTroopObj?.name || (eventItem.troop_id ? 'Troop Event' : 'Group Wide Events')
-
-        uploadFormData.append('groupName', groupName || 'Scout Group')
-        uploadFormData.append('troopName', assignedTroopName)
-        uploadFormData.append('eventTitle', `${eventItem.title || 'Event'} (${eventYear})`)
 
         let finalFileUrl = ''
-        try {
-            const res = await fetch('/api/documents/upload-gdrive', {
-                method: 'POST',
-                body: uploadFormData,
-            })
-            const gdriveRes = await res.json()
+        let titleToUse = docTitle.trim()
 
-            if (res.ok && gdriveRes.webViewLink) {
-                finalFileUrl = gdriveRes.webViewLink
-            } else {
-                setIsUploadingFile(false)
-                return showStatus(`Google Drive Upload Error: ${gdriveRes.error || 'Failed to upload file'}`, 'error')
+        if (docUploadMode === 'link') {
+            if (!docUrl.trim()) return showStatus('Please enter a valid Google Drive Folder or Album link.', 'error')
+            if (!docUrl.startsWith('http://') && !docUrl.startsWith('https://')) {
+                return showStatus('Link must start with https://', 'error')
             }
-        } catch (err: any) {
+            finalFileUrl = docUrl.trim()
+            if (!titleToUse) {
+                if (finalFileUrl.includes('drive.google.com/drive/folders')) {
+                    titleToUse = 'Google Drive Media Folder'
+                } else if (finalFileUrl.includes('photos')) {
+                    titleToUse = 'Google Photos Album'
+                } else {
+                    titleToUse = 'Event Media & Document Link'
+                }
+            }
+        } else {
+            if (!selectedFile) return showStatus('Please select a file from your device to upload.', 'error')
+            if (!titleToUse) titleToUse = selectedFile.name.replace(/\.[^/.]+$/, '')
+
+            setIsUploadingFile(true)
+            const uploadFormData = new FormData()
+            uploadFormData.append('file', selectedFile)
+
+            const eventYear = eventItem.start_time ? new Date(eventItem.start_time).getFullYear() : new Date().getFullYear()
+            const assignedTroopObj = troops.find((t) => t.id === eventItem.troop_id)
+            const assignedTroopName = assignedTroopObj?.name || (eventItem.troop_id ? 'Troop Event' : 'Group Wide Events')
+
+            uploadFormData.append('groupName', groupName || 'Scout Group')
+            uploadFormData.append('troopName', assignedTroopName)
+            uploadFormData.append('eventTitle', `${eventItem.title || 'Event'} (${eventYear})`)
+
+            try {
+                const res = await fetch('/api/documents/upload-gdrive', {
+                    method: 'POST',
+                    body: uploadFormData,
+                })
+                const gdriveRes = await res.json()
+
+                if (res.ok && gdriveRes.webViewLink) {
+                    finalFileUrl = gdriveRes.webViewLink
+                } else {
+                    setIsUploadingFile(false)
+                    return showStatus(`Google Drive Upload Error: ${gdriveRes.error || 'Failed to upload file'}`, 'error')
+                }
+            } catch (err: any) {
+                setIsUploadingFile(false)
+                return showStatus(`Upload connection failed: ${err.message}`, 'error')
+            }
             setIsUploadingFile(false)
-            return showStatus(`Upload connection failed: ${err.message}`, 'error')
         }
-        setIsUploadingFile(false)
 
         const { data: docData, error } = await supabase
             .from('event_documents')
             .insert({
                 event_id: eventItem.id,
-                title: docTitle.trim(),
+                title: titleToUse,
                 file_url: finalFileUrl,
                 uploaded_by: userProfileId,
             })
@@ -2008,7 +2029,7 @@ export default function EventWorkspace({
             setDocTitle('')
             setDocUrl('')
             setSelectedFile(null)
-            showStatus('Document uploaded and attached successfully!', 'success')
+            showStatus(docUploadMode === 'link' ? 'Drive folder / media link attached successfully!' : 'Document uploaded and attached successfully!', 'success')
         } else if (error) {
             showStatus(error.message, 'error')
         }
@@ -2850,50 +2871,121 @@ export default function EventWorkspace({
                     </div>
 
                     <form onSubmit={handleAddDocument} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            <UploadCloud className="h-4 w-4 text-teal-700" />
-                            Direct Google Drive File Uploader
-                        </h4>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
+                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <UploadCloud className="h-4 w-4 text-teal-700" />
+                                <span>Event Media & Files Storage</span>
+                            </h4>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Document Title (Optional)</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Camp Schedule PDF / Permission Slip"
-                                    value={docTitle}
-                                    onChange={(e) => setDocTitle(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Choose File from Device</label>
-                                <input
-                                    type="file"
-                                    required
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0]
-                                        if (f) {
-                                            setSelectedFile(f)
-                                            if (!docTitle) setDocTitle(f.name.replace(/\.[^/.]+$/, ''))
-                                        }
-                                    }}
-                                    className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 cursor-pointer"
-                                />
+                            {/* Mode Switcher */}
+                            <div className="flex items-center bg-white border border-slate-200 p-0.5 rounded-xl shadow-2xs self-start sm:self-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => setDocUploadMode('upload')}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                        docUploadMode === 'upload'
+                                            ? 'bg-teal-800 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <UploadCloud className="h-3.5 w-3.5" />
+                                    <span>Upload File</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setDocUploadMode('link')}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                        docUploadMode === 'link'
+                                            ? 'bg-teal-800 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <Link2 className="h-3.5 w-3.5" />
+                                    <span>Link Drive Folder / Album</span>
+                                </button>
                             </div>
                         </div>
+
+                        {docUploadMode === 'upload' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Document Title (Optional)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Camp Schedule PDF / Permission Slip"
+                                        value={docTitle}
+                                        onChange={(e) => setDocTitle(e.target.value)}
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Choose File from Device</label>
+                                    <input
+                                        type="file"
+                                        required
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0]
+                                            if (f) {
+                                                setSelectedFile(f)
+                                                if (!docTitle) setDocTitle(f.name.replace(/\.[^/.]+$/, ''))
+                                            }
+                                        }}
+                                        className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100 cursor-pointer"
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Album / Folder Title</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. 📸 Official Camp Photo Album (Google Drive)"
+                                            value={docTitle}
+                                            onChange={(e) => setDocTitle(e.target.value)}
+                                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Google Drive Folder / Album URL</label>
+                                        <input
+                                            type="url"
+                                            required
+                                            placeholder="https://drive.google.com/drive/folders/..."
+                                            value={docUrl}
+                                            onChange={(e) => setDocUrl(e.target.value)}
+                                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="p-2.5 rounded-xl bg-teal-50/80 border border-teal-200/70 text-teal-900 text-xs flex items-start gap-2">
+                                    <FolderOpen className="h-4 w-4 text-teal-700 shrink-0 mt-0.5" />
+                                    <div>
+                                        <span className="font-bold">Bulk Media Tip:</span> Upload all photos, drone shots, or videos directly into a folder on your Google Drive app / website, set sharing to <em>&ldquo;Anyone with link can view&rdquo;</em>, and paste the folder link here. All leaders will have 1-click access!
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex justify-end pt-1">
                             <button
                                 type="submit"
-                                disabled={isUploadingFile || !selectedFile}
+                                disabled={docUploadMode === 'upload' ? (isUploadingFile || !selectedFile) : (!docUrl.trim())}
                                 className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-5 py-2.5 rounded-lg text-xs shadow disabled:bg-slate-300 transition-colors flex items-center gap-2"
                             >
                                 {isUploadingFile ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                         <span>Uploading to Google Drive…</span>
+                                    </>
+                                ) : docUploadMode === 'link' ? (
+                                    <>
+                                        <Link2 className="h-4 w-4" />
+                                        <span>Attach Google Drive Album / Link</span>
                                     </>
                                 ) : (
                                     <>
@@ -2907,59 +2999,82 @@ export default function EventWorkspace({
 
                     <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
                         {(eventItem.event_documents || []).length === 0 ? (
-                            <div className="p-8 text-center text-xs text-slate-400">No documents attached to this event yet.</div>
+                            <div className="p-8 text-center text-xs text-slate-400">No documents or media attached to this event yet.</div>
                         ) : (
-                            (eventItem.event_documents || []).map((doc) => (
-                                <div key={doc.id} className="p-4 bg-white flex items-center justify-between gap-3 text-xs hover:bg-slate-50 transition-colors">
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <div className="p-2 rounded-lg bg-teal-50 text-teal-800 shrink-0">
-                                            <Paperclip className="h-4 w-4" />
-                                        </div>
-                                        {editingDocId === doc.id ? (
-                                            <div className="flex-1 flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={editingDocTitle}
-                                                    onChange={(e) => setEditingDocTitle(e.target.value)}
-                                                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
-                                                    autoFocus
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') doc.id && handleUpdateDocumentTitle(doc.id)
-                                                        if (e.key === 'Escape') setEditingDocId(null)
-                                                    }}
-                                                />
-                                                <button
-                                                    onClick={() => doc.id && handleUpdateDocumentTitle(doc.id)}
-                                                    className="p-1.5 text-teal-700 hover:bg-teal-50 rounded transition-colors"
-                                                >
-                                                    <CheckCircle2 className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditingDocId(null)}
-                                                    className="p-1.5 text-slate-400 hover:bg-slate-100 rounded transition-colors"
-                                                >
-                                                    <XCircle className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="min-w-0">
-                                                <span className="font-bold text-slate-900 text-sm truncate block">{doc.title}</span>
-                                                <span className="text-[10px] text-slate-400 truncate block">{doc.file_url}</span>
-                                            </div>
-                                        )}
-                                    </div>
+                            (eventItem.event_documents || []).map((doc) => {
+                                const isDriveFolder = doc.file_url?.includes('drive.google.com/drive/folders') || doc.file_url?.includes('folder')
+                                const isPhotosAlbum = doc.file_url?.includes('photos') || doc.title.toLowerCase().includes('photo') || doc.title.toLowerCase().includes('album')
 
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        {editingDocId !== doc.id && (
-                                            <a
-                                                href={doc.file_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
-                                            >
-                                                Open File <ExternalLink className="h-3.5 w-3.5" />
-                                            </a>
-                                        )}
+                                return (
+                                    <div key={doc.id} className="p-4 bg-white flex items-center justify-between gap-3 text-xs hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div className={`p-2 rounded-lg shrink-0 ${isDriveFolder ? 'bg-amber-50 text-amber-800' : isPhotosAlbum ? 'bg-purple-50 text-purple-800' : 'bg-teal-50 text-teal-800'}`}>
+                                                {isDriveFolder ? (
+                                                    <FolderOpen className="h-4 w-4" />
+                                                ) : isPhotosAlbum ? (
+                                                    <ImageIcon className="h-4 w-4" />
+                                                ) : (
+                                                    <Paperclip className="h-4 w-4" />
+                                                )}
+                                            </div>
+                                            {editingDocId === doc.id ? (
+                                                <div className="flex-1 flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={editingDocTitle}
+                                                        onChange={(e) => setEditingDocTitle(e.target.value)}
+                                                        className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-900 focus:border-teal-500 focus:outline-none"
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') doc.id && handleUpdateDocumentTitle(doc.id)
+                                                            if (e.key === 'Escape') setEditingDocId(null)
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={() => doc.id && handleUpdateDocumentTitle(doc.id)}
+                                                        className="p-1.5 text-teal-700 hover:bg-teal-50 rounded transition-colors"
+                                                    >
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingDocId(null)}
+                                                        className="p-1.5 text-slate-400 hover:bg-slate-100 rounded transition-colors"
+                                                    >
+                                                        <XCircle className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="font-bold text-slate-900 text-sm truncate block">{doc.title}</span>
+                                                        {isDriveFolder && (
+                                                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 uppercase">
+                                                                Drive Folder
+                                                            </span>
+                                                        )}
+                                                        {isPhotosAlbum && !isDriveFolder && (
+                                                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 uppercase">
+                                                                Photo Album
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400 truncate block">{doc.file_url}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {editingDocId !== doc.id && (
+                                                <a
+                                                    href={doc.file_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1.5 font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
+                                                >
+                                                    <span>{isDriveFolder ? 'Open Drive Folder' : isPhotosAlbum ? 'Open Photo Album' : 'Open File'}</span>
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                </a>
+                                            )}
 
                                         {isCampSecretary && doc.id && editingDocId !== doc.id && (
                                             <>
@@ -2986,10 +3101,11 @@ export default function EventWorkspace({
                                         )}
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            )
+                        })
+                    )}
                 </div>
+            </div>
             )}
 
             {/* ── TAB 5: EQUIPMENT & LOGISTICS WORKSPACE ───────────────────────── */}
