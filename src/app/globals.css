@@ -78,3 +78,19 @@ button {
     transform: translateX(200%);
   }
 }
+
+@keyframes splashProgress {
+  0% {
+    width: 0%;
+  }
+  40% {
+    width: 55%;
+  }
+  80% {
+    width: 88%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+

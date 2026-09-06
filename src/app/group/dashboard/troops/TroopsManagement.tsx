@@ -247,7 +247,7 @@ export default function TroopsManagement({
 
       {/* Create Troop Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
           <div className="bg-white w-full max-w-md p-4 sm:p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4 max-h-[88vh] overflow-y-auto my-auto relative">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900">Create New Troop / Unit</h3>
@@ -309,7 +309,7 @@ export default function TroopsManagement({
 
       {/* Edit Troop Modal */}
       {showEditModal && editingTroop && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
           <div className="bg-white w-full max-w-md p-4 sm:p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4 max-h-[88vh] overflow-y-auto my-auto relative">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900">Edit Troop Unit</h3>

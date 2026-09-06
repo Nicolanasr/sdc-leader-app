@@ -503,7 +503,7 @@ export default function LeadersManagement({
 
             {/* Reset Password Modal */}
             {resettingLeader && (
-              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
                   <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-2">
@@ -620,7 +620,7 @@ export default function LeadersManagement({
 
             {/* Edit Leader Modal */}
             {editingLeader && (
-              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
                   <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                     <h3 className="text-lg font-bold text-slate-900">Edit Leader — {editingLeader.fullName}</h3>
@@ -727,7 +727,7 @@ export default function LeadersManagement({
 
       {/* Onboard Leader Modal */}
       {showOnboardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
           <div className="bg-white w-full max-w-xl p-4 sm:p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4 max-h-[88vh] overflow-y-auto my-auto relative">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900">Onboard & Invite New Leader</h3>

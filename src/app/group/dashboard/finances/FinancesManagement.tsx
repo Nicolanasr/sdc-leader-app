@@ -3406,7 +3406,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: QUICK MONTHLY MATRIX PAYMENT ───────────────────────── */}
                 {quickPayCell && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3510,7 +3510,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: CONFIGURE MONTHLY TARGET ────────────────────────────── */}
                 {isConfigTargetOpen && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3562,7 +3562,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: SUBMIT HANDOVER ─────────────────────────────────────── */}
                 {isHandoverModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3641,7 +3641,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: REQUEST DISBURSEMENT ────────────────────────────────── */}
                 {isDisbursementModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3705,7 +3705,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: RECORD ANNUAL COTISATION PAYMENT (GROUP TREASURER ONLY) */}
                 {isAnnualPaymentModalOpen && selectedFeeForAnnual && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3786,7 +3786,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: SETUP ANNUAL DUES BULK (GROUP TREASURER ONLY) ──────── */}
                 {isBulkAnnualModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3838,7 +3838,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: RECORD GENERAL TREASURY TRANSACTION (GROUP TREASURER ONLY) */}
                 {isTxModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto -mt-1 mb-2 sm:hidden shrink-0" />
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3980,7 +3980,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: TROOP DETAILS & FINANCIAL AUDIT (GROUP TREASURER DEEP DIVE) ── */}
                 {selectedTroopForDetails && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 overflow-hidden">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto mt-2 sm:hidden shrink-0" />
                             {/* Modal Header */}
@@ -4378,7 +4378,7 @@ export default function FinancesManagement({
 
                 {/* ── MODAL: STATEMENT LINE ITEM BREAKDOWN DRILL-DOWN ── */}
                 {selectedStatementGroup && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
                         <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 overflow-hidden">
                             <div className="w-10 h-1.5 bg-slate-300 rounded-full mx-auto mt-2 sm:hidden shrink-0" />
                             <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">

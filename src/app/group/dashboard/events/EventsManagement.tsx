@@ -715,8 +715,8 @@ export default function EventsManagement({
 
             {/* ── CREATE EVENT MODAL (Mobile Bottom Sheet / Desktop Dialog) ── */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-                    <div className="bg-white max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl max-w-xl w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+                    <div className="bg-white max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl max-w-xl w-full p-4 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 space-y-4 shadow-2xl max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
                         <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <h3 className="text-lg font-bold text-slate-900">Create New Event / Camp</h3>
@@ -873,8 +873,8 @@ export default function EventsManagement({
 
             {/* ── EDIT EVENT MODAL (Mobile Bottom Sheet / Desktop Dialog) ── */}
             {isEditModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-                    <div className="bg-white max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl max-w-xl w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+                    <div className="bg-white max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl max-w-xl w-full p-4 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 space-y-4 shadow-2xl max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
                         <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <h3 className="text-lg font-bold text-slate-900">Edit Event / Camp Details</h3>
@@ -1020,8 +1020,8 @@ export default function EventsManagement({
 
             {/* ── PHONE CALENDAR LIVE SYNC MODAL (Mobile Bottom Sheet / Desktop Dialog) ── */}
             {isSyncModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-                    <div className="bg-white max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 space-y-4 shadow-2xl my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+                    <div className="bg-white max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 space-y-4 shadow-2xl my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
                         <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2">

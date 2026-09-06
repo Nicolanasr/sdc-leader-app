@@ -825,7 +825,7 @@ export default function BroadcastManagement({
 
                 {/* ── CONFIRMATION MODAL ── */}
                 {showConfirmModal && (
-                    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                    <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
                         <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-150">
                             <div className="flex items-center gap-3 text-teal-900">
                                 <div className="w-10 h-10 rounded-2xl bg-teal-100 flex items-center justify-center shrink-0">

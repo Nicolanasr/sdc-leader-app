@@ -59,7 +59,7 @@ export const viewport: Viewport = {
     userScalable: false,
     interactiveWidget: "resizes-content",
     viewportFit: "cover",
-    themeColor: "#134e4a",
+    themeColor: "#06231e",
 };
 
 export default function RootLayout({
@@ -71,6 +71,7 @@ export default function RootLayout({
         <html
             lang="en"
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+            style={{ backgroundColor: '#06231e', colorScheme: 'dark light' }}
         >
             <body className="min-h-full flex flex-col">
                 <SplashScreen />

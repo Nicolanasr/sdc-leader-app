@@ -746,7 +746,7 @@ export default function LibraryManagement({
 
         {/* ── SONG LYRICS MODAL ── */}
         {viewingSong && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+          <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-2xl p-4 sm:p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-3 max-h-[85vh] flex flex-col justify-between">
               <div>
                 <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2.5">
@@ -848,7 +848,7 @@ export default function LibraryManagement({
 
         {/* ── UPLOAD MODAL ── */}
         {isUploadModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+          <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
@@ -1087,7 +1087,7 @@ export default function LibraryManagement({
 
         {/* ── EDIT RESOURCE MODAL ── */}
         {editingItem && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+          <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">

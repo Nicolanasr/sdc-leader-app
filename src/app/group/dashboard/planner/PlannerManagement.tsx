@@ -1727,7 +1727,7 @@ export default function PlannerManagement({
           const catCfg = currentBlock ? CATEGORIES[currentBlock.category] || CATEGORIES.workshop : CATEGORIES.workshop
 
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in">
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in">
               <div className="bg-slate-900 border border-teal-500/40 w-full max-w-xl p-4 sm:p-6 rounded-3xl shadow-2xl space-y-4 text-white my-auto max-h-[92vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -1847,7 +1847,7 @@ export default function PlannerManagement({
             MODAL: PRE-BUILT TEMPLATES SELECTOR
         ══════════════════════════════════════════════════════════ */}
         {isTemplateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
             <div className="bg-white w-full max-w-lg p-4 sm:p-5 rounded-2xl shadow-xl space-y-3 max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
@@ -1903,7 +1903,7 @@ export default function PlannerManagement({
             MODAL: WHATSAPP STAFF BRIEFING
         ══════════════════════════════════════════════════════════ */}
         {isWhatsAppModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
             <div className="bg-white w-full max-w-lg p-4 sm:p-5 rounded-2xl shadow-xl space-y-3 max-h-[88vh] flex flex-col">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
@@ -1960,7 +1960,7 @@ export default function PlannerManagement({
             MODAL: DUPLICATE TO NEXT WEEK
         ══════════════════════════════════════════════════════════ */}
         {isDuplicateModalOpen && planToDuplicate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
             <div className="bg-white w-full max-w-md p-4 sm:p-5 rounded-2xl shadow-xl space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">

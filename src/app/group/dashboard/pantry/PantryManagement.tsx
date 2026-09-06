@@ -2593,7 +2593,7 @@ export default function PantryManagement({
                     MODAL: ADD / EDIT PANTRY ITEM & MULTI-BATCHES
                 ══════════════════════════════════════════════════════════ */}
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
                             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                                 <div className="flex items-center gap-2">
@@ -2910,7 +2910,7 @@ export default function PantryManagement({
                     MODAL: FULFILL CAMP REQUEST & FIFO LOT DEDUCTION
                 ══════════════════════════════════════════════════════════ */}
                 {fulfillingRequest && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
                             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                                 <div className="flex items-center gap-2">
@@ -3132,7 +3132,7 @@ export default function PantryManagement({
                     MODAL: GIVE EXTRA / CUSTOM PROVISION TO CAMP
                 ══════════════════════════════════════════════════════════ */}
                 {isGiveExtraModalOpen && giveExtraTargetEvent && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
                             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                                 <div className="flex items-center gap-2">
@@ -3336,7 +3336,7 @@ export default function PantryManagement({
                     MODAL: RETURN UNUSED FOOD / LOTS TO CENTRAL PANTRY
                 ══════════════════════════════════════════════════════════ */}
                 {returningRequest && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
                             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                                 <div className="flex items-center gap-2">

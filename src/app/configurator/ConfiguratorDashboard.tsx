@@ -366,7 +366,7 @@ export default function ConfiguratorDashboard({
 
       {/* Password Reset Overlay Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xs">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/55 backdrop-blur-xs">
           <div className="bg-white w-full max-w-md p-6 border border-slate-200 rounded-2xl shadow-xl space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
