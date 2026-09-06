@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
+import SplashScreen from "@/components/SplashScreen";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,6 +22,11 @@ export const metadata: Metadata = {
     authors: [{ name: "Scouts des Cèdres Saint Jean Marc" }],
     metadataBase: new URL("https://portal.sdcsaintjeanmarc.org"),
     manifest: "/site.webmanifest",
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: "black-translucent",
+        title: "SdC Leaders",
+    },
     icons: {
         icon: [
             { url: "/favicon.ico" },
@@ -67,6 +73,7 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
             <body className="min-h-full flex flex-col">
+                <SplashScreen />
                 <Suspense fallback={null}>
                     <NavigationProgressBar />
                 </Suspense>

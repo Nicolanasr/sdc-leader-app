@@ -1007,8 +1007,8 @@ export default function MembersManagement({
 
                     {/* Centered Member Profile Detail Modal / Mobile Bottom Sheet */}
                     {selectedMember && (
-                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                            <div className="bg-white w-full max-w-xl p-5 sm:p-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto relative animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 my-0 sm:my-auto">
+                        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                            <div className="bg-white w-full max-w-xl p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto relative animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 my-0 sm:my-auto">
                                 <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-2 mb-2" />
                                 <button
                                     onClick={() => setSelectedMember(null)}
@@ -1278,8 +1278,8 @@ export default function MembersManagement({
 
             {/* Add / Edit Modal Drawer (Tabbed View / Mobile Bottom Sheet) */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                    <div className="bg-white w-full max-w-2xl p-4 sm:p-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white w-full max-w-2xl p-4 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
                         <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                             <h3 className="text-lg font-bold text-slate-900">
@@ -1839,8 +1839,8 @@ export default function MembersManagement({
 
             {/* Create Patrol Modal / Mobile Bottom Sheet */}
             {showPatrolModal && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                    <div className="bg-white w-full max-w-md p-5 sm:p-6 border-t sm:border border-slate-200 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl shadow-2xl space-y-4 my-0 sm:my-8 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white w-full max-w-md p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 border-t sm:border border-slate-200 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl shadow-2xl space-y-4 my-0 sm:my-8 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
                         <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
                         <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                             <h3 className="text-lg font-bold text-slate-900">Create New Patrol</h3>
