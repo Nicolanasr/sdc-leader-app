@@ -26,7 +26,7 @@ export default function DashboardHeader({ userName, currentRole, onOpenMobileMen
   const formattedRole = ROLE_LABELS[currentRole] || currentRole.replace(/_/g, ' ')
 
   return (
-    <header className="bg-white/95 backdrop-blur-xs sticky top-0 z-30 border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between md:justify-end shrink-0">
+    <header className="bg-white/95 backdrop-blur-xs sticky top-0 z-30 border-b border-slate-200 px-3 sm:px-6 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2 sm:py-3 flex items-center justify-between md:justify-end shrink-0">
       <button
         onClick={onOpenMobileMenu}
         className="md:hidden text-teal-900 p-1.5 -ml-1 rounded-lg hover:bg-slate-100 transition-colors focus:outline-none"

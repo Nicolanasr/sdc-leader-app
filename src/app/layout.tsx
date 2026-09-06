@@ -73,7 +73,7 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
             style={{ backgroundColor: '#06231e', colorScheme: 'dark light' }}
         >
-            <body className="min-h-full flex flex-col">
+            <body className="min-h-full flex flex-col" style={{ backgroundColor: '#06231e' }}>
                 <SplashScreen />
                 <Suspense fallback={null}>
                     <NavigationProgressBar />

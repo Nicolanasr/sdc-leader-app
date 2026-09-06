@@ -58,7 +58,7 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-6 border-b border-teal-800 flex justify-between items-center">
+      <div className="p-6 pt-[max(env(safe-area-inset-top),1.5rem)] border-b border-teal-800 flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold tracking-tight">{groupName}</h1>
           <p className="text-xs text-teal-300 mt-1">Group Dashboard</p>

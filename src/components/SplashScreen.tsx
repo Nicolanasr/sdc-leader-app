@@ -84,7 +84,7 @@ export default function SplashScreen() {
                     />
                 </div>
                 <span className="text-[10px] font-bold text-teal-200/80 tracking-widest uppercase animate-pulse">
-                    Chargement…
+                    Loading…
                 </span>
             </div>
         </div>
