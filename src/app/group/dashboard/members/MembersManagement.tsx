@@ -1224,6 +1224,15 @@ export default function MembersManagement({
                             >
                                 🔑 Portal Login
                             </button>
+                            <a
+                                href={`/scout/${selectedMember.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 flex items-center gap-1"
+                            >
+                                <span>🌐 Public Passport</span>
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1241,6 +1250,28 @@ export default function MembersManagement({
                         {/* Tab 1: Scout Details */}
                         {profileTab === 'scout' && (
                             <div className="space-y-4">
+                                {/* Public Passport Quick Card */}
+                                <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-xl flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-900 flex items-center justify-center font-bold text-base">
+                                            ⚜️
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-xs text-slate-900">Public Scout Passport</h4>
+                                            <p className="text-[11px] text-slate-500">Shareable digital ID, achievements & QR code</p>
+                                        </div>
+                                    </div>
+                                    <a
+                                        href={`/scout/${selectedMember.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-2.5 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                                    >
+                                        <span>View Passport</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                </div>
+
                                 {/* Progression Quick Card */}
                                 <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2.5">

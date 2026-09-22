@@ -32,6 +32,15 @@ export default async function MembersPage() {
     if (troopRole) userTroopId = troopRole.troop_id
   }
 
+  const userRoles: string[] = Array.from(
+    new Set([
+      userRole,
+      ...(user.app_metadata?.roles || []),
+      ...(user.app_metadata?.role_scopes || []),
+      ...activeScopes,
+    ].filter(Boolean))
+  )
+
   let memberPatrolRole: string | null = null
   if (userRole === 'scout_member') {
     const memberId = user.app_metadata?.member_id
@@ -68,7 +77,15 @@ export default async function MembersPage() {
     redirect('/group/dashboard?message=Unauthorized. Youth Roster access only.')
   }
 
-  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a' || userRole === 'chef_troupe' || (activeScopes.includes('ka2ed_fer2a') && !activeScopes.includes('chef_groupe')) || isUnitSecretary
+  const isGroupExecutive =
+    userRoles.some((r) => ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(r)) ||
+    activeScopes.some((s: string) => ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(s))
+
+  const isTroopLeader =
+    !isGroupExecutive &&
+    (userRoles.some((r) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(r)) ||
+      activeScopes.some((s: string) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(s)) ||
+      isUnitSecretary)
 
   // 2. Fetch Group Name
   const { data: groupData } = await supabase
@@ -187,15 +204,6 @@ export default async function MembersPage() {
     .single()
 
   const userName = userProfile?.full_name || user.email || 'Leader'
-
-  const userRoles: string[] = Array.from(
-    new Set([
-      userRole,
-      ...(user.app_metadata?.roles || []),
-      ...(user.app_metadata?.role_scopes || []),
-      ...activeScopes,
-    ].filter(Boolean))
-  )
 
   return (
     <MembersManagement

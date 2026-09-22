@@ -50,8 +50,10 @@ export default async function FinancesPage() {
     'chef_groupe',
     'assistant_chef_groupe',
     'amin_sandou2_group',
+    'amin_serr_group',
     'ka2ed_fer2a',
     'mouse3ed_ka2ed_fer2a',
+    'chef_troupe',
     'configurator',
   ]
 

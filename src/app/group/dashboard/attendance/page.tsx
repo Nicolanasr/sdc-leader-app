@@ -60,7 +60,7 @@ export default async function AttendancePage() {
 
   const isTroopLeader =
     (userRoles.some((r) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(r)) &&
-      !userRoles.some((r) => ['chef_groupe', 'assistant_chef_groupe'].includes(r))) ||
+      !userRoles.some((r) => ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(r))) ||
     isUnitSecretary
 
   // Troops + patrols (scoped for troop leaders and unit secretaries)

@@ -24,6 +24,12 @@ import {
   Package,
   ArrowRight,
   Edit,
+  Share2,
+  Copy,
+  Check,
+  QrCode,
+  MessageCircle,
+  X,
 } from 'lucide-react'
 import EditBasicInfoModal from './profile/EditBasicInfoModal'
 
@@ -119,11 +125,59 @@ export default function MemberDashboardView({ member: initialMember, events, lea
   const [member, setMember] = useState<MemberData>(initialMember)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'events' | 'leaders' | 'attendance'>('profile')
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [showQrModal, setShowQrModal] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const fullName = `${member.first_name} ${member.last_name}`
   const troopName = member.troops?.name || 'Unit'
   const sectionName = member.troops?.section_types?.name || 'Scout'
   const patrolName = member.patrols?.name || null
+
+  const profileUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/scout/${member.id}`
+      : `https://portal.sdcsaintjeanmarc.org/scout/${member.id}`
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(profileUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      // Fallback
+    }
+  }
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${fullName} • Scout Passport`,
+          text: `Check out ${fullName}'s official Scout Passport & Achievements at Scouts des Cèdres!`,
+          url: profileUrl,
+        })
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      handleCopyLink()
+    }
+  }
+
+  const handleWhatsAppShare = () => {
+    const text = encodeURIComponent(
+      `⚜️ *${fullName}* - Scout Passport\n` +
+      `🌲 *Unit:* ${troopName}\n` +
+      (member.current_rank ? `⭐ *Rank:* ${member.current_rank}\n` : '') +
+      `\nView Official Scout Record & Passport:\n${profileUrl}`
+    )
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank')
+  }
+
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=15&format=svg&data=${encodeURIComponent(
+    profileUrl
+  )}`
 
   const calculateAge = (dobString?: string | null) => {
     if (!dobString) return null
@@ -228,8 +282,18 @@ export default function MemberDashboardView({ member: initialMember, events, lea
 
             <button
               type="button"
+              onClick={() => setShowShareModal(true)}
+              className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+              title="Share Official Scout Passport"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span>Share Passport</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsEditModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 transition-all shadow-xs shrink-0"
+              className="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 transition-all shadow-xs shrink-0 cursor-pointer"
               title="Edit Personal Information"
             >
               <Edit className="h-3.5 w-3.5" />
@@ -413,6 +477,60 @@ export default function MemberDashboardView({ member: initialMember, events, lea
       {/* ── TAB 1: MY PROFILE ── */}
       {activeTab === 'profile' && (
         <div className="space-y-4">
+          {/* Public Scout Passport Quick Action Card */}
+          <div className="bg-gradient-to-br from-teal-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 border border-teal-700/60 shadow-lg relative overflow-hidden">
+            <div className="absolute right-3 -bottom-4 text-7xl text-white/5 pointer-events-none select-none">
+              🌲
+            </div>
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-400/20 text-teal-300 border border-teal-400/30">
+                    Public Scout Passport
+                  </span>
+                  <span className="text-[11px] text-teal-200/80 font-arabic">كشاف الأرز</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                  <span>Your Official Digital ID & Credentials</span>
+                  <span className="text-sm">⚜️</span>
+                </h3>
+                <p className="text-xs text-teal-100/80 max-w-xl leading-relaxed">
+                  Your verified scout record is publicly shareable. Family, friends, and leaders can view your rank, unit, investiture status, and badges without requiring an account.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <a
+                  href={`/scout/${member.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0"
+                >
+                  <span>Open Passport</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-600" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(true)}
+                  className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  <span>Share</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-teal-200 border border-white/15 transition-all active:scale-95 shrink-0 cursor-pointer"
+                  title="Show QR Code"
+                >
+                  <QrCode className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
             <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs">
@@ -877,6 +995,164 @@ export default function MemberDashboardView({ member: initialMember, events, lea
           }))
         }}
       />
+
+      {/* ── SHARE PASSPORT MODAL ── */}
+      {showShareModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowShareModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 shadow-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-1">
+                  <span>⚜️</span>
+                  <span>Scouts des Cèdres</span>
+                </div>
+                <h3 className="text-base font-black text-slate-900">Share Scout Passport</h3>
+                <p className="text-xs text-slate-500">{fullName} • {troopName}</p>
+              </div>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Quick Share Buttons */}
+            <div className="space-y-2.5">
+              <button
+                onClick={handleWhatsAppShare}
+                className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-xs font-bold text-white transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>Share on WhatsApp</span>
+              </button>
+
+              <button
+                onClick={handleNativeShare}
+                className="w-full py-3 px-4 rounded-2xl bg-teal-800 hover:bg-teal-900 active:scale-98 text-xs font-bold text-white transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Share2 className="h-4 w-4" />
+                <span>Share to Other Apps</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowShareModal(false)
+                  setShowQrModal(true)
+                }}
+                className="w-full py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-98 text-xs font-bold text-slate-800 border border-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <QrCode className="h-4 w-4 text-emerald-700" />
+                <span>Show QR Code</span>
+              </button>
+            </div>
+
+            {/* Link Copy Box */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="text-[11px] font-bold text-slate-500 block mb-1.5">
+                Passport URL
+              </label>
+              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-50 border border-slate-200">
+                <input
+                  type="text"
+                  readOnly
+                  value={profileUrl}
+                  className="flex-1 bg-transparent px-2.5 text-xs text-slate-600 outline-none select-all"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── QR CODE MODAL ── */}
+      {showQrModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-6 text-center shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center text-left">
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  Scout Passport QR
+                </h3>
+                <p className="text-xs text-emerald-700 font-bold">{fullName}</p>
+              </div>
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* QR Code Graphic */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrImageUrl}
+                alt={`QR code for ${fullName}`}
+                className="w-56 h-56 object-contain"
+              />
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Scan with any phone camera to view and verify your official Scout Passport record.
+            </p>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleCopyLink}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-xs font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleWhatsAppShare}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-all cursor-pointer border border-slate-200"
+              >
+                WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
