@@ -43,7 +43,9 @@ export async function updateSession(request: NextRequest) {
     needsPasswordChange &&
     !path.startsWith('/change-password') &&
     !path.startsWith('/login') &&
-    !path.startsWith('/bootstrap')
+    !path.startsWith('/bootstrap') &&
+    !path.startsWith('/auth') &&
+    !path.startsWith('/reset-password')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/change-password'
