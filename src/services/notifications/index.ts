@@ -12,6 +12,9 @@ import { emailProvider } from './providers/emailProvider'
 import { whatsappProvider } from './providers/whatsappProvider'
 import { smsProvider } from './providers/smsProvider'
 import { telegramProvider } from './providers/telegramProvider'
+import { WebPushProvider } from './providers/webPushProvider'
+
+const webPushProvider = new WebPushProvider()
 
 // Provider Registry
 const providers: Record<NotificationChannel, NotificationProvider> = {
@@ -20,6 +23,7 @@ const providers: Record<NotificationChannel, NotificationProvider> = {
   whatsapp: whatsappProvider,
   sms: smsProvider,
   telegram: telegramProvider,
+  web_push: webPushProvider,
 }
 
 /**
