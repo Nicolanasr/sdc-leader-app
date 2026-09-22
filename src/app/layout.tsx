@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import SplashScreen from "@/components/SplashScreen";
+import NotificationPrompt from "@/components/NotificationPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -79,6 +80,7 @@ export default function RootLayout({
                     <NavigationProgressBar />
                 </Suspense>
                 {children}
+                <NotificationPrompt />
             </body>
         </html>
     );

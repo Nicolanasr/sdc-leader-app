@@ -59,6 +59,7 @@ export default function DashboardSidebar({ groupName, currentRole, roles = [], p
   const canAccessFinances = isUnitTreasurer || hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
   const canAccessInventory = isUnitQuartermaster || hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
   const canAccessPantry = !isMember && hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'configurator'])
+  const canAccessNotifications = !isMember && hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'mas2oul_toswir', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'ka2ed_idare', 'configurator'])
 
   return (
     <div className="flex flex-col h-full">
@@ -154,7 +155,15 @@ export default function DashboardSidebar({ groupName, currentRole, roles = [], p
           navLink('/group/dashboard/pantry', 'Provisions & Pantry', <UtensilsCrossed className="h-4 w-4" />, pathname.startsWith('/group/dashboard/pantry'), onClose)
         )}
 
-        {navLink('/test-push', 'Push Notifications Lab', <BellRing className="h-4 w-4 text-amber-300" />, pathname === '/test-push', onClose)}
+        {canAccessNotifications && (
+          navLink(
+            '/group/dashboard/notifications',
+            'Push Notifications',
+            <BellRing className="h-4 w-4 text-teal-300" />,
+            pathname.startsWith('/group/dashboard/notifications'),
+            onClose
+          )
+        )}
       </nav>
 
       {/* Logout */}
