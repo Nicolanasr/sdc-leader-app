@@ -7,6 +7,7 @@ import DashboardSidebar from './DashboardSidebar'
 import DashboardHeader from './DashboardHeader'
 import MobileBottomNav from './MobileBottomNav'
 import PWAInstallPrompt from '@/components/PWAInstallPrompt'
+import ScoutAIAssistant from '@/components/ScoutAIAssistant'
 
 interface Props {
     groupName: string
@@ -67,6 +68,9 @@ export default function DashboardShell({ groupName, currentRole, userName, child
                 currentRole={currentRole}
                 onOpenMenu={() => setIsMobileOpen(true)}
             />
+
+            {/* Scout AI Operations Assistant */}
+            <ScoutAIAssistant />
         </div>
     )
 }
