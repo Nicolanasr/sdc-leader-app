@@ -43,15 +43,6 @@ export default function DashboardHeader({ userName, currentRole, roles = [], onO
 
       <div className="flex items-center gap-2">
         <Link
-          href="/group/dashboard/notifications"
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 active:scale-95 text-teal-900 border border-teal-200/80 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-          title="Push Notifications Dispatch Hub"
-        >
-          <BellRing className="h-3.5 w-3.5 text-teal-700" />
-          <span className="text-[11px] sm:text-xs">Push Alerts</span>
-        </Link>
-
-        <Link
           href="/group/dashboard/profile"
           className="flex items-center gap-2 text-right hover:bg-slate-100/70 p-1.5 -mr-1.5 rounded-xl transition-all group cursor-pointer"
           title="View My Profile"

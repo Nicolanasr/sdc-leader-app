@@ -62,8 +62,8 @@ export default function NotificationPrompt() {
     }
 
     if (isPermissionDefault && !isSnoozed) {
-      // Delay showing the prompt slightly so the page loads cleanly first
-      const timer = setTimeout(() => setShowPrompt(true), 2500)
+      // Show prompt after a short delay once page loads
+      const timer = setTimeout(() => setShowPrompt(true), 2000)
       return () => clearTimeout(timer)
     }
 
@@ -90,7 +90,7 @@ export default function NotificationPrompt() {
     }
   }, [syncSubscriptionWithUser])
 
-  // 3. User clicks "Enable Alerts"
+  // 3. User clicks "Enable Alerts" - Fast, non-blocking flow
   const handleEnableNotifications = async () => {
     try {
       setLoading(true)
@@ -102,40 +102,47 @@ export default function NotificationPrompt() {
         return
       }
 
-      // Fetch public VAPID key
-      const keyRes = await fetch('/api/notifications/push/vapid-public-key')
-      const keyData = await keyRes.json()
-
-      if (!keyRes.ok || !keyData.publicKey) {
-        throw new Error(keyData.error || 'Failed to fetch public VAPID key')
+      // Fast-path: use inlined public VAPID key if present, fallback to endpoint
+      let publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      if (!publicKey) {
+        const keyRes = await fetch('/api/notifications/push/vapid-public-key')
+        const keyData = await keyRes.json()
+        publicKey = keyData.publicKey
       }
 
-      const reg = await navigator.serviceWorker.ready
-      const appServerKey = urlBase64ToUint8Array(keyData.publicKey)
+      if (!publicKey) {
+        throw new Error('Public VAPID key not available')
+      }
 
+      // Resolve service worker with timeout protection to prevent hanging
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<ServiceWorkerRegistration>((_, reject) =>
+          setTimeout(() => reject(new Error('Service worker ready timeout')), 3500)
+        ),
+      ])
+
+      const appServerKey = urlBase64ToUint8Array(publicKey)
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: appServerKey.buffer as ArrayBuffer,
       })
 
-      // Send to subscribe endpoint (will automatically link user_id if logged in)
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      // Immediate visual confirmation
+      setSuccess(true)
 
-      await fetch('/api/notifications/push/subscribe', {
+      // Background registration save (server automatically extracts authenticated user from session cookie)
+      fetch('/api/notifications/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subscription: sub.toJSON(),
           userAgent: navigator.userAgent,
-          userId: user?.id || null,
         }),
-      })
+      }).catch((err) => console.warn('Background subscription save error:', err))
 
-      setSuccess(true)
-      setTimeout(() => setShowPrompt(false), 2200)
+      // Swiftly close prompt without keeping user waiting
+      setTimeout(() => setShowPrompt(false), 700)
     } catch (err) {
       console.error('[NotificationPrompt] Failed to enable notifications:', err)
       setShowPrompt(false)
@@ -152,68 +159,63 @@ export default function NotificationPrompt() {
   if (!showPrompt) return null
 
   return (
-    <div className="fixed bottom-[max(env(safe-area-inset-bottom),1rem)] left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-      <div className="bg-gradient-to-r from-teal-950 via-slate-900 to-teal-900 text-white rounded-3xl p-5 border border-teal-500/40 shadow-2xl backdrop-blur-md relative overflow-hidden">
-        {/* Background emblem */}
-        <div className="absolute right-2 -bottom-4 text-7xl text-white/5 pointer-events-none select-none font-serif">
-          ⚜️
+    <div className="fixed bottom-[max(env(safe-area-inset-bottom),1rem)] left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+      <div className="bg-white text-slate-900 rounded-2xl p-4 border border-slate-200/90 shadow-xl relative overflow-hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0 shadow-2xs">
+              <BellRing className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">
+                Scouts des Cèdres
+              </span>
+              <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                Enable Push Alerts
+              </h4>
+            </div>
+          </div>
+
+          <button
+            onClick={handleDismiss}
+            className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition-colors cursor-pointer"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 shrink-0">
-                <BellRing className="h-4 w-4 animate-bounce" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-teal-300 uppercase tracking-widest block">
-                  Scouts des Cèdres
-                </span>
-                <h4 className="text-sm font-black text-white">Enable Push Alerts</h4>
-              </div>
-            </div>
+        <p className="text-xs text-slate-600 leading-relaxed mt-2.5">
+          Get instant alerts for troop gatherings, camp logistics, and urgent announcements — even when your app is closed.
+        </p>
 
-            <button
-              onClick={handleDismiss}
-              className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="flex items-center gap-2 pt-3">
+          <button
+            onClick={handleEnableNotifications}
+            disabled={loading || success}
+            className="flex-1 py-2.5 px-3 rounded-xl bg-teal-800 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-80"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Enabling...</span>
+              </>
+            ) : success ? (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Alerts Enabled!</span>
+              </>
+            ) : (
+              <span>Enable Alerts</span>
+            )}
+          </button>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Get instant alerts for troop gatherings, camp logistics, and urgent announcements — even when your app is closed.
-          </p>
-
-          <div className="flex items-center gap-2 pt-1">
-            <button
-              onClick={handleEnableNotifications}
-              disabled={loading || success}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-teal-500 hover:bg-teal-400 active:scale-95 text-slate-950 text-xs font-black transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-80"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Enabling...</span>
-                </>
-              ) : success ? (
-                <>
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-800" />
-                  <span>Enabled!</span>
-                </>
-              ) : (
-                <span>Enable Alerts</span>
-              )}
-            </button>
-
-            <button
-              onClick={handleDismiss}
-              className="py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
-            >
-              Not now
-            </button>
-          </div>
+          <button
+            onClick={handleDismiss}
+            className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+          >
+            Not now
+          </button>
         </div>
       </div>
     </div>
