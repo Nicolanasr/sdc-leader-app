@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award, Clock, User } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award, Clock, User, BellRing } from 'lucide-react'
 
 interface Props {
   groupName: string
@@ -153,6 +153,8 @@ export default function DashboardSidebar({ groupName, currentRole, roles = [], p
         {canAccessPantry && (
           navLink('/group/dashboard/pantry', 'Provisions & Pantry', <UtensilsCrossed className="h-4 w-4" />, pathname.startsWith('/group/dashboard/pantry'), onClose)
         )}
+
+        {navLink('/test-push', 'Push Notifications Lab', <BellRing className="h-4 w-4 text-amber-300" />, pathname === '/test-push', onClose)}
       </nav>
 
       {/* Logout */}
