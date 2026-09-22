@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import DashboardShell from '../DashboardShell'
-import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2, Key, Copy, Check, Sparkles, Loader2 } from 'lucide-react'
+import { Menu, X, Plus, Users, Landmark, Award, Briefcase, Shield, Layers, Edit, Trash2, Key, Copy, Check, Sparkles, Loader2, ExternalLink } from 'lucide-react'
 
 interface LeaderRole {
   roleId?: string
@@ -21,6 +21,17 @@ interface Leader {
   fullName: string
   email: string
   rank: string
+  memberId?: string | null
+  linkedMember?: {
+    id: string
+    first_name: string
+    last_name: string
+    current_rank?: string | null
+    promise_date?: string | null
+    blood_type?: string | null
+    troop_id?: string | null
+    troops?: { name?: string } | null
+  } | null
   responsibilityIds?: string[]
   responsibilities: string[]
   roles: LeaderRole[]
@@ -47,6 +58,15 @@ interface Role {
   permission_scope: string
 }
 
+export interface AvailableMember {
+  id: string
+  first_name: string
+  last_name: string
+  troop_id: string
+  current_rank?: string | null
+  troops?: { name?: string } | null
+}
+
 interface Props {
   initialLeaders: Leader[]
   troops: Troop[]
@@ -57,6 +77,7 @@ interface Props {
   responsibilities: Responsibility[]
   roles: Role[]
   userName?: string
+  availableMembers?: AvailableMember[]
 }
 
 export default function LeadersManagement({
@@ -69,6 +90,7 @@ export default function LeadersManagement({
   responsibilities,
   roles,
   userName,
+  availableMembers = [],
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -100,9 +122,66 @@ export default function LeadersManagement({
   const [loading, setLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
+  // Member record linking states
+  const [linkingLeader, setLinkingLeader] = useState<Leader | null>(null)
+  const [linkingMemberId, setLinkingMemberId] = useState('')
+  const [linkingLoading, setLinkingLoading] = useState(false)
+  const [viewingMember, setViewingMember] = useState<Leader | null>(null)
+
   const showStatus = (text: string, type: 'success' | 'error') => {
     setStatusMessage({ text, type })
     setTimeout(() => setStatusMessage(null), 7000)
+  }
+
+  const handleLinkLeaderMember = async (leaderProfileId: string, memberId: string) => {
+    setLinkingLoading(true)
+    try {
+      const res = await fetch('/api/me/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'link',
+          targetProfileId: leaderProfileId,
+          memberId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to link member record.')
+
+      showStatus('Scout member profile linked successfully.', 'success')
+      setLinkingLeader(null)
+      router.refresh()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error linking member.'
+      showStatus(msg, 'error')
+    } finally {
+      setLinkingLoading(false)
+    }
+  }
+
+  const handleCreateLeaderMember = async (leaderProfileId: string) => {
+    setLinkingLoading(true)
+    try {
+      const res = await fetch('/api/me/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          targetProfileId: leaderProfileId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create member record.')
+
+      showStatus('Scout member record created and linked successfully.', 'success')
+      setLinkingLeader(null)
+      router.refresh()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error creating member.'
+      showStatus(msg, 'error')
+    } finally {
+      setLinkingLoading(false)
+    }
   }
 
   const handleGeneratePassword = () => {
@@ -439,7 +518,7 @@ export default function LeadersManagement({
                         <div className="space-y-1 min-w-0">
                           <h4 className="font-bold text-sm text-slate-900">{leader.fullName}</h4>
                           <p className="text-[11px] text-slate-400 font-medium">{leader.email}</p>
-                          <div className="flex flex-wrap gap-1 pt-0.5">
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
                             <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
                               {leader.rank}
                             </span>
@@ -448,6 +527,37 @@ export default function LeadersManagement({
                                 {resp}
                               </span>
                             ))}
+
+                            {/* Member Profile Badge / Link */}
+                            {leader.linkedMember ? (
+                              <button
+                                type="button"
+                                onClick={() => setViewingMember(leader)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition-colors"
+                                title="View linked Scout Member Record"
+                              >
+                                <span>⚜️ Member Profile</span>
+                                {leader.linkedMember.current_rank && (
+                                  <span className="text-[9px] text-amber-700 font-semibold">
+                                    • {leader.linkedMember.current_rank}
+                                  </span>
+                                )}
+                              </button>
+                            ) : (
+                              canManage && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setLinkingLeader(leader)
+                                    setLinkingMemberId('')
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 hover:bg-teal-50 hover:text-teal-900 hover:border-teal-200 text-slate-500 border border-slate-200 transition-colors"
+                                  title="Link to Scout Member Record"
+                                >
+                                  <span>🔗 Link Member Profile</span>
+                                </button>
+                              )
+                            )}
                           </div>
                         </div>
                         <div className="w-full md:w-auto text-left md:text-right flex flex-row md:flex-col justify-between md:justify-start items-center md:items-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
@@ -848,6 +958,175 @@ export default function LeadersManagement({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── VIEW LINKED MEMBER MODAL ── */}
+      {viewingMember && viewingMember.linkedMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs">
+                  ⚜️
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Scout Member Record</h3>
+                  <p className="text-[11px] text-slate-500">{viewingMember.fullName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingMember(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Assigned Unit
+                  </span>
+                  <span className="text-sm font-black text-slate-900 block mt-0.5">
+                    {viewingMember.linkedMember.troops?.name || 'Leadership'}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Scout Rank
+                  </span>
+                  <span className="text-sm font-black text-teal-900 block mt-0.5">
+                    {viewingMember.linkedMember.current_rank || 'Leader'}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Promise Date
+                  </span>
+                  <span className="text-sm font-bold text-slate-800 block mt-0.5">
+                    {viewingMember.linkedMember.promise_date || 'Not recorded'}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Blood Type
+                  </span>
+                  <span className="text-sm font-black text-rose-600 block mt-0.5">
+                    {viewingMember.linkedMember.blood_type || 'Unknown'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setViewingMember(null)}
+                  className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                >
+                  Close
+                </button>
+                <Link
+                  href={`/group/dashboard/members?search=${encodeURIComponent(viewingMember.linkedMember.first_name)}`}
+                  className="flex-1 py-2 rounded-xl bg-teal-900 hover:bg-teal-950 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                >
+                  <span>Open in Youth Roster</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── LINK MEMBER PROFILE MODAL ── */}
+      {linkingLeader && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-teal-800 text-white flex items-center justify-center font-bold text-xs">
+                  🔗
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Link Scout Member Record</h3>
+                  <p className="text-[11px] text-slate-500">{linkingLeader.fullName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setLinkingLeader(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <p className="text-slate-600 leading-relaxed">
+                Connect <strong>{linkingLeader.fullName}</strong> to their official record in the Scout Youth Roster, or generate an official member identity.
+              </p>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Choose Existing Member from Roster
+                </label>
+                <select
+                  value={linkingMemberId}
+                  onChange={(e) => setLinkingMemberId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                >
+                  <option value="">-- Select Member --</option>
+                  {availableMembers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.first_name} {m.last_name} ({m.troops?.name || 'Unit'} - {m.current_rank || 'Scout'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {linkingMemberId && (
+                <button
+                  type="button"
+                  disabled={linkingLoading}
+                  onClick={() => handleLinkLeaderMember(linkingLeader.profileId, linkingMemberId)}
+                  className="w-full py-2.5 rounded-xl bg-teal-900 hover:bg-teal-950 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
+                >
+                  {linkingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  <span>Confirm Link to Selected Member</span>
+                </button>
+              )}
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-200" />
+                <span className="shrink-0 mx-2 text-[10px] text-slate-400 font-bold uppercase">or create new</span>
+                <div className="flex-grow border-t border-slate-200" />
+              </div>
+
+              <button
+                type="button"
+                disabled={linkingLoading}
+                onClick={() => handleCreateLeaderMember(linkingLeader.profileId)}
+                className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs disabled:opacity-50"
+              >
+                {linkingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                <span>Create Member Record in Leadership Unit</span>
+              </button>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setLinkingLeader(null)}
+                  className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

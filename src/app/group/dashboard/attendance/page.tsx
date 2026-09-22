@@ -10,23 +10,48 @@ export default async function AttendancePage() {
 
   const groupId = user.app_metadata?.group_id
   const userRole = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
-  const userTroopId = user.app_metadata?.troop_id || null
+  let userTroopId = user.app_metadata?.troop_id || null
+  let memberPatrolRole: string | null = null
+
+  if (userRole === 'scout_member') {
+    const memberId = user.app_metadata?.member_id
+    if (memberId) {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id, troop_id, patrol_role')
+        .eq('id', memberId)
+        .maybeSingle()
+      memberPatrolRole = memberData?.patrol_role || null
+      if (memberData?.troop_id) userTroopId = memberData.troop_id
+    } else {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('member_id, members(id, troop_id, patrol_role)')
+        .eq('id', user.id)
+        .maybeSingle()
+      const m = prof?.members as any
+      memberPatrolRole = m?.patrol_role || null
+      if (m?.troop_id) userTroopId = m.troop_id
+    }
+  }
+
+  const isUnitSecretary = userRole === 'scout_member' && memberPatrolRole === 'amin_serr'
 
   const allowedRoles = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
     'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator',
   ]
 
-  if (!groupId || !allowedRoles.includes(userRole)) {
+  if (!groupId || (!allowedRoles.includes(userRole) && !isUnitSecretary)) {
     redirect('/group/dashboard?message=Unauthorized. Attendance access only.')
   }
 
   const { data: groupData } = await supabase.from('groups').select('name').eq('id', groupId).single()
   const groupName = groupData?.name || 'Scout Group'
 
-  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a'
+  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a' || isUnitSecretary
 
-  // Troops + patrols (scoped for troop leaders)
+  // Troops + patrols (scoped for troop leaders and unit secretaries)
   let troopsQuery = supabase
     .from('troops')
     .select('id, name, section_types:section_type_id (name)')
@@ -146,6 +171,7 @@ export default async function AttendancePage() {
       groupId={groupId}
       groupName={groupName}
       currentRole={userRole}
+      patrolRole={memberPatrolRole}
       userTroopId={userTroopId}
       troops={troopsList}
       patrols={patrolsData}

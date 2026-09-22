@@ -421,6 +421,7 @@ interface Props {
     initialShoppingList?: EventShoppingListItem[]
     initialPantryRequests?: EventPantryRequest[]
     currentRole: string
+    patrolRole?: string | null
     groupId: string
     groupName: string
     userProfileId: string
@@ -465,6 +466,7 @@ export default function EventWorkspace({
     initialShoppingList = [],
     initialPantryRequests = [],
     currentRole,
+    patrolRole,
     groupId,
     groupName,
     userProfileId,
@@ -729,40 +731,45 @@ export default function EventWorkspace({
     }
 
     // ── Role & Permission Scoping ────────────────────────────────────────────────
-    const isGroupLeader = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
-    const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
-    const isGroupPantryOwner = ['amin_mounet_group', 'mas2oul_mounet'].includes(currentRole)
-    const isGroupQuartermaster = currentRole === 'amin_tejhizet_group' || isGroupLeader
+    const isMember = currentRole === 'scout_member'
+    const isGroupLeader = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
+    const isGroupAdmin = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+    const isGroupPantryOwner = !isMember && ['amin_mounet_group', 'mas2oul_mounet'].includes(currentRole)
+    const isGroupQuartermaster = !isMember && (currentRole === 'amin_tejhizet_group' || isGroupLeader)
 
     const userAssignedRoles = (eventItem.event_staff || [])
         .filter((s) => s.profile_id === userProfileId)
         .map((s) => s.event_role)
 
-    const isEventLeader = userAssignedRoles.includes('ka2ed_mouskhayyam')
+    const isEventLeader = userAssignedRoles.includes('ka2ed_mouskhayyam') || userAssignedRoles.includes('mousa3ed_ka2ed_mouskhayyam')
     const canEditEvent = isGroupLeader || isEventLeader
     const isCampLeader = canEditEvent
 
-    const isCampSecretary = userAssignedRoles.includes('amin_serr_mouskhayyam') || isCampLeader || isGroupAdmin
-    const isCampTreasurer = userAssignedRoles.includes('amin_sandou2_mouskhayyam') || isCampLeader || isGroupAdmin
-    const isEventQuartermaster = userAssignedRoles.includes('amin_tejhizet')
+    const hasSecretaryStaffRole = userAssignedRoles.some((r) => r === 'amin_serr_mouskhayyam' || r === 'amin_serr')
+    const hasTreasurerStaffRole = userAssignedRoles.some((r) => r === 'amin_sandou2_mouskhayyam' || r === 'amin_sandou2')
+    const hasQuartermasterStaffRole = userAssignedRoles.some((r) => r === 'amin_tejhizet' || r === 'mas2oul_tejhizet')
+    const hasProvisionsStaffRole = userAssignedRoles.some((r) => r === 'mas2oul_matbakh' || r === 'mas2oul_mounet' || r === 'amin_mounet')
+
+    const isCampSecretary = hasSecretaryStaffRole || isCampLeader || isGroupAdmin
+    const isCampTreasurer = hasTreasurerStaffRole || isCampLeader || isGroupAdmin
+    const isEventQuartermaster = hasQuartermasterStaffRole
     const isQuartermaster = isGroupQuartermaster || isEventQuartermaster
     const canAccessEquipment = isQuartermaster || isEventLeader
 
-    const isEventProvisionsMaster = userAssignedRoles.includes('mas2oul_matbakh') || userAssignedRoles.includes('mas2oul_mounet') || userAssignedRoles.includes('amin_mounet')
+    const isEventProvisionsMaster = hasProvisionsStaffRole
     const canAccessProvisions = isCampLeader || isEventProvisionsMaster || isGroupPantryOwner
     const canManageProvisions = canAccessProvisions
 
     // Determine allowed tabs for current user
     const availableTabs = useMemo(() => {
-        const tabs: Array<{ key: 'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'; label: string; icon: string }> = [
-            { key: 'hierarchy', label: 'Staff Hierarchy', icon: '📋' },
-        ]
+        const tabs: Array<{ key: 'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'; label: string; icon: string }> = []
 
-        if (isCampSecretary || isCampLeader) {
+        // Prioritize the user's specific staff duty tab if assigned
+        if (isCampSecretary) {
             tabs.push({ key: 'roster', label: 'Scout Roster & Consent', icon: '👥' })
         }
 
-        if (isCampTreasurer || isCampLeader) {
+        if (isCampTreasurer) {
             tabs.push({ key: 'treasury', label: 'Camp Treasury & Expenses', icon: '💰' })
         }
 
@@ -774,11 +781,20 @@ export default function EventWorkspace({
             tabs.push({ key: 'provisions', label: 'Provisions & Meals', icon: '🍞' })
         }
 
+        tabs.push({ key: 'hierarchy', label: 'Staff Hierarchy', icon: '📋' })
         tabs.push({ key: 'documents', label: 'Documents Repository', icon: '📁' })
         return tabs
     }, [isCampLeader, isCampSecretary, isCampTreasurer, canAccessEquipment, canAccessProvisions])
 
-    const [activeTab, setActiveTab] = useState<'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'>(availableTabs[0]?.key || 'hierarchy')
+    const initialDefaultTab = useMemo(() => {
+        if (isCampSecretary && !isCampLeader) return 'roster'
+        if (isCampTreasurer && !isCampLeader) return 'treasury'
+        if (canAccessEquipment && !isCampLeader) return 'equipment'
+        if (canAccessProvisions && !isCampLeader) return 'provisions'
+        return availableTabs[0]?.key || 'hierarchy'
+    }, [isCampSecretary, isCampTreasurer, canAccessEquipment, canAccessProvisions, isCampLeader, availableTabs])
+
+    const [activeTab, setActiveTab] = useState<'hierarchy' | 'roster' | 'treasury' | 'equipment' | 'provisions' | 'documents'>(initialDefaultTab)
 
     // ── Calculated Camp Days & Headcount ─────────────────────────────────────────
     const totalCampDays = useMemo(() => {
@@ -2057,7 +2073,7 @@ export default function EventWorkspace({
         : '—'
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName} patrolRole={patrolRole}>
             {statusMessage && (
                 <div
                     className={`p-4 rounded-xl border text-sm text-center ${statusMessage.type === 'success'

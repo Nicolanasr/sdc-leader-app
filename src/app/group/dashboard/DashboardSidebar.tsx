@@ -2,27 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award, Clock } from 'lucide-react'
+import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, UtensilsCrossed, Megaphone, BookOpen, Award, Clock, User } from 'lucide-react'
 
 interface Props {
   groupName: string
   currentRole: string
+  patrolRole?: string | null
   onClose?: () => void
   onLogout: () => void
 }
 
-const GROUP_ADMIN_ROLES = [
-  'chef_groupe',
-  'assistant_chef_groupe',
-  'amin_serr_group',
-  'amin_sandou2_group',
-  'amin_tejhizet_group',
-  'mas2oul_toswir',
-  'mas2oul_mounet',
-  'amin_mounet_group',
-  'ka2ed_idare',
-  'configurator',
-]
 
 const navLink = (href: string, label: string, icon: React.ReactNode, active: boolean, onClick?: () => void) => (
   <Link
@@ -41,19 +30,24 @@ const navLink = (href: string, label: string, icon: React.ReactNode, active: boo
   </Link>
 )
 
-export default function DashboardSidebar({ groupName, currentRole, onClose, onLogout }: Props) {
+export default function DashboardSidebar({ groupName, currentRole, patrolRole, onClose, onLogout }: Props) {
   const pathname = usePathname()
+  const isMember = currentRole === 'scout_member'
 
-  // Role permissions per view (Supports multi-role leaders: group leaders, troop leaders, treasurers, and quartermasters)
-  const canAccessBroadcast = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
-  const canAccessLeaders = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
-  const canAccessTroops = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
-  const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
-  const canAccessAttendance = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const isUnitSecretary = isMember && patrolRole === 'amin_serr'
+  const isUnitTreasurer = isMember && patrolRole === 'sandou2'
+  const isUnitQuartermaster = isMember && patrolRole === 'tejhizet'
+
+  // Role permissions per view (Supports multi-role leaders & youth unit officers)
+  const canAccessBroadcast = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
+  const canAccessLeaders = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+  const canAccessTroops = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
+  const canAccessMembers = isUnitSecretary || ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const canAccessAttendance = isUnitSecretary || ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
   const canAccessEvents = true
-  const canAccessFinances = ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
-  const canAccessInventory = ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
-  const canAccessPantry = ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessFinances = isUnitTreasurer || ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const canAccessInventory = isUnitQuartermaster || ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const canAccessPantry = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
 
   return (
     <div className="flex flex-col h-full">
@@ -61,7 +55,14 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
       <div className="p-6 pt-[max(env(safe-area-inset-top),1.5rem)] border-b border-teal-800 flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold tracking-tight">{groupName}</h1>
-          <p className="text-xs text-teal-300 mt-1">Group Dashboard</p>
+          <p className="text-xs text-teal-300 mt-1">
+            {isMember ? (
+              isUnitSecretary ? 'Scout Member • Unit Secretary' :
+              isUnitTreasurer ? 'Scout Member • Unit Treasurer' :
+              isUnitQuartermaster ? 'Scout Member • Unit Quartermaster' :
+              'Scout Member Portal'
+            ) : 'Group Dashboard'}
+          </p>
         </div>
         {onClose && (
           <button className="md:hidden text-teal-200" onClick={onClose}>
@@ -72,7 +73,23 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
 
       {/* Nav links */}
       <nav className="p-4 space-y-1 flex-1">
-        {navLink('/group/dashboard', 'Dashboard Overview', <Landmark className="h-4 w-4" />, pathname === '/group/dashboard', onClose)}
+        {navLink(
+          '/group/dashboard',
+          isMember ? 'My Profile' : 'Dashboard Overview',
+          isMember ? <User className="h-4 w-4" /> : <Landmark className="h-4 w-4" />,
+          pathname === '/group/dashboard',
+          onClose
+        )}
+
+        {!isMember && (
+          navLink(
+            '/group/dashboard/profile',
+            'My Profile',
+            <User className="h-4 w-4" />,
+            pathname === '/group/dashboard/profile',
+            onClose
+          )
+        )}
 
         {canAccessLeaders && (
           navLink('/group/dashboard/leaders', 'Leaders & Council', <Users className="h-4 w-4" />, pathname === '/group/dashboard/leaders', onClose)
@@ -87,33 +104,39 @@ export default function DashboardSidebar({ groupName, currentRole, onClose, onLo
         )}
 
         {canAccessMembers && (
-          navLink('/group/dashboard/members', 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)
+          navLink('/group/dashboard/members', isMember ? 'Unit Youth Roster' : 'Youth Roster', <Users className="h-4 w-4" />, pathname === '/group/dashboard/members', onClose)
         )}
 
-        {canAccessMembers && (
+        {!isMember && canAccessMembers && (
           navLink('/group/dashboard/progression', 'Progression & Badges', <Award className="h-4 w-4" />, pathname.startsWith('/group/dashboard/progression'), onClose)
         )}
 
         {canAccessAttendance && (
-          navLink('/group/dashboard/attendance', 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)
+          navLink('/group/dashboard/attendance', isMember ? 'Unit Attendance' : 'Attendance', <ClipboardList className="h-4 w-4" />, pathname === '/group/dashboard/attendance', onClose)
         )}
 
-        {canAccessAttendance && (
+        {!isMember && canAccessAttendance && (
           navLink('/group/dashboard/planner', 'Session Planner (Canevas)', <Clock className="h-4 w-4" />, pathname.startsWith('/group/dashboard/planner'), onClose)
         )}
 
         {canAccessEvents && (
-          navLink('/group/dashboard/events', 'Events & Camps', <Calendar className="h-4 w-4" />, pathname.startsWith('/group/dashboard/events'), onClose)
+          navLink(
+            '/group/dashboard/events',
+            isMember ? 'My Events & Camps' : 'Events & Camps',
+            <Calendar className="h-4 w-4" />,
+            pathname.startsWith('/group/dashboard/events'),
+            onClose
+          )
         )}
 
         {navLink('/group/dashboard/library', 'Library & Archive', <BookOpen className="h-4 w-4" />, pathname.startsWith('/group/dashboard/library'), onClose)}
 
         {canAccessFinances && (
-          navLink('/group/dashboard/finances', 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)
+          navLink('/group/dashboard/finances', isMember ? 'Troop Dues & Treasury' : 'Treasury & Dues', <Wallet className="h-4 w-4" />, pathname.startsWith('/group/dashboard/finances'), onClose)
         )}
 
         {canAccessInventory && (
-          navLink('/group/dashboard/inventory', 'Equipment & Gear', <Package className="h-4 w-4" />, pathname.startsWith('/group/dashboard/inventory'), onClose)
+          navLink('/group/dashboard/inventory', isMember ? 'Unit Equipment & Gear' : 'Equipment & Gear', <Package className="h-4 w-4" />, pathname.startsWith('/group/dashboard/inventory'), onClose)
         )}
 
         {canAccessPantry && (

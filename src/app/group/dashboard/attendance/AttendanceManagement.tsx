@@ -26,6 +26,7 @@ interface Props {
     groupId: string
     groupName: string
     currentRole: string
+    patrolRole?: string | null
     userTroopId: string | null
     troops: Troop[]
     patrols: Patrol[]
@@ -54,7 +55,7 @@ const DAY_MS = 86400000
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AttendanceManagement({
-    groupId, groupName, currentRole, userTroopId,
+    groupId, groupName, currentRole, patrolRole, userTroopId,
     troops, patrols, members, leaders,
     initialEvents, initialSessions, initialRecords,
     userName,
@@ -418,7 +419,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
     // ─── RENDER ───────────────────────────────────────────────────────────────
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName} patrolRole={patrolRole}>
             {/* Status banner */}
                     {statusMsg && (
                         <div className={`mb-4 p-3 rounded-xl text-sm text-center border ${statusMsg.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-rose-50 border-rose-100 text-rose-800'

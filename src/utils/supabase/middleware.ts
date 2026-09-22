@@ -52,5 +52,32 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Redirect legacy /portal to /group/dashboard
+  if (path.startsWith('/portal')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/group/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  const isScoutMember = user?.app_metadata?.role === 'scout_member'
+
+  if (isScoutMember) {
+    // Strictly administrative leader routes that scout members cannot access
+    const adminOnlyRoutes = [
+      '/group/dashboard/leaders',
+      '/group/dashboard/troops',
+      '/group/dashboard/broadcast',
+      '/group/dashboard/pantry',
+      '/group/dashboard/planner',
+      '/group/dashboard/progression',
+      '/configurator',
+    ]
+    if (adminOnlyRoutes.some((p) => path.startsWith(p))) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/group/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
   return supabaseResponse
 }

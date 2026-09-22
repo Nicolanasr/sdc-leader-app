@@ -1,6 +1,7 @@
 'use client'
 
-import { Menu } from 'lucide-react'
+import Link from 'next/link'
+import { Menu, User } from 'lucide-react'
 
 interface Props {
   userName?: string
@@ -20,6 +21,7 @@ const ROLE_LABELS: Record<string, string> = {
   configurator: 'Superadmin / Configurator',
   ka2ed_fer2a: 'Chef de Troupe / Unité (قائد فرقة)',
   mouse3ed_ka2ed_fer2a: 'Assistant Chef de Troupe (مساعد قائد فرقة)',
+  scout_member: 'Scout Member',
 }
 
 export default function DashboardHeader({ userName, currentRole, onOpenMobileMenu }: Props) {
@@ -35,16 +37,25 @@ export default function DashboardHeader({ userName, currentRole, onOpenMobileMen
         <Menu className="h-5 w-5" />
       </button>
 
-      <div className="flex items-center gap-2 text-right">
-        {userName && (
-          <span className="text-xs sm:text-sm font-bold text-slate-900 truncate max-w-[120px] sm:max-w-none">
-            {userName}
+      <Link
+        href="/group/dashboard/profile"
+        className="flex items-center gap-2 text-right hover:bg-slate-100/70 p-1.5 -mr-1.5 rounded-xl transition-all group cursor-pointer"
+        title="View My Profile"
+      >
+        <div className="flex flex-col items-end">
+          {userName && (
+            <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors truncate max-w-[120px] sm:max-w-none">
+              {userName}
+            </span>
+          )}
+          <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg bg-teal-50 text-teal-900 border border-teal-200/70 truncate max-w-[140px] sm:max-w-none">
+            {formattedRole}
           </span>
-        )}
-        <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg bg-teal-50 text-teal-900 border border-teal-200/70 truncate max-w-[140px] sm:max-w-none">
-          {formattedRole}
-        </span>
-      </div>
+        </div>
+        <div className="w-8 h-8 rounded-xl bg-teal-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+          <User className="h-4 w-4" />
+        </div>
+      </Link>
     </header>
   )
 }

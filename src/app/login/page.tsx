@@ -18,6 +18,7 @@ const ROLE_DISPLAY_NAMES: Record<string, string> = {
   ka2ed_idare: 'Chef Administratif (القائد الإداري)',
   ka2ed_fer2a: 'Chef d’Unité (قائد الوحدة)',
   mouse3ed_ka2ed_fer2a: 'Assistant Chef d’Unité (مساعد قائد الوحدة)',
+  scout_member: 'Scout Member (عضو كشفي)',
   configurator: 'System Administrator (مدير النظام)',
 }
 
@@ -32,7 +33,7 @@ export default async function LoginPage({
   // Auto-redirect if already logged in
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
-    const role = user.app_metadata?.role
+    const role = user.app_metadata?.role || user.app_metadata?.role_scope
     if (role === 'configurator') {
       redirect('/configurator')
     } else {
@@ -133,7 +134,7 @@ export default async function LoginPage({
       return redirect(`/login?message=${encodeURIComponent(error.message)}`)
     }
 
-    const role = data.user?.app_metadata?.role
+    const role = data.user?.app_metadata?.role || data.user?.app_metadata?.role_scope
 
     if (role === 'configurator') {
       redirect('/configurator')

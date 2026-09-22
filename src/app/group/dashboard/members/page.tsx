@@ -32,19 +32,44 @@ export default async function MembersPage() {
     if (troopRole) userTroopId = troopRole.troop_id
   }
 
+  let memberPatrolRole: string | null = null
+  if (userRole === 'scout_member') {
+    const memberId = user.app_metadata?.member_id
+    if (memberId) {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id, troop_id, patrol_role')
+        .eq('id', memberId)
+        .maybeSingle()
+      memberPatrolRole = memberData?.patrol_role || null
+      if (memberData?.troop_id) userTroopId = memberData.troop_id
+    } else {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('member_id, members(id, troop_id, patrol_role)')
+        .eq('id', user.id)
+        .maybeSingle()
+      const m = prof?.members as any
+      memberPatrolRole = m?.patrol_role || null
+      if (m?.troop_id) userTroopId = m.troop_id
+    }
+  }
+
+  const isUnitSecretary = userRole === 'scout_member' && memberPatrolRole === 'amin_serr'
+
   const allowedRoles = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
     'amin_sandou2_group', 'amin_tejhizet_group',
     'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator',
   ]
 
-  const hasAccess = allowedRoles.includes(userRole) || activeScopes.some((s: string) => allowedRoles.includes(s))
+  const hasAccess = allowedRoles.includes(userRole) || activeScopes.some((s: string) => allowedRoles.includes(s)) || isUnitSecretary
 
   if (!groupId || !hasAccess) {
     redirect('/group/dashboard?message=Unauthorized. Youth Roster access only.')
   }
 
-  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a' || userRole === 'chef_troupe' || (activeScopes.includes('ka2ed_fer2a') && !activeScopes.includes('chef_groupe'))
+  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a' || userRole === 'chef_troupe' || (activeScopes.includes('ka2ed_fer2a') && !activeScopes.includes('chef_groupe')) || isUnitSecretary
 
   // 2. Fetch Group Name
   const { data: groupData } = await supabase
@@ -149,9 +174,9 @@ export default async function MembersPage() {
       : (siblingMap[m.id] || []),
   }))
 
-  // 7. If user is a Troop Leader (ka2ed_fer2a / mouse3ed_ka2ed_fer2a), scope members strictly to their troop
+  // 7. If user is a Troop Leader or Unit Secretary, scope members strictly to their troop
   let filteredMembers = enrichedMembers
-  if (['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a'].includes(userRole) && userTroopId) {
+  if ((['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(userRole) || isUnitSecretary) && userTroopId) {
     filteredMembers = enrichedMembers.filter((m: any) => m.troop_id === userTroopId)
   }
 
@@ -173,6 +198,7 @@ export default async function MembersPage() {
       groupName={groupName}
       groupId={groupId}
       currentRole={userRole}
+      patrolRole={memberPatrolRole}
       userTroopId={userTroopId}
       userName={userName}
     />

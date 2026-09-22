@@ -127,6 +127,37 @@ export default async function EventDetailsPage({ params }: PageProps) {
     notFound()
   }
 
+  let memberPatrolRole: string | null = null
+  if (role === 'scout_member') {
+    const memberId = user.app_metadata?.member_id
+    if (memberId) {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id, troop_id, patrol_role')
+        .eq('id', memberId)
+        .maybeSingle()
+      memberPatrolRole = memberData?.patrol_role || null
+    } else {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('member_id, members(id, troop_id, patrol_role)')
+        .eq('id', user.id)
+        .maybeSingle()
+      const m = prof?.members as any
+      memberPatrolRole = m?.patrol_role || null
+    }
+
+    const isStaff = (eventData.event_staff || []).some((s: any) => s.profile_id === user.id)
+    const profileMemberId = user.app_metadata?.member_id
+    const isParticipant = (eventData.event_participants || []).some(
+      (p: any) => (p.members?.id && p.members.id === profileMemberId) || p.member_id === profileMemberId
+    )
+
+    if (!isStaff && !isParticipant) {
+      redirect('/group/dashboard?message=Unauthorized. You are not enrolled in this event.')
+    }
+  }
+
   const groupName = groupRes.data?.name || 'Scout Group'
   const troopsData = troopsRes.data || []
   const leaders = (profilesRes.data || []).map((p: any) => ({
@@ -157,6 +188,7 @@ export default async function EventDetailsPage({ params }: PageProps) {
       initialShoppingList={initialShoppingList}
       initialPantryRequests={initialPantryRequests}
       currentRole={role}
+      patrolRole={memberPatrolRole}
       groupId={groupId}
       groupName={groupName}
       userProfileId={user.id}

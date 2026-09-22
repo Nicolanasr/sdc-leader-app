@@ -41,6 +41,17 @@ export default async function LeadersDirectoryPage() {
       full_name,
       email,
       rank,
+      member_id,
+      members:member_id (
+        id,
+        first_name,
+        last_name,
+        current_rank,
+        promise_date,
+        blood_type,
+        troop_id,
+        troops:troop_id (name)
+      ),
       user_roles!inner (
         id,
         group_id,
@@ -60,6 +71,8 @@ export default async function LeadersDirectoryPage() {
     fullName: prof.full_name || 'Unknown',
     email: prof.email || 'N/A',
     rank: prof.rank || 'N/A',
+    memberId: prof.member_id || null,
+    linkedMember: prof.members || null,
     responsibilityIds: (prof.profile_responsibilities || []).map((pr: any) => pr.responsibilities?.id).filter(Boolean),
     responsibilities: (prof.profile_responsibilities || []).map((pr: any) => pr.responsibilities?.name).filter(Boolean),
     roles: (prof.user_roles || []).map((ur: any) => ({
@@ -100,7 +113,24 @@ export default async function LeadersDirectoryPage() {
     .neq('permission_scope', 'configurator')
     .order('name', { ascending: true })
 
-  // 8. Fetch logged in user full_name
+  // 8. Fetch all active members in group for linking
+  const { data: allMembersData } = await supabase
+    .from('members')
+    .select('id, first_name, last_name, troop_id, current_rank, troops:troop_id(name)')
+    .eq('group_id', groupId)
+    .eq('is_deleted', false)
+    .order('first_name', { ascending: true })
+
+  const availableMembers = (allMembersData || []).map((m: any) => ({
+    id: m.id,
+    first_name: m.first_name,
+    last_name: m.last_name,
+    troop_id: m.troop_id,
+    current_rank: m.current_rank,
+    troops: Array.isArray(m.troops) ? m.troops[0] : m.troops,
+  }))
+
+  // 9. Fetch logged in user full_name
   const { data: userProfile } = await supabase
     .from('profiles')
     .select('full_name')
@@ -120,6 +150,7 @@ export default async function LeadersDirectoryPage() {
       responsibilities={responsibilities || []}
       roles={roles || []}
       userName={userName}
+      availableMembers={availableMembers}
     />
   )
 }

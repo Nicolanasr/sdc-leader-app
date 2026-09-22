@@ -136,6 +136,7 @@ interface Props {
     groupId: string
     groupName: string
     currentRole: string
+    patrolRole?: string | null
     userTroopId: string | null
     userId: string
     userName?: string
@@ -225,6 +226,7 @@ export default function InventoryManagement({
     groupId,
     groupName,
     currentRole,
+    patrolRole,
     userTroopId,
     userId,
     userName,
@@ -1575,6 +1577,7 @@ export default function InventoryManagement({
             groupName={groupName}
             currentRole={currentRole}
             userName={userName}
+            patrolRole={patrolRole}
         >
             <div className="space-y-3 w-full">
                 {/* Status Toast */}

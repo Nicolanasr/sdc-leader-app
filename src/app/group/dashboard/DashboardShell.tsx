@@ -13,10 +13,11 @@ interface Props {
     groupName: string
     currentRole: string
     userName?: string
+    patrolRole?: string | null
     children: React.ReactNode
 }
 
-export default function DashboardShell({ groupName, currentRole, userName, children }: Props) {
+export default function DashboardShell({ groupName, currentRole, userName, patrolRole, children }: Props) {
     const [isMobileOpen, setIsMobileOpen] = useState(false)
     const router = useRouter()
     const supabase = createClient()
@@ -45,6 +46,7 @@ export default function DashboardShell({ groupName, currentRole, userName, child
                 <DashboardSidebar
                     groupName={groupName}
                     currentRole={currentRole}
+                    patrolRole={patrolRole}
                     onClose={() => setIsMobileOpen(false)}
                     onLogout={handleLogout}
                 />
@@ -66,6 +68,7 @@ export default function DashboardShell({ groupName, currentRole, userName, child
             {/* Mobile Bottom Navigation Tab Bar */}
             <MobileBottomNav
                 currentRole={currentRole}
+                patrolRole={patrolRole}
                 onOpenMenu={() => setIsMobileOpen(true)}
             />
 

@@ -2,15 +2,21 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Landmark, Calendar, Users, ClipboardList, Menu, Wallet } from 'lucide-react'
+import { Landmark, Calendar, Users, ClipboardList, Menu, Wallet, User, Package } from 'lucide-react'
 
 interface Props {
   currentRole: string
+  patrolRole?: string | null
   onOpenMenu: () => void
 }
 
-export default function MobileBottomNav({ currentRole, onOpenMenu }: Props) {
+export default function MobileBottomNav({ currentRole, patrolRole, onOpenMenu }: Props) {
   const pathname = usePathname()
+  const isMember = currentRole === 'scout_member'
+
+  const isUnitSecretary = isMember && patrolRole === 'amin_serr'
+  const isUnitTreasurer = isMember && patrolRole === 'sandou2'
+  const isUnitQuartermaster = isMember && patrolRole === 'tejhizet'
 
   const canAccessMembers = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 
@@ -20,47 +26,98 @@ export default function MobileBottomNav({ currentRole, onOpenMenu }: Props) {
 
   const isTreasurer = currentRole === 'amin_sandou2_group'
 
-  const navItems = [
-    {
-      label: 'Home',
-      href: '/group/dashboard',
-      icon: Landmark,
-      active: pathname === '/group/dashboard',
-    },
-    {
-      label: 'Events',
-      href: '/group/dashboard/events',
-      icon: Calendar,
-      active: pathname.startsWith('/group/dashboard/events'),
-    },
-    ...(canAccessMembers
-      ? [
-          {
-            label: 'Scouts',
-            href: '/group/dashboard/members',
-            icon: Users,
-            active: pathname.startsWith('/group/dashboard/members'),
-          },
-        ]
-      : []),
-    ...(isTreasurer
-      ? [
-          {
-            label: 'Treasury',
-            href: '/group/dashboard/finances',
-            icon: Wallet,
-            active: pathname.startsWith('/group/dashboard/finances'),
-          },
-        ]
-      : [
-          {
-            label: 'Planner',
-            href: '/group/dashboard/planner',
-            icon: ClipboardList,
-            active: pathname.startsWith('/group/dashboard/planner'),
-          },
-        ]),
-  ]
+  const navItems = isMember
+    ? [
+        {
+          label: 'Profile',
+          href: '/group/dashboard',
+          icon: User,
+          active: pathname === '/group/dashboard',
+        },
+        ...(isUnitSecretary
+          ? [
+              {
+                label: 'Attendance',
+                href: '/group/dashboard/attendance',
+                icon: ClipboardList,
+                active: pathname.startsWith('/group/dashboard/attendance'),
+              },
+              {
+                label: 'Roster',
+                href: '/group/dashboard/members',
+                icon: Users,
+                active: pathname.startsWith('/group/dashboard/members'),
+              },
+            ]
+          : []),
+        ...(isUnitTreasurer
+          ? [
+              {
+                label: 'Dues',
+                href: '/group/dashboard/finances',
+                icon: Wallet,
+                active: pathname.startsWith('/group/dashboard/finances'),
+              },
+            ]
+          : []),
+        ...(isUnitQuartermaster
+          ? [
+              {
+                label: 'Equipment',
+                href: '/group/dashboard/inventory',
+                icon: Package,
+                active: pathname.startsWith('/group/dashboard/inventory'),
+              },
+            ]
+          : []),
+        {
+          label: 'Events',
+          href: '/group/dashboard/events',
+          icon: Calendar,
+          active: pathname.startsWith('/group/dashboard/events'),
+        },
+      ]
+    : [
+        {
+          label: 'Home',
+          href: '/group/dashboard',
+          icon: Landmark,
+          active: pathname === '/group/dashboard',
+        },
+        {
+          label: 'Events',
+          href: '/group/dashboard/events',
+          icon: Calendar,
+          active: pathname.startsWith('/group/dashboard/events'),
+        },
+        ...(canAccessMembers
+          ? [
+              {
+                label: 'Scouts',
+                href: '/group/dashboard/members',
+                icon: Users,
+                active: pathname.startsWith('/group/dashboard/members'),
+              },
+            ]
+          : []),
+        ...(isTreasurer
+          ? [
+              {
+                label: 'Treasury',
+                href: '/group/dashboard/finances',
+                icon: Wallet,
+                active: pathname.startsWith('/group/dashboard/finances'),
+              },
+            ]
+          : [
+              {
+                label: 'Planner',
+                href: '/group/dashboard/planner',
+                icon: ClipboardList,
+                active: pathname.startsWith('/group/dashboard/planner'),
+              },
+            ]),
+      ]
 
   return (
     <nav 

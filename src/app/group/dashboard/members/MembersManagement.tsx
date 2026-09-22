@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle, Sparkles, KeyRound } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -99,6 +99,7 @@ interface Props {
     groupName: string
     groupId: string
     currentRole: string
+    patrolRole?: string | null
     userTroopId: string | null
     userName?: string
 }
@@ -111,6 +112,7 @@ export default function MembersManagement({
     groupName,
     groupId,
     currentRole,
+    patrolRole: userPatrolRole,
     userTroopId,
     userName,
 }: Props) {
@@ -173,7 +175,84 @@ export default function MembersManagement({
 
     // Modal Tab States
     const [formTab, setFormTab] = useState<'scout' | 'family' | 'personal' | 'siblings'>('scout')
-    const [profileTab, setProfileTab] = useState<'scout' | 'family' | 'personal' | 'siblings'>('scout')
+    const [profileTab, setProfileTab] = useState<'scout' | 'family' | 'personal' | 'siblings' | 'login'>('scout')
+
+    // Portal Login Provisioning states
+    const [loginStatus, setLoginStatus] = useState<{
+        loading: boolean
+        isProvisioned: boolean
+        email?: string
+        error?: string
+    }>({ loading: false, isProvisioned: false })
+    const [loginEmail, setLoginEmail] = useState('')
+    const [loginPassword, setLoginPassword] = useState('')
+    const [provisionSubmitting, setProvisionSubmitting] = useState(false)
+    const [provisionSuccessMsg, setProvisionSuccessMsg] = useState('')
+
+    const checkLoginStatus = async (memberId: string, memberObj?: Member) => {
+        setLoginStatus({ loading: true, isProvisioned: false })
+        setProvisionSuccessMsg('')
+        try {
+            const res = await fetch(`/api/group/onboard-member-login?memberId=${memberId}`)
+            const data = await res.json()
+            if (res.ok && data.isProvisioned) {
+                setLoginStatus({ loading: false, isProvisioned: true, email: data.email })
+                setLoginEmail(data.email)
+            } else {
+                setLoginStatus({ loading: false, isProvisioned: false })
+                const target = memberObj || selectedMember
+                if (target) {
+                    const cleanFirst = target.first_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    const cleanLast = target.last_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    setLoginEmail(`${cleanFirst}.${cleanLast}@sdcsjm.org`)
+                }
+            }
+        } catch {
+            setLoginStatus({ loading: false, isProvisioned: false, error: 'Could not load status' })
+        }
+    }
+
+    const handleGenerateMemberPassword = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$'
+        let pass = ''
+        for (let i = 0; i < 10; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        setLoginPassword(pass)
+    }
+
+    const handleProvisionLogin = async (isReset = false) => {
+        if (!selectedMember || !loginEmail || !loginPassword) {
+            showStatus('Please enter both email and password.', 'error')
+            return
+        }
+        setProvisionSubmitting(true)
+        setProvisionSuccessMsg('')
+        try {
+            const res = await fetch('/api/group/onboard-member-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    memberId: selectedMember.id,
+                    email: loginEmail,
+                    password: loginPassword,
+                    isReset,
+                }),
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                showStatus(data.error || 'Failed to provision account.', 'error')
+            } else {
+                setLoginStatus({ loading: false, isProvisioned: true, email: loginEmail })
+                setProvisionSuccessMsg(`✓ Login credentials ready: Email: ${loginEmail} | Password: ${loginPassword}`)
+                showStatus(`Member login ${isReset ? 'updated' : 'activated'} successfully!`, 'success')
+            }
+        } catch (err: any) {
+            showStatus(err.message || 'Error provisioning account', 'error')
+        } finally {
+            setProvisionSubmitting(false)
+        }
+    }
 
     // Patrol Creation Modal states
     const [showPatrolModal, setShowPatrolModal] = useState(false)
@@ -701,8 +780,11 @@ export default function MembersManagement({
         return queryMatch && troopMatch && rankMatch
     })
 
+    const isMember = currentRole === 'scout_member'
+    const isUnitSecretary = isMember && userPatrolRole === 'amin_serr'
+
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName} patrolRole={userPatrolRole}>
             {statusMessage && (
                 <div
                     className={`p-3.5 rounded-xl border text-sm text-center ${statusMessage.type === 'success'
@@ -721,11 +803,20 @@ export default function MembersManagement({
                         <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
-                            Youth Roster
-                        </h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
+                                {isUnitSecretary ? 'Unit Youth Roster' : 'Youth Roster'}
+                            </h1>
+                            {isUnitSecretary && (
+                                <span className="px-2 py-0.5 rounded-md bg-teal-100 text-teal-800 text-[10px] font-black uppercase tracking-wider">
+                                    Secretary View
+                                </span>
+                            )}
+                        </div>
                         <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
-                            Scout profiles, patrols, badges & records
+                            {isUnitSecretary
+                                ? 'Unit Secretary view • Scout contact profiles, patrols & emergency records'
+                                : 'Scout profiles, patrols, badges & records'}
                         </p>
                     </div>
                 </div>
@@ -1054,6 +1145,16 @@ export default function MembersManagement({
                             <button
                                 type="button"
                                 onClick={() => {
+                                    setProfileTab('login')
+                                    if (selectedMember) checkLoginStatus(selectedMember.id, selectedMember)
+                                }}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 ${profileTab === 'login' ? 'bg-teal-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            >
+                                🔑 Portal Login
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
                                     const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
                                     const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
                                     router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
@@ -1260,6 +1361,127 @@ export default function MembersManagement({
                                         )}
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Tab 5: Portal Login Account */}
+                        {profileTab === 'login' && (
+                            <div className="space-y-4">
+                                {loginStatus.loading ? (
+                                    <div className="p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin text-teal-700" />
+                                        <span>Checking portal login status...</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {/* Status card */}
+                                        <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                                            loginStatus.isProvisioned
+                                                ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                                                : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                                        }`}>
+                                            <div className="mt-0.5">
+                                                {loginStatus.isProvisioned ? (
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
+                                                        ✓
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">
+                                                        !
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-xs font-black">
+                                                    {loginStatus.isProvisioned
+                                                        ? 'Active Member Portal Account'
+                                                        : 'No Portal Account Yet'}
+                                                </h4>
+                                                <p className="text-[11px] mt-0.5 opacity-90 leading-relaxed">
+                                                    {loginStatus.isProvisioned
+                                                        ? `This scout can log into the mobile app using: ${loginStatus.email}`
+                                                        : 'Activating portal access lets this scout log into the app on mobile and see their own profile, emergency contacts, and enrolled activities.'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Success alert with copyable credentials */}
+                                        {provisionSuccessMsg && (
+                                            <div className="p-3.5 rounded-xl bg-teal-900 text-white text-xs space-y-1.5 shadow-md">
+                                                <div className="flex items-center gap-1.5 font-bold text-amber-300 text-[11px]">
+                                                    <Sparkles className="h-3.5 w-3.5" />
+                                                    <span>Credentials Ready to Share</span>
+                                                </div>
+                                                <p className="text-[11px] font-mono bg-black/30 p-2 rounded-lg break-all select-all">
+                                                    {provisionSuccessMsg}
+                                                </p>
+                                                <p className="text-[10px] text-teal-200">
+                                                    You can copy and send this directly to the scout or their parents via WhatsApp or SMS.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Provision or Reset Form */}
+                                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                                            <h5 className="text-xs font-bold text-slate-800">
+                                                {loginStatus.isProvisioned ? 'Reset Password / Update Account' : 'Create Login Credentials'}
+                                            </h5>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                                    Login Email
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    value={loginEmail}
+                                                    onChange={(e) => setLoginEmail(e.target.value)}
+                                                    placeholder="scout.name@sdcsjm.org"
+                                                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:border-teal-700 focus:outline-none"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        {loginStatus.isProvisioned ? 'New Password' : 'Password'}
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleGenerateMemberPassword}
+                                                        className="text-[10px] font-bold text-teal-700 hover:underline"
+                                                    >
+                                                        🎲 Generate Random
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={loginPassword}
+                                                    onChange={(e) => setLoginPassword(e.target.value)}
+                                                    placeholder="At least 6 characters"
+                                                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-mono text-slate-900 focus:border-teal-700 focus:outline-none"
+                                                />
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                disabled={provisionSubmitting || !loginEmail || !loginPassword}
+                                                onClick={() => handleProvisionLogin(loginStatus.isProvisioned)}
+                                                className="w-full py-2.5 rounded-xl bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                                            >
+                                                {provisionSubmitting ? (
+                                                    <>
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        <span>Saving...</span>
+                                                    </>
+                                                ) : loginStatus.isProvisioned ? (
+                                                    <span>Update Password</span>
+                                                ) : (
+                                                    <span>Activate Member Portal Login</span>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 

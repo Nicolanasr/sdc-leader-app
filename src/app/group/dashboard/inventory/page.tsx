@@ -12,7 +12,7 @@ export default async function InventoryPage() {
 
   const role = user?.app_metadata?.role
   const groupId = user?.app_metadata?.group_id
-  const userTroopId = user?.app_metadata?.troop_id || null
+  let userTroopId = user?.app_metadata?.troop_id || null
 
   if (!user || !role || !groupId) {
     redirect('/login?message=Unauthorized. Leader access only.')
@@ -24,7 +24,32 @@ export default async function InventoryPage() {
     .select('id, event_id, event_role')
     .eq('profile_id', user.id)
 
-  const isEventStaff = (eventStaffAssignments || []).length > 0
+  const isEventStaff = Boolean(eventStaffAssignments && eventStaffAssignments.length > 0)
+
+  let memberPatrolRole: string | null = null
+  if (role === 'scout_member') {
+    const memberId = user?.app_metadata?.member_id
+    if (memberId) {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id, troop_id, patrol_role')
+        .eq('id', memberId)
+        .maybeSingle()
+      memberPatrolRole = memberData?.patrol_role || null
+      if (memberData?.troop_id) userTroopId = memberData.troop_id
+    } else {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('member_id, members(id, troop_id, patrol_role)')
+        .eq('id', user?.id)
+        .maybeSingle()
+      const m = prof?.members as any
+      memberPatrolRole = m?.patrol_role || null
+      if (m?.troop_id) userTroopId = m.troop_id
+    }
+  }
+
+  const isUnitQuartermaster = role === 'scout_member' && memberPatrolRole === 'tejhizet'
 
   const strictlyAllowedRoles = [
     'chef_groupe',
@@ -35,7 +60,7 @@ export default async function InventoryPage() {
     'configurator',
   ]
 
-  const hasAccess = strictlyAllowedRoles.includes(role) || isEventStaff
+  const hasAccess = strictlyAllowedRoles.includes(role) || isEventStaff || isUnitQuartermaster
 
   if (!hasAccess) {
     redirect('/group/dashboard?message=Access to Inventory is restricted to Quartermasters, Group Leaders, and Troop/Event Leaders.')
@@ -140,6 +165,7 @@ export default async function InventoryPage() {
       groupId={groupId}
       groupName={groupName}
       currentRole={role}
+      patrolRole={memberPatrolRole}
       userTroopId={userTroopId}
       userId={user.id}
       userName={userName}

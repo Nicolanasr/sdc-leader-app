@@ -12,7 +12,32 @@ export default async function FinancesPage() {
 
   const role = user?.app_metadata?.role
   const groupId = user?.app_metadata?.group_id
-  const userTroopId = user?.app_metadata?.troop_id
+  let userTroopId = user?.app_metadata?.troop_id || null
+  let memberPatrolRole: string | null = null
+
+  if (role === 'scout_member') {
+    const memberId = user?.app_metadata?.member_id
+    if (memberId) {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id, troop_id, patrol_role')
+        .eq('id', memberId)
+        .maybeSingle()
+      memberPatrolRole = memberData?.patrol_role || null
+      if (memberData?.troop_id) userTroopId = memberData.troop_id
+    } else {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('member_id, members(id, troop_id, patrol_role)')
+        .eq('id', user?.id)
+        .maybeSingle()
+      const m = prof?.members as any
+      memberPatrolRole = m?.patrol_role || null
+      if (m?.troop_id) userTroopId = m.troop_id
+    }
+  }
+
+  const isUnitTreasurer = role === 'scout_member' && memberPatrolRole === 'sandou2'
 
   const allowedRoles = [
     'chef_groupe',
@@ -23,7 +48,7 @@ export default async function FinancesPage() {
     'configurator',
   ]
 
-  if (!user || !role || !groupId || !allowedRoles.includes(role)) {
+  if (!user || !role || !groupId || (!allowedRoles.includes(role) && !isUnitTreasurer)) {
     redirect('/group/dashboard?message=Unauthorized. Treasury & Dues access only.')
   }
 
@@ -36,13 +61,18 @@ export default async function FinancesPage() {
 
   const groupName = groupData?.name || 'Scout Group'
 
-  // 3. Fetch Troops in Group
-  const { data: troopsData } = await supabase
+  // 3. Fetch Troops in Group (scoped for unit treasurer)
+  let troopsQuery = supabase
     .from('troops')
     .select('id, name')
     .eq('group_id', groupId)
     .eq('is_deleted', false)
     .order('name', { ascending: true })
+
+  if (isUnitTreasurer && userTroopId) {
+    troopsQuery = troopsQuery.eq('id', userTroopId)
+  }
+  const { data: troopsData } = await troopsQuery
 
   // 4. Fetch Leaders/Profiles in Group
   const { data: profilesData } = await supabase
@@ -63,14 +93,19 @@ export default async function FinancesPage() {
     rank: p.rank || '',
   }))
 
-  // 5. Fetch Active Scout Members in Group
-  const { data: membersData } = await supabase
+  // 5. Fetch Active Scout Members in Group (scoped for unit treasurer)
+  let membersQuery = supabase
     .from('members')
     .select('id, first_name, last_name, troop_id, current_rank, birth_date')
     .eq('group_id', groupId)
     .eq('is_active', true)
     .eq('is_deleted', false)
     .order('last_name', { ascending: true })
+
+  if (isUnitTreasurer && userTroopId) {
+    membersQuery = membersQuery.eq('troop_id', userTroopId)
+  }
+  const { data: membersData } = await membersQuery
 
   // 6. Fetch Sibling Links from member_history
   const { data: siblingHistory } = await supabase
@@ -107,8 +142,8 @@ export default async function FinancesPage() {
     .select('*')
     .eq('group_id', groupId)
 
-  // 9. Fetch Troop Monthly Dues & Payments
-  const { data: troopMonthlyDues } = await supabase
+  // 9. Fetch Troop Monthly Dues & Payments (scoped for unit treasurer)
+  let duesQuery = supabase
     .from('troop_monthly_dues')
     .select(`
       *,
@@ -116,6 +151,11 @@ export default async function FinancesPage() {
       troop_dues_payments (*, profiles(full_name))
     `)
     .eq('group_id', groupId)
+
+  if (isUnitTreasurer && userTroopId) {
+    duesQuery = duesQuery.eq('troop_id', userTroopId)
+  }
+  const { data: troopMonthlyDues } = await duesQuery
 
   // 10. Fetch Troop Handovers
   const { data: troopHandovers } = await supabase
@@ -183,6 +223,7 @@ export default async function FinancesPage() {
       troops={troopsData || []}
       leaders={leaders || []}
       currentRole={role}
+      patrolRole={memberPatrolRole}
       groupId={groupId}
       groupName={groupName}
       userTroopId={userTroopId || null}
