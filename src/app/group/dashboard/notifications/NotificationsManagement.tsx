@@ -356,7 +356,7 @@ export default function NotificationsManagement({
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+    <div className="space-y-8 max-w-7xl mx-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {/* 1. Header & Overview */}
       <div className="bg-gradient-to-br from-teal-950 via-slate-900 to-teal-900 rounded-3xl p-6 sm:p-8 text-white border border-teal-500/20 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />

@@ -238,7 +238,7 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)] bg-slate-50 text-slate-900">
       <div className="w-full max-w-md p-6 sm:p-8 bg-white border border-slate-200 rounded-3xl shadow-sm space-y-6">
         <div className="text-center space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-900 text-xs font-black uppercase tracking-wider mb-1">

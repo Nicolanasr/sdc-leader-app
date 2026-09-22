@@ -162,6 +162,8 @@ export default async function NotificationsPage() {
   return (
     <NotificationsManagement
       groupName={groupName}
+      currentRole={role}
+      roles={roles}
       currentUserName={userName}
       troops={troops}
       recipients={recipientsList}

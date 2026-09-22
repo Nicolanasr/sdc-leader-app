@@ -92,9 +92,9 @@ export default function PublicScoutCard({ scout }: Props) {
   )}`
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-emerald-50/40 to-slate-100 text-slate-800 flex flex-col justify-between selection:bg-emerald-600 selection:text-white pb-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-emerald-50/40 to-slate-100 text-slate-800 flex flex-col justify-between selection:bg-emerald-600 selection:text-white pb-[max(env(safe-area-inset-bottom),2rem)]">
       {/* Top Floating App Bar */}
-      <header className="w-full max-w-lg mx-auto px-4 pt-4 pb-2 flex items-center justify-between">
+      <header className="w-full max-w-lg mx-auto px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-xl bg-emerald-800 text-white flex items-center justify-center text-lg shadow-sm">
             ⚜️

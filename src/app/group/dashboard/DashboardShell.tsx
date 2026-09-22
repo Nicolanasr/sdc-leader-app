@@ -55,7 +55,7 @@ export default function DashboardShell({ groupName, currentRole, roles, userName
             </aside>
 
             {/* Main viewport */}
-            <main className="flex-1 overflow-y-auto flex flex-col min-w-0 pb-16 md:pb-0">
+            <main className="flex-1 overflow-y-auto flex flex-col min-w-0 pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-0">
                 <DashboardHeader
                     userName={userName}
                     currentRole={currentRole}

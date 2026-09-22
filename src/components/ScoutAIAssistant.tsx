@@ -191,7 +191,7 @@ export default function ScoutAIAssistant() {
   return (
     <>
       {/* ── FLOATING ACTION BUTTON ── */}
-      <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40">
+      <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 sm:bottom-6 sm:right-6 z-40">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -216,7 +216,7 @@ export default function ScoutAIAssistant() {
       {isOpen && (
         <div className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[420px] sm:h-[600px] z-50 flex flex-col bg-white sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in sm:zoom-in-95">
           {/* Header */}
-          <div className="p-3.5 sm:p-4 bg-gradient-to-r from-slate-900 via-teal-950 to-teal-900 text-white flex flex-col shrink-0 shadow-xs gap-2.5">
+          <div className="p-3.5 sm:p-4 pt-[max(env(safe-area-inset-top),0.875rem)] bg-gradient-to-r from-slate-900 via-teal-950 to-teal-900 text-white flex flex-col shrink-0 shadow-xs gap-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-sm shadow-2xs">
@@ -398,7 +398,7 @@ export default function ScoutAIAssistant() {
           </div>
 
           {/* Input Footer */}
-          <div className="p-3 bg-white border-t border-slate-100 shrink-0">
+          <div className="p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-white border-t border-slate-100 shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault()

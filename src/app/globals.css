@@ -105,4 +105,13 @@ body:has(.fixed.inset-0.z-\[80\]) nav[aria-label="Mobile Bottom Navigation"] {
   transform: translateY(100%) !important;
 }
 
-
+/* PWA Safe Area Utilities for Notched Displays & Home Indicators */
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+}
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+}
+.pb-safe-nav {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}

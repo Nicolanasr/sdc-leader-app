@@ -167,7 +167,7 @@ export default function DashboardSidebar({ groupName, currentRole, roles = [], p
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-teal-800">
+      <div className="p-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] border-t border-teal-800">
         <button
           onClick={onLogout}
           className="w-full text-center px-4 py-2 rounded-lg text-sm font-semibold text-teal-200 hover:bg-teal-800 hover:text-white transition-colors"
