@@ -136,6 +136,7 @@ interface Props {
     groupId: string
     groupName: string
     currentRole: string
+    roles?: string[]
     patrolRole?: string | null
     userTroopId: string | null
     userId: string
@@ -226,6 +227,7 @@ export default function InventoryManagement({
     groupId,
     groupName,
     currentRole,
+    roles,
     patrolRole,
     userTroopId,
     userId,
@@ -1576,6 +1578,7 @@ export default function InventoryManagement({
         <DashboardShell
             groupName={groupName}
             currentRole={currentRole}
+            roles={roles}
             userName={userName}
             patrolRole={patrolRole}
         >

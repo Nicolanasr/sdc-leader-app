@@ -138,6 +138,14 @@ export async function PATCH(request: NextRequest) {
 
     // 2. Extract allowed fields to update
     const {
+      first_name,
+      last_name,
+      first_name_ar,
+      last_name_ar,
+      father_name,
+      father_name_ar,
+      mother_name,
+      mother_name_ar,
       phone_number,
       whatsapp_number,
       emergency_contact_name,
@@ -155,9 +163,19 @@ export async function PATCH(request: NextRequest) {
     const profileUpdates: Record<string, any> = {}
     if (phone_number !== undefined) profileUpdates.phone_number = phone_number || null
     if (whatsapp_number !== undefined) profileUpdates.whatsapp_number = whatsapp_number || null
+    if (first_name !== undefined || last_name !== undefined) {
+      const fn = first_name !== undefined ? first_name : ''
+      const ln = last_name !== undefined ? last_name : ''
+      if (fn || ln) {
+        profileUpdates.full_name = `${fn} ${ln}`.trim()
+      }
+    }
 
     if (Object.keys(profileUpdates).length > 0) {
-      await adminSupabase.from('profiles').update(profileUpdates).eq('id', user.id)
+      const { error: pErr } = await clientSupabase.from('profiles').update(profileUpdates).eq('id', user.id)
+      if (pErr) {
+        await adminSupabase.from('profiles').update(profileUpdates).eq('id', user.id)
+      }
     }
 
     // 4. Update members table if member record is linked
@@ -166,6 +184,27 @@ export async function PATCH(request: NextRequest) {
 
     if (memberId) {
       const memberUpdates: Record<string, any> = {}
+      if (first_name !== undefined) {
+        memberUpdates.first_name = first_name.trim()
+        memberUpdates.first_name_en = first_name.trim()
+      }
+      if (last_name !== undefined) {
+        memberUpdates.last_name = last_name.trim()
+        memberUpdates.last_name_en = last_name.trim()
+      }
+      if (first_name_ar !== undefined) memberUpdates.first_name_ar = first_name_ar?.trim() || null
+      if (last_name_ar !== undefined) memberUpdates.last_name_ar = last_name_ar?.trim() || null
+      if (father_name !== undefined) {
+        memberUpdates.father_name = father_name?.trim() || null
+        memberUpdates.father_name_en = father_name?.trim() || null
+      }
+      if (father_name_ar !== undefined) memberUpdates.father_name_ar = father_name_ar?.trim() || null
+      if (mother_name !== undefined) {
+        memberUpdates.mother_name = mother_name?.trim() || null
+        memberUpdates.mother_name_en = mother_name?.trim() || null
+      }
+      if (mother_name_ar !== undefined) memberUpdates.mother_name_ar = mother_name_ar?.trim() || null
+
       if (phone_number !== undefined) memberUpdates.member_phone = phone_number || null
       if (emergency_contact_name !== undefined) memberUpdates.emergency_contact_name = emergency_contact_name
       if (emergency_contact_relation !== undefined) memberUpdates.emergency_contact_relation = emergency_contact_relation
@@ -178,7 +217,7 @@ export async function PATCH(request: NextRequest) {
       if (photo_url !== undefined) memberUpdates.photo_url = photo_url || null
 
       if (Object.keys(memberUpdates).length > 0) {
-        const { data: mData, error: mError } = await adminSupabase
+        let { data: mData, error: mError } = await clientSupabase
           .from('members')
           .update(memberUpdates)
           .eq('id', memberId)
@@ -186,10 +225,41 @@ export async function PATCH(request: NextRequest) {
           .single()
 
         if (mError) {
-          console.error('Failed to update member record:', mError)
-          return NextResponse.json({ error: mError.message }, { status: 400 })
+          const { data: adminData, error: adminErr } = await adminSupabase
+            .from('members')
+            .update(memberUpdates)
+            .eq('id', memberId)
+            .select('*')
+            .single()
+
+          if (adminErr) {
+            if (adminErr.message?.includes('schema cache') || adminErr.message?.includes('column')) {
+              const fallback = { ...memberUpdates }
+              delete fallback.first_name_ar
+              delete fallback.last_name_ar
+              delete fallback.father_name_ar
+              delete fallback.mother_name_ar
+              delete fallback.first_name_en
+              delete fallback.last_name_en
+              delete fallback.father_name_en
+              delete fallback.mother_name_en
+              const { data: fallbackData } = await adminSupabase
+                .from('members')
+                .update(fallback)
+                .eq('id', memberId)
+                .select('*')
+                .single()
+              updatedMember = fallbackData
+            } else {
+              console.error('Failed to update member record:', adminErr)
+              return NextResponse.json({ error: adminErr.message }, { status: 400 })
+            }
+          } else {
+            updatedMember = adminData
+          }
+        } else {
+          updatedMember = mData
         }
-        updatedMember = mData
       }
     }
 

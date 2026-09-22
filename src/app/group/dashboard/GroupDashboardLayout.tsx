@@ -34,6 +34,7 @@ interface Props {
   groupName: string
   commissariatName: string
   role: string
+  roles?: string[]
   groupId: string
   stats: Stats
   userName?: string
@@ -59,23 +60,27 @@ export default function GroupDashboardLayout({
   groupName,
   commissariatName,
   role,
+  roles = [],
   groupId,
   stats,
   userName = 'Leader',
   assignedTroopName,
   upcomingEvents = [],
 }: Props) {
+  const allUserRoles = Array.from(new Set([role, ...roles].filter(Boolean)))
+  const hasRole = (targetRoles: string[]) => allUserRoles.some((r) => targetRoles.includes(r))
+
   const roleInfo = ROLE_LABELS[role] || { label: 'Scout Leader', ar: 'قائد' }
 
-  // Role permissions per workspace
-  const canAccessBroadcast = ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(role)
-  const canAccessLeaders = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
-  const canAccessTroops = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
-  const canAccessMembers = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
-  const canAccessAttendance = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
-  const canAccessFinances = ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
-  const canAccessInventory = ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(role)
-  const canAccessPantry = ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(role)
+  // Role permissions per workspace (Evaluates union of all roles held by user)
+  const canAccessBroadcast = hasRole(['chef_groupe', 'assistant_chef_groupe', 'configurator'])
+  const canAccessLeaders = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
+  const canAccessTroops = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
+  const canAccessMembers = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessAttendance = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessFinances = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessInventory = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessPantry = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'configurator'])
 
   // Dynamic Workspace Modules tailored to the active role
   const modules = [
@@ -132,7 +137,7 @@ export default function GroupDashboardLayout({
       color: 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-400',
       badge: 'Progression',
       badgeColor: 'bg-amber-100 text-amber-900',
-      canAccess: true,
+      canAccess: canAccessMembers,
     },
     {
       title: 'Quartermaster & Gear',
@@ -214,16 +219,24 @@ export default function GroupDashboardLayout({
   ].filter((m) => m.canAccess)
 
   return (
-    <DashboardShell groupName={groupName} currentRole={role} userName={userName}>
+    <DashboardShell groupName={groupName} currentRole={role} roles={allUserRoles} userName={userName}>
       <div className="w-full pb-20 space-y-3 sm:space-y-4">
         {/* ── 1. WELCOME & LEADER IDENTITY HERO CARD ── */}
         <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white p-4 sm:p-5 rounded-3xl shadow-sm border border-teal-950/40 relative overflow-hidden">
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-teal-700/80 text-teal-100 border border-teal-600/40 uppercase tracking-wider">
-                  ⚜️ {roleInfo.label}
-                </span>
+                {allUserRoles.map((r) => {
+                  const info = ROLE_LABELS[r] || { label: r.replace(/_/g, ' ') }
+                  return (
+                    <span
+                      key={r}
+                      className="text-xs font-black px-2.5 py-0.5 rounded-full bg-teal-700/80 text-teal-100 border border-teal-600/40 uppercase tracking-wider"
+                    >
+                      ⚜️ {info.label}
+                    </span>
+                  )
+                })}
                 {assignedTroopName && (
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30">
                     🏕️ {assignedTroopName}

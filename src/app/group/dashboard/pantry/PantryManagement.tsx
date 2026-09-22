@@ -76,6 +76,7 @@ interface Props {
     groupId: string
     groupName: string
     currentRole: string
+    roles?: string[]
     userName: string
     userId?: string
     initialPantry: PantryItem[]
@@ -252,6 +253,7 @@ export default function PantryManagement({
     groupId,
     groupName,
     currentRole,
+    roles,
     userName,
     userId,
     initialPantry,
@@ -1652,6 +1654,7 @@ export default function PantryManagement({
         <DashboardShell
             groupName={groupName}
             currentRole={currentRole}
+            roles={roles}
             userName={userName}
         >
             <div className="w-full pb-24 space-y-2.5 sm:space-y-3">

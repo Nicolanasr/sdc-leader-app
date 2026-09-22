@@ -20,6 +20,7 @@ export default async function UserProfilePage() {
   }
 
   const role = user.app_metadata?.role || 'scout_member'
+  const roles: string[] = user.app_metadata?.roles || user.app_metadata?.role_scopes || [role]
   const groupId = user.app_metadata?.group_id
 
   // 2. Fetch Group details
@@ -61,6 +62,16 @@ export default async function UserProfilePage() {
         id,
         first_name,
         last_name,
+        first_name_en,
+        last_name_en,
+        first_name_ar,
+        last_name_ar,
+        father_name,
+        father_name_en,
+        father_name_ar,
+        mother_name,
+        mother_name_en,
+        mother_name_ar,
         birth_date,
         blood_type,
         medical_info,
@@ -143,6 +154,7 @@ export default async function UserProfilePage() {
     <DashboardShell
       groupName={groupName}
       currentRole={role}
+      roles={roles}
       patrolRole={member?.patrol_role || null}
       userName={profile.full_name}
     >

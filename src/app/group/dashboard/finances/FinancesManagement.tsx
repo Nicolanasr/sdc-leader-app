@@ -208,6 +208,7 @@ interface Props {
     troops: Troop[]
     leaders: Leader[]
     currentRole: string
+    roles?: string[]
     patrolRole?: string | null
     groupId: string
     groupName: string
@@ -303,6 +304,7 @@ export default function FinancesManagement({
     troops,
     leaders,
     currentRole,
+    roles,
     patrolRole,
     groupId,
     groupName,
@@ -1569,7 +1571,7 @@ export default function FinancesManagement({
     }
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName} patrolRole={patrolRole}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName} patrolRole={patrolRole}>
             <div className="space-y-6 pb-12">
                 {/* Status Toast */}
                 {statusMessage && (

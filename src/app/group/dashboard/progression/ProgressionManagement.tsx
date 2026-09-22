@@ -74,6 +74,7 @@ interface Props {
     groupId: string
     groupName: string
     currentRole: string
+    roles?: string[]
     userName: string
     userId: string
     userTroopId: string | null
@@ -88,6 +89,7 @@ export default function ProgressionManagement({
     groupId,
     groupName,
     currentRole,
+    roles,
     userName,
     userId,
     userTroopId,
@@ -376,7 +378,7 @@ export default function ProgressionManagement({
     }
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName}>
             <div className="w-full pb-20 space-y-3">
                 {/* Toast Alert */}
                 {statusMessage && (

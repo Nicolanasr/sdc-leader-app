@@ -12,12 +12,13 @@ import ScoutAIAssistant from '@/components/ScoutAIAssistant'
 interface Props {
     groupName: string
     currentRole: string
+    roles?: string[]
     userName?: string
     patrolRole?: string | null
     children: React.ReactNode
 }
 
-export default function DashboardShell({ groupName, currentRole, userName, patrolRole, children }: Props) {
+export default function DashboardShell({ groupName, currentRole, roles, userName, patrolRole, children }: Props) {
     const [isMobileOpen, setIsMobileOpen] = useState(false)
     const router = useRouter()
     const supabase = createClient()
@@ -46,6 +47,7 @@ export default function DashboardShell({ groupName, currentRole, userName, patro
                 <DashboardSidebar
                     groupName={groupName}
                     currentRole={currentRole}
+                    roles={roles}
                     patrolRole={patrolRole}
                     onClose={() => setIsMobileOpen(false)}
                     onLogout={handleLogout}
@@ -57,6 +59,7 @@ export default function DashboardShell({ groupName, currentRole, userName, patro
                 <DashboardHeader
                     userName={userName}
                     currentRole={currentRole}
+                    roles={roles}
                     onOpenMobileMenu={() => setIsMobileOpen(true)}
                 />
                 <div className="px-3 sm:px-6 py-3 sm:py-4 flex-1 flex flex-col space-y-3 sm:space-y-4 max-w-7xl w-full mx-auto">
@@ -68,6 +71,7 @@ export default function DashboardShell({ groupName, currentRole, userName, patro
             {/* Mobile Bottom Navigation Tab Bar */}
             <MobileBottomNav
                 currentRole={currentRole}
+                roles={roles}
                 patrolRole={patrolRole}
                 onOpenMenu={() => setIsMobileOpen(true)}
             />

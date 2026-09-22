@@ -53,6 +53,16 @@ export interface MemberRecord {
   school?: string | null
   hobbies?: string | null
   address?: string | null
+  father_name?: string | null
+  father_name_en?: string | null
+  father_name_ar?: string | null
+  mother_name?: string | null
+  mother_name_en?: string | null
+  mother_name_ar?: string | null
+  first_name_en?: string | null
+  last_name_en?: string | null
+  first_name_ar?: string | null
+  last_name_ar?: string | null
   is_active: boolean
   troops?: {
     id: string
@@ -112,6 +122,18 @@ export default function UserProfileView({
         if (!prev) return null
         return {
           ...prev,
+          first_name: updated.first_name || prev.first_name,
+          first_name_en: updated.first_name || prev.first_name_en,
+          first_name_ar: updated.first_name_ar !== undefined ? updated.first_name_ar : prev.first_name_ar,
+          last_name: updated.last_name || prev.last_name,
+          last_name_en: updated.last_name || prev.last_name_en,
+          last_name_ar: updated.last_name_ar !== undefined ? updated.last_name_ar : prev.last_name_ar,
+          father_name: updated.father_name || prev.father_name,
+          father_name_en: updated.father_name || prev.father_name_en,
+          father_name_ar: updated.father_name_ar !== undefined ? updated.father_name_ar : prev.father_name_ar,
+          mother_name: updated.mother_name || prev.mother_name,
+          mother_name_en: updated.mother_name || prev.mother_name_en,
+          mother_name_ar: updated.mother_name_ar !== undefined ? updated.mother_name_ar : prev.mother_name_ar,
           member_phone: updated.phone_number || prev.member_phone,
           emergency_contact_name: updated.emergency_contact_name || prev.emergency_contact_name,
           emergency_contact_relation: updated.emergency_contact_relation || prev.emergency_contact_relation,
@@ -525,6 +547,14 @@ export default function UserProfileView({
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={{
+          first_name: member?.first_name_en || member?.first_name || profile.full_name?.split(' ')[0] || '',
+          first_name_ar: member?.first_name_ar || '',
+          last_name: member?.last_name_en || member?.last_name || profile.full_name?.split(' ').slice(1).join(' ') || '',
+          last_name_ar: member?.last_name_ar || '',
+          father_name: member?.father_name_en || member?.father_name || '',
+          father_name_ar: member?.father_name_ar || '',
+          mother_name: member?.mother_name_en || member?.mother_name || '',
+          mother_name_ar: member?.mother_name_ar || '',
           phone_number: displayPhone,
           whatsapp_number: displayWhatsApp,
           emergency_contact_name: displayEmergency?.name,

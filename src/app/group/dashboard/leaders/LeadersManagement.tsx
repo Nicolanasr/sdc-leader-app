@@ -71,6 +71,7 @@ interface Props {
   initialLeaders: Leader[]
   troops: Troop[]
   currentRole: string
+  userRoles?: string[]
   groupId: string
   groupName: string
   ranks: Rank[]
@@ -84,6 +85,7 @@ export default function LeadersManagement({
   initialLeaders,
   troops,
   currentRole,
+  userRoles,
   groupId,
   groupName,
   ranks,
@@ -453,7 +455,7 @@ export default function LeadersManagement({
   }
 
   return (
-    <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+    <DashboardShell groupName={groupName} currentRole={currentRole} roles={userRoles || [currentRole]} userName={userName}>
         {statusMessage && (
             <div
               className={`mb-6 p-4 rounded-xl border text-sm text-center ${

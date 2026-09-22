@@ -1,0 +1,1822 @@
+[
+  {
+    "index": 1,
+    "id": "8354d40e-160d-4b73-907b-53e8239036a6",
+    "original": {
+      "first": "alex",
+      "last": "mouannes",
+      "father": null,
+      "mother": null
+    },
+    "bilingual": {
+      "first_en": "Alex",
+      "first_ar": "أليكس",
+      "last_en": "Mouannes",
+      "last_ar": "موعنّس",
+      "father_en": "",
+      "father_ar": "",
+      "mother_en": "",
+      "mother_ar": ""
+    }
+  },
+  {
+    "index": 2,
+    "id": "33cbee08-5dd5-45c8-9de0-6582aa044487",
+    "original": {
+      "first": "Anthony-joe",
+      "last": "Sfeir",
+      "father": null,
+      "mother": null
+    },
+    "bilingual": {
+      "first_en": "Anthony-Joe",
+      "first_ar": "أنطوني-جو",
+      "last_en": "Sfeir",
+      "last_ar": "صفير",
+      "father_en": "",
+      "father_ar": "",
+      "mother_en": "",
+      "mother_ar": ""
+    }
+  },
+  {
+    "index": 3,
+    "id": "754ad2bc-0215-4818-af31-36fd0ae28536",
+    "original": {
+      "first": "Antoine",
+      "last": "charbel issa",
+      "father": "Pierre issa",
+      "mother": "Jacqueline el khoury"
+    },
+    "bilingual": {
+      "first_en": "Antoine-Charbel",
+      "first_ar": "أنطوان شربل",
+      "last_en": "Issa",
+      "last_ar": "عيسى",
+      "father_en": "Pierre Issa",
+      "father_ar": "بيار عيسى",
+      "mother_en": "Jacqueline El Khoury",
+      "mother_ar": "جاكلين الخوري"
+    }
+  },
+  {
+    "index": 4,
+    "id": "a49120c3-8419-4a18-ba66-54e2021a1d7e",
+    "original": {
+      "first": "Antoni-Joe",
+      "last": "Sfeir",
+      "father": "Marck-Antoine Sfeir",
+      "mother": "Alexandra Kallab"
+    },
+    "bilingual": {
+      "first_en": "Anthony-Joe",
+      "first_ar": "أنطوني-جو",
+      "last_en": "Sfeir",
+      "last_ar": "صفير",
+      "father_en": "Marc-Antoine Sfeir",
+      "father_ar": "مارك-أنطوان صفير",
+      "mother_en": "Alexandra Kallab",
+      "mother_ar": "ألكسندرا قلاب"
+    }
+  },
+  {
+    "index": 5,
+    "id": "73c74c53-6787-4a1a-9131-9a9049af5353",
+    "original": {
+      "first": "charbel",
+      "last": "zeiden",
+      "father": "wahib",
+      "mother": "pauline abi raad"
+    },
+    "bilingual": {
+      "first_en": "Charbel",
+      "first_ar": "شربل",
+      "last_en": "Zeidan",
+      "last_ar": "زيدان",
+      "father_en": "Wahib Zeidan",
+      "father_ar": "وهيب زيدان",
+      "mother_en": "Pauline Abi Raad",
+      "mother_ar": "بولين أبي رعد"
+    }
+  },
+  {
+    "index": 6,
+    "id": "563ded06-8e6e-4788-84f4-b64f12783a53",
+    "original": {
+      "first": "Charbel",
+      "last": "sfeir",
+      "father": "Dib sfeir",
+      "mother": "Majida ghawi"
+    },
+    "bilingual": {
+      "first_en": "Charbel",
+      "first_ar": "شربل",
+      "last_en": "Sfeir",
+      "last_ar": "صفير",
+      "father_en": "Dib Sfeir",
+      "father_ar": "ديب صفير",
+      "mother_en": "Majida Ghawi",
+      "mother_ar": "ماجدة غاوي"
+    }
+  },
+  {
+    "index": 7,
+    "id": "9a307810-3464-42b8-8a0c-8eac5533aeb9",
+    "original": {
+      "first": "Christiano",
+      "last": "geara",
+      "father": "Imad geara",
+      "mother": "Mariane"
+    },
+    "bilingual": {
+      "first_en": "Christiano",
+      "first_ar": "كريستيانو",
+      "last_en": "Geara",
+      "last_ar": "جعارة",
+      "father_en": "Imad Geara",
+      "father_ar": "عماد جعارة",
+      "mother_en": "Marianne",
+      "mother_ar": "ماريان"
+    }
+  },
+  {
+    "index": 8,
+    "id": "6573fe5c-77d2-4f4e-a450-de49eb58246f",
+    "original": {
+      "first": "Elaya",
+      "last": "Zgheib",
+      "father": "Nadim",
+      "mother": "Nancy Gerges"
+    },
+    "bilingual": {
+      "first_en": "Elaya",
+      "first_ar": "إيلايا",
+      "last_en": "Zgheib",
+      "last_ar": "زغيب",
+      "father_en": "Nadim Zgheib",
+      "father_ar": "نديم زغيب",
+      "mother_en": "Nancy Gerges",
+      "mother_ar": "نانسي جرجس"
+    }
+  },
+  {
+    "index": 9,
+    "id": "7ca31d0d-424c-43b6-9280-bbe8a6f94f0b",
+    "original": {
+      "first": "elias",
+      "last": "daher",
+      "father": "chady",
+      "mother": "oula beainy"
+    },
+    "bilingual": {
+      "first_en": "Elias",
+      "first_ar": "إلياس",
+      "last_en": "Daher",
+      "last_ar": "ضاهر",
+      "father_en": "Chady Daher",
+      "father_ar": "شادي ضاهر",
+      "mother_en": "Oula Beainy",
+      "mother_ar": "علا بعيني"
+    }
+  },
+  {
+    "index": 10,
+    "id": "29def7fb-330b-4361-9e9a-3cb779a082fc",
+    "original": {
+      "first": "Elias",
+      "last": "Zgheib",
+      "father": "Nadim",
+      "mother": "Nancy Gerges"
+    },
+    "bilingual": {
+      "first_en": "Elias",
+      "first_ar": "إلياس",
+      "last_en": "Zgheib",
+      "last_ar": "زغيب",
+      "father_en": "Nadim Zgheib",
+      "father_ar": "نديم زغيب",
+      "mother_en": "Nancy Gerges",
+      "mother_ar": "نانسي جرجس"
+    }
+  },
+  {
+    "index": 11,
+    "id": "d522a2d4-0234-42a3-a593-3141cfcb6791",
+    "original": {
+      "first": "Ghinwa",
+      "last": "Ounaissy",
+      "father": "Ramzy",
+      "mother": "Lina abi chebel"
+    },
+    "bilingual": {
+      "first_en": "Ghinwa",
+      "first_ar": "غنوة",
+      "last_en": "Ounaissy",
+      "last_ar": "عويسي",
+      "father_en": "Ramzy Ounaissy",
+      "father_ar": "رمزي عويسي",
+      "mother_en": "Lina Abi Chebel",
+      "mother_ar": "لينا أبي شبل"
+    }
+  },
+  {
+    "index": 12,
+    "id": "6e4392f9-ca4d-41a0-ae23-9bd5fc4b9755",
+    "original": {
+      "first": "Gina-maria",
+      "last": "Sfeir",
+      "father": "Marck-Antoine Sfeir",
+      "mother": "Alexandra Kallab"
+    },
+    "bilingual": {
+      "first_en": "Gina-Maria",
+      "first_ar": "جينا-ماريا",
+      "last_en": "Sfeir",
+      "last_ar": "صفير",
+      "father_en": "Marc-Antoine Sfeir",
+      "father_ar": "مارك-أنطوان صفير",
+      "mother_en": "Alexandra Kallab",
+      "mother_ar": "ألكسندرا قلاب"
+    }
+  },
+  {
+    "index": 13,
+    "id": "8a427d36-009e-4b68-8edf-1e33f5871028",
+    "original": {
+      "first": "Jeanina",
+      "last": "zgheib",
+      "father": "Naoum",
+      "mother": "Lama saliba"
+    },
+    "bilingual": {
+      "first_en": "Jeanina",
+      "first_ar": "جانين",
+      "last_en": "Zgheib",
+      "last_ar": "زغيب",
+      "father_en": "Naoum Zgheib",
+      "father_ar": "نعوم زغيب",
+      "mother_en": "Lama Saliba",
+      "mother_ar": "لمى صليبا"
+    }
+  },
+  {
+    "index": 14,
+    "id": "091e788e-38ca-4948-bdf8-44abadd4feca",
+    "original": {
+      "first": "joliyo",
+      "last": "ibrahim",
+      "father": null,
+      "mother": "joyce yacoub"
+    },
+    "bilingual": {
+      "first_en": "Julio",
+      "first_ar": "جوليو",
+      "last_en": "Ibrahim",
+      "last_ar": "إبراهيم",
+      "father_en": "",
+      "father_ar": "",
+      "mother_en": "Joyce Yacoub",
+      "mother_ar": "جويس يعقوب"
+    }
+  },
+  {
+    "index": 15,
+    "id": "9b3ad938-67a9-400e-a202-eb7295f285fb",
+    "original": {
+      "first": "Joseph",
+      "last": "el kallab",
+      "father": "Pierre El kallab",
+      "mother": "Roula nassar"
+    },
+    "bilingual": {
+      "first_en": "Joseph",
+      "first_ar": "جوزف",
+      "last_en": "El Kallab",
+      "last_ar": "القلاب",
+      "father_en": "Pierre El Kallab",
+      "father_ar": "بيار القلاب",
+      "mother_en": "Roula Nassar",
+      "mother_ar": "رولا نصار"
+    }
+  },
+  {
+    "index": 16,
+    "id": "b79bdfbf-97f5-4715-9dd3-3c916e8c73e1",
+    "original": {
+      "first": "Jovia",
+      "last": "Zgheib",
+      "father": "Joe Zgheib",
+      "mother": "Patricia sarkis zgheib"
+    },
+    "bilingual": {
+      "first_en": "Jovia",
+      "first_ar": "جوفيا",
+      "last_en": "Zgheib",
+      "last_ar": "زغيب",
+      "father_en": "Joe Zgheib",
+      "father_ar": "جو زغيب",
+      "mother_en": "Patricia Sarkis Zgheib",
+      "mother_ar": "باتريسيا سركيس زغيب"
+    }
+  },
+  {
+    "index": 17,
+    "id": "c1675e70-7628-49b3-9223-690dd5af7254",
+    "original": {
+      "first": "Lorenzo",
+      "last": "geara",
+      "father": "Imad geara",
+      "mother": "Mariam moussa"
+    },
+    "bilingual": {
+      "first_en": "Lorenzo",
+      "first_ar": "لورنزو",
+      "last_en": "Geara",
+      "last_ar": "جعارة",
+      "father_en": "Imad Geara",
+      "father_ar": "عماد جعارة",
+      "mother_en": "Mariam Moussa",
+      "mother_ar": "مريم موسى"
+    }
+  },
+  {
+    "index": 18,
+    "id": "cd0ef865-2f80-44cd-9ac8-17cda1e207a3",
+    "original": {
+      "first": "Mael",
+      "last": "Abboud",
+      "father": "Mikel",
+      "mother": "Gistelle Zgheib"
+    },
+    "bilingual": {
+      "first_en": "Mael",
+      "first_ar": "مايل",
+      "last_en": "Abboud",
+      "last_ar": "عبود",
+      "father_en": "Michael Abboud",
+      "father_ar": "مايكل عبود",
+      "mother_en": "Giselle Zgheib",
+      "mother_ar": "جيزيل زغيب"
+    }
+  },
+  {
+    "index": 19,
+    "id": "9a1ce486-044c-4e3f-bf00-640e85ea323b",
+    "original": {
+      "first": "Marcelino",
+      "last": "Geara",
+      "father": "Salim Geara",
+      "mother": "Lara Atallah Geara"
+    },
+    "bilingual": {
+      "first_en": "Marcelino",
+      "first_ar": "مارسيلينو",
+      "last_en": "Geara",
+      "last_ar": "جعارة",
+      "father_en": "Salim Geara",
+      "father_ar": "سليم جعارة",
+      "mother_en": "Lara Atallah Geara",
+      "mother_ar": "لارا عطالله جعارة"
+    }
+  },
+  {
+    "index": 20,
+    "id": "4cbae529-cdfe-49f4-b7c7-86bc33a58c1f",
+    "original": {
+      "first": "Maria",
+      "last": "geara",
+      "father": "Salim geara",
+      "mother": "Lara atallah"
+    },
+    "bilingual": {
+      "first_en": "Maria",
+      "first_ar": "ماريا",
+      "last_en": "Geara",
+      "last_ar": "جعارة",
+      "father_en": "Salim Geara",
+      "father_ar": "سليم جعارة",
+      "mother_en": "Lara Atallah",
+      "mother_ar": "لارا عطالله"
+    }
+  },
+  {
+    "index": 21,
+    "id": "ae7b534f-506e-457f-a299-29acf991bb16",
+    "original": {
+      "first": "Marissa",
+      "last": "salameh",
+      "father": "Moussa salameh",
+      "mother": "Lara mansour salameh"
+    },
+    "bilingual": {
+      "first_en": "Marissa",
+      "first_ar": "ماريسا",
+      "last_en": "Salameh",
+      "last_ar": "سلامة",
+      "father_en": "Moussa Salameh",
+      "father_ar": "موسى سلامة",
+      "mother_en": "Lara Mansour Salameh",
+      "mother_ar": "لارا منصور سلامة"
+    }
+  },
+  {
+    "index": 22,
+    "id": "21669126-8669-4057-8a37-43d4d65ee45a",
+    "original": {
+      "first": "Matheo",
+      "last": "Geitany",
+      "father": "Miguel",
+      "mother": "Lara ayoub"
+    },
+    "bilingual": {
+      "first_en": "Matheo",
+      "first_ar": "ماتيو",
+      "last_en": "Geitany",
+      "last_ar": "غيطاني",
+      "father_en": "Miguel Geitany",
+      "father_ar": "ميغيل غيطاني",
+      "mother_en": "Lara Ayoub",
+      "mother_ar": "لارا أيوب"
+    }
+  },
+  {
+    "index": 23,
+    "id": "13366bc8-3c07-47b5-9eb3-d6ba9e3e6e2d",
+    "original": {
+      "first": "Mia-Belle",
+      "last": "Msttar",
+      "father": "Bassem Mattar",
+      "mother": "Marie-Noel Zghondy"
+    },
+    "bilingual": {
+      "first_en": "Mia-Belle",
+      "first_ar": "ميا-بيل",
+      "last_en": "Mattar",
+      "last_ar": "مطر",
+      "father_en": "Bassem Mattar",
+      "father_ar": "باسم مطر",
+      "mother_en": "Marie-Noel Zghondy",
+      "mother_ar": "ماري-نويل زغوندي"
+    }
+  },
+  {
+    "index": 24,
+    "id": "dd5029d8-f62e-4b80-b9b2-e1e2cbc99f58",
+    "original": {
+      "first": "Michael",
+      "last": "Bassil",
+      "father": "Paul",
+      "mother": "Najat Zouein"
+    },
+    "bilingual": {
+      "first_en": "Michael",
+      "first_ar": "مايكل",
+      "last_en": "Bassil",
+      "last_ar": "باسيل",
+      "father_en": "Paul Bassil",
+      "father_ar": "بول باسيل",
+      "mother_en": "Najat Zouein",
+      "mother_ar": "نجاة زوين"
+    }
+  },
+  {
+    "index": 25,
+    "id": "cf76a7b1-fa6d-468c-9743-d32ce9a9118c",
+    "original": {
+      "first": "Nady",
+      "last": "Mattar",
+      "father": "Bassem Mattar",
+      "mother": "Marie-Noel Zghondy"
+    },
+    "bilingual": {
+      "first_en": "Nady",
+      "first_ar": "نادي",
+      "last_en": "Mattar",
+      "last_ar": "مطر",
+      "father_en": "Bassem Mattar",
+      "father_ar": "باسم مطر",
+      "mother_en": "Marie-Noel Zghondy",
+      "mother_ar": "ماري-نويل زغوندي"
+    }
+  },
+  {
+    "index": 26,
+    "id": "4083703f-9b7f-4b2b-b13d-786b24d35d7f",
+    "original": {
+      "first": "Naya",
+      "last": "Akouri",
+      "father": null,
+      "mother": null
+    },
+    "bilingual": {
+      "first_en": "Naya",
+      "first_ar": "نايا",
+      "last_en": "El Akouri",
+      "last_ar": "العاقوري",
+      "father_en": "Fadi El Akouri",
+      "father_ar": "فادي العاقوري",
+      "mother_en": "Abeer El Beaini",
+      "mother_ar": "عبير البعيني"
+    }
+  },
+  {
+    "index": 27,
+    "id": "263f8454-7e94-4e83-bc15-f3d78d5dfa3d",
+    "original": {
+      "first": "Nicolas",
+      "last": "Nasr",
+      "father": null,
+      "mother": null
+    },
+    "bilingual": {
+      "first_en": "Nicolas",
+      "first_ar": "نقولا",
+      "last_en": "Nasr",
+      "last_ar": "نصر",
+      "father_en": "",
+      "father_ar": "",
+      "mother_en": "",
+      "mother_ar": ""
+    }
+  },
+  {
+    "index": 28,
+    "id": "11bd433c-aae7-4709-b64d-793c8a305647",
+    "original": {
+      "first": "Pierre",
+      "last": "El Kallab",
+      "father": "Pierre",
+      "mother": "Roula nassar"
+    },
+    "bilingual": {
+      "first_en": "Pierre",
+      "first_ar": "بيار",
+      "last_en": "El Kallab",
+      "last_ar": "القلاب",
+      "father_en": "Pierre El Kallab",
+      "father_ar": "بيار القلاب",
+      "mother_en": "Roula Nassar",
+      "mother_ar": "رولا نصار"
+    }
+  },
+  {
+    "index": 29,
+    "id": "10defcd1-c21b-46a5-9714-5de3a18815cd",
+    "original": {
+      "first": "Ramez",
+      "last": "Abboud",
+      "father": "Mikel",
+      "mother": "Gistelle Zgheib"
+    },
+    "bilingual": {
+      "first_en": "Ramez",
+      "first_ar": "رامز",
+      "last_en": "Abboud",
+      "last_ar": "عبود",
+      "father_en": "Michael Abboud",
+      "father_ar": "مايكل عبود",
+      "mother_en": "Giselle Zgheib",
+      "mother_ar": "جيزيل زغيب"
+    }
+  },
+  {
+    "index": 30,
+    "id": "53a24815-ba2c-40a1-9786-3bbfceab1dbc",
+    "original": {
+      "first": "Reya",
+      "last": "Rizk",
+      "father": "Tarek",
+      "mother": "Marie freyfer"
+    },
+    "bilingual": {
+      "first_en": "Reya",
+      "first_ar": "ريا",
+      "last_en": "Rizk",
+      "last_ar": "رزق",
+      "father_en": "Tarek Rizk",
+      "father_ar": "طارق رزق",
+      "mother_en": "Marie Freyfer",
+      "mother_ar": "ماري فريفر"
+    }
+  },
+  {
+    "index": 31,
+    "id": "09987dc2-65c8-43f1-8510-0525ca4ade0e",
+    "original": {
+      "first": "Ricardo",
+      "last": "Geara",
+      "father": null,
+      "mother": null
+    },
+    "bilingual": {
+      "first_en": "Ricardo",
+      "first_ar": "ريكاردو",
+      "last_en": "Geara",
+      "last_ar": "جعارة",
+      "father_en": "",
+      "father_ar": "",
+      "mother_en": "",
+      "mother_ar": ""
+    }
+  },
+  {
+    "index": 32,
+    "id": "6d4dc12e-e4f1-4ddc-abc2-f3f0aa617584",
+    "original": {
+      "first": "Ryan",
+      "last": "Abboud",
+      "father": "Mikel",
+      "mother": "Gistelle zgheib"
+    },
+    "bilingual": {
+      "first_en": "Ryan",
+      "first_ar": "راين",
+      "last_en": "Abboud",
+      "last_ar": "عبود",
+      "father_en": "Michael Abboud",
+      "father_ar": "مايكل عبود",
+      "mother_en": "Giselle Zgheib",
+      "mother_ar": "جيزيل زغيب"
+    }
+  },
+  {
+    "index": 33,
+    "id": "22caaed6-1c37-45d6-8497-d9af66b9a23e",
+    "original": {
+      "first": "Séréna",
+      "last": "Assaf",
+      "father": "Elie Assaf",
+      "mother": "Stephanie fahed"
+    },
+    "bilingual": {
+      "first_en": "Serena",
+      "first_ar": "سيرينا",
+      "last_en": "Assaf",
+      "last_ar": "عساف",
+      "father_en": "Elie Assaf",
+      "father_ar": "إيلي عساف",
+      "mother_en": "Stephanie Fahed",
+      "mother_ar": "ستيفاني فهد"
+    }
+  },
+  {
+    "index": 34,
+    "id": "90daf799-3c3e-4d17-9e43-6783fd5b1adc",
+    "original": {
+      "first": "William",
+      "last": "noun",
+      "father": "Andre-charbel",
+      "mother": "Jennifer saliba"
+    },
+    "bilingual": {
+      "first_en": "William",
+      "first_ar": "وليم",
+      "last_en": "Noun",
+      "last_ar": "نون",
+      "father_en": "Andre-Charbel Noun",
+      "father_ar": "أندريه-شربل نون",
+      "mother_en": "Jennifer Saliba",
+      "mother_ar": "جنيفر صليبا"
+    }
+  },
+  {
+    "index": 35,
+    "id": "28cc4e06-0d8a-425e-bf91-71f152b9b0ef",
+    "original": {
+      "first": "Windy",
+      "last": "elias",
+      "father": "Edward elias",
+      "mother": "Nisrine habchy"
+    },
+    "bilingual": {
+      "first_en": "Wendy",
+      "first_ar": "ويندي",
+      "last_en": "Elias",
+      "last_ar": "إلياس",
+      "father_en": "Edward Elias",
+      "father_ar": "إدوار إلياس",
+      "mother_en": "Nisrine Habchy",
+      "mother_ar": "نسرين حبشي"
+    }
+  },
+  {
+    "index": 36,
+    "id": "c0fe73cf-fcbb-42cc-a3e9-69ed5eed8a69",
+    "original": {
+      "first": "أنجلينا",
+      "last": "خميس",
+      "father": "شربل خميس",
+      "mother": "سينتيا الصايغ"
+    },
+    "bilingual": {
+      "first_en": "Angelina",
+      "first_ar": "أنجلينا",
+      "last_en": "Khamis",
+      "last_ar": "خميس",
+      "father_en": "Charbel Khamis",
+      "father_ar": "شربل خميس",
+      "mother_en": "Cynthia El Sayegh",
+      "mother_ar": "سينتيا الصايغ"
+    }
+  },
+  {
+    "index": 37,
+    "id": "a300dd06-9bd5-4329-98dd-1279e19b0bc1",
+    "original": {
+      "first": "إدوار",
+      "last": "بصبوص",
+      "father": "جواد",
+      "mother": "حنان ابي شر"
+    },
+    "bilingual": {
+      "first_en": "Edouard",
+      "first_ar": "إدوار",
+      "last_en": "Basbous",
+      "last_ar": "بصبوص",
+      "father_en": "Jawad Basbous",
+      "father_ar": "جواد بصبوص",
+      "mother_en": "Hanan Abi Charr",
+      "mother_ar": "حنان أبي شر"
+    }
+  },
+  {
+    "index": 38,
+    "id": "3bbbc266-93fa-48bc-9ba5-88d8ed14211f",
+    "original": {
+      "first": "انجيلا",
+      "last": "دويدي",
+      "father": "ميلاد دويدي",
+      "mother": "بوليني متى"
+    },
+    "bilingual": {
+      "first_en": "Angela",
+      "first_ar": "أنجيلا",
+      "last_en": "Dwaydi",
+      "last_ar": "دويدي",
+      "father_en": "Milad Dwaydi",
+      "father_ar": "ميلاد دويدي",
+      "mother_en": "Pauline Matta",
+      "mother_ar": "بولين متى"
+    }
+  },
+  {
+    "index": 39,
+    "id": "49591ce3-7ed5-4d80-9e2b-b68a4b561d40",
+    "original": {
+      "first": "بترا",
+      "last": "حواط",
+      "father": "جورج",
+      "mother": "عيده زعرور"
+    },
+    "bilingual": {
+      "first_en": "Petra",
+      "first_ar": "بترا",
+      "last_en": "Howat",
+      "last_ar": "حواط",
+      "father_en": "Georges Howat",
+      "father_ar": "جورج حواط",
+      "mother_en": "Aida Zaarour",
+      "mother_ar": "عايدة زعرور"
+    }
+  },
+  {
+    "index": 40,
+    "id": "99267114-0710-47e6-afb6-ea5259bc307e",
+    "original": {
+      "first": "بترو",
+      "last": "بطرس",
+      "father": "جورج",
+      "mother": "كلوديت نادر"
+    },
+    "bilingual": {
+      "first_en": "Petro",
+      "first_ar": "بترو",
+      "last_en": "Boutros",
+      "last_ar": "بطرس",
+      "father_en": "Georges Boutros",
+      "father_ar": "جورج بطرس",
+      "mother_en": "Claudette Nader",
+      "mother_ar": "كلوديت نادر"
+    }
+  },
+  {
+    "index": 41,
+    "id": "7128dc41-4c0a-41ad-a0ff-575fef01e6e4",
+    "original": {
+      "first": "برني",
+      "last": "روجيه صهيون",
+      "father": "روجيه",
+      "mother": "نتالي رزق"
+    },
+    "bilingual": {
+      "first_en": "Berny",
+      "first_ar": "برني",
+      "last_en": "Sahyoun",
+      "last_ar": "صهيون",
+      "father_en": "Roger Sahyoun",
+      "father_ar": "روجيه صهيون",
+      "mother_en": "Nathalie Rizk",
+      "mother_ar": "نتالي رزق"
+    }
+  },
+  {
+    "index": 42,
+    "id": "1993f2e3-ceef-493c-9266-db13d379ac4e",
+    "original": {
+      "first": "بيتر",
+      "last": "حداد",
+      "father": "طوني",
+      "mother": "ريموندا المجبر"
+    },
+    "bilingual": {
+      "first_en": "Peter",
+      "first_ar": "بيتر",
+      "last_en": "Haddad",
+      "last_ar": "حداد",
+      "father_en": "Tony Haddad",
+      "father_ar": "طوني حداد",
+      "mother_en": "Raymonde El Mejber",
+      "mother_ar": "ريموندا المجبر"
+    }
+  },
+  {
+    "index": 43,
+    "id": "56badc8a-a355-46fe-95ca-d813550899cd",
+    "original": {
+      "first": "بيتينا",
+      "last": "ابي حنا",
+      "father": "سمير ابي حنا",
+      "mother": "مرغريتا بطرس"
+    },
+    "bilingual": {
+      "first_en": "Petina",
+      "first_ar": "بيتينا",
+      "last_en": "Abi Hanna",
+      "last_ar": "أبي حنا",
+      "father_en": "Samir Abi Hanna",
+      "father_ar": "سمير أبي حنا",
+      "mother_en": "Margherita Boutros",
+      "mother_ar": "مارغريتا بطرس"
+    }
+  },
+  {
+    "index": 44,
+    "id": "7b397c9c-082b-46de-b83f-3929774c4cb2",
+    "original": {
+      "first": "جايسون",
+      "last": "سابا النمر",
+      "father": "Seba",
+      "mother": "Jessica Sakr"
+    },
+    "bilingual": {
+      "first_en": "Jason",
+      "first_ar": "جايسون",
+      "last_en": "Saba El Nemr",
+      "last_ar": "سابا النمر",
+      "father_en": "Saba El Nemr",
+      "father_ar": "سابا النمر",
+      "mother_en": "Jessica Sakr",
+      "mother_ar": "جيسيكا صقر"
+    }
+  },
+  {
+    "index": 45,
+    "id": "6226b877-87a8-41a8-98d7-cd11e01106c1",
+    "original": {
+      "first": "جنان",
+      "last": "اليوزباشي",
+      "father": "وليد اليوزباشي",
+      "mother": "ماجدة المصري"
+    },
+    "bilingual": {
+      "first_en": "Jinane",
+      "first_ar": "جنان",
+      "last_en": "El Youzbashi",
+      "last_ar": "اليوزباشي",
+      "father_en": "Walid El Youzbashi",
+      "father_ar": "وليد اليوزباشي",
+      "mother_en": "Majida El Masri",
+      "mother_ar": "ماجدة المصري"
+    }
+  },
+  {
+    "index": 46,
+    "id": "522c87f7-fde7-42a9-991d-e49d2db851d9",
+    "original": {
+      "first": "جنى",
+      "last": "العاقوري",
+      "father": "فادي العاقوري",
+      "mother": "عبير البعيني"
+    },
+    "bilingual": {
+      "first_en": "Jana",
+      "first_ar": "جنى",
+      "last_en": "El Akouri",
+      "last_ar": "العاقوري",
+      "father_en": "Fadi El Akouri",
+      "father_ar": "فادي العاقوري",
+      "mother_en": "Abeer El Beaini",
+      "mother_ar": "عبير البعيني"
+    }
+  },
+  {
+    "index": 47,
+    "id": "ee2c20a5-29e8-4e52-bc5f-6f982dde14d2",
+    "original": {
+      "first": "جنيفر",
+      "last": "بيار هاشم",
+      "father": "بيار هاشم",
+      "mother": "جانيت بضعان"
+    },
+    "bilingual": {
+      "first_en": "Jennifer",
+      "first_ar": "جنيفر",
+      "last_en": "Hashem",
+      "last_ar": "هاشم",
+      "father_en": "Pierre Hashem",
+      "father_ar": "بيار هاشم",
+      "mother_en": "Janet Badaan",
+      "mother_ar": "جانيت بضعان"
+    }
+  },
+  {
+    "index": 48,
+    "id": "2e88708c-c81c-4d91-a9fe-301688a4aa22",
+    "original": {
+      "first": "جوفن",
+      "last": "زغيب",
+      "father": "جو زغيب",
+      "mother": "باتريسيا سركيس"
+    },
+    "bilingual": {
+      "first_en": "Giovan",
+      "first_ar": "جوفن",
+      "last_en": "Zgheib",
+      "last_ar": "زغيب",
+      "father_en": "Joe Zgheib",
+      "father_ar": "جو زغيب",
+      "mother_en": "Patricia Sarkis",
+      "mother_ar": "باتريسيا سركيس"
+    }
+  },
+  {
+    "index": 49,
+    "id": "8564098a-8e3c-4f9c-9b9f-b441280cee0d",
+    "original": {
+      "first": "جوي",
+      "last": "خميس",
+      "father": "شربل خميس",
+      "mother": "سينتيا الصايغ"
+    },
+    "bilingual": {
+      "first_en": "Joy",
+      "first_ar": "جوي",
+      "last_en": "Khamis",
+      "last_ar": "خميس",
+      "father_en": "Charbel Khamis",
+      "father_ar": "شربل خميس",
+      "mother_en": "Cynthia El Sayegh",
+      "mother_ar": "سينتيا الصايغ"
+    }
+  },
+  {
+    "index": 50,
+    "id": "8355ce79-51d9-4e1c-8def-7cf94cbf91e3",
+    "original": {
+      "first": "داني",
+      "last": "الراعي",
+      "father": "روجي  الراعي",
+      "mother": "الين سلامه"
+    },
+    "bilingual": {
+      "first_en": "Danny",
+      "first_ar": "داني",
+      "last_en": "El Rahi",
+      "last_ar": "الراعي",
+      "father_en": "Roger El Rahi",
+      "father_ar": "روجيه الراعي",
+      "mother_en": "Aline Salameh",
+      "mother_ar": "ألين سلامة"
+    }
+  },
+  {
+    "index": 51,
+    "id": "662e9258-aa96-44ec-ad45-ca34d0bdb297",
+    "original": {
+      "first": "راين",
+      "last": "مرعي",
+      "father": "روبير",
+      "mother": "ريتا سعاده"
+    },
+    "bilingual": {
+      "first_en": "Rayen",
+      "first_ar": "راين",
+      "last_en": "Merhi",
+      "last_ar": "مرعي",
+      "father_en": "Robert Merhi",
+      "father_ar": "روبير مرعي",
+      "mother_en": "Rita Saade",
+      "mother_ar": "ريتا سعادة"
+    }
+  },
+  {
+    "index": 52,
+    "id": "c0cf21f3-8b97-47c3-b7ca-c36e447f340c",
+    "original": {
+      "first": "رشا",
+      "last": "ضاهر",
+      "father": "شادي",
+      "mother": "Oula beainy"
+    },
+    "bilingual": {
+      "first_en": "Racha",
+      "first_ar": "رشا",
+      "last_en": "Daher",
+      "last_ar": "ضاهر",
+      "father_en": "Chady Daher",
+      "father_ar": "شادي ضاهر",
+      "mother_en": "Oula Beainy",
+      "mother_ar": "علا بعيني"
+    }
+  },
+  {
+    "index": 53,
+    "id": "2dd3d9f3-bb78-497f-a370-023f1b4d1886",
+    "original": {
+      "first": "رودي",
+      "last": "الراعي",
+      "father": "روجيه",
+      "mother": "الين سلامه"
+    },
+    "bilingual": {
+      "first_en": "Rudy",
+      "first_ar": "رودي",
+      "last_en": "El Rahi",
+      "last_ar": "الراعي",
+      "father_en": "Roger El Rahi",
+      "father_ar": "روجيه الراعي",
+      "mother_en": "Aline Salameh",
+      "mother_ar": "ألين سلامة"
+    }
+  },
+  {
+    "index": 54,
+    "id": "b7b63c81-3274-4654-9bbb-f556d286967f",
+    "original": {
+      "first": "ريبيكا",
+      "last": "كماتو",
+      "father": "عماد كماتو",
+      "mother": "رائدة محفوظ"
+    },
+    "bilingual": {
+      "first_en": "Rebecca",
+      "first_ar": "ريبيكا",
+      "last_en": "Kamato",
+      "last_ar": "كماتو",
+      "father_en": "Imad Kamato",
+      "father_ar": "عماد كماتو",
+      "mother_en": "Raeda Mahfouz",
+      "mother_ar": "رائدة محفوظ"
+    }
+  },
+  {
+    "index": 55,
+    "id": "70a72645-76ee-4e0f-bfed-baf564eebdd1",
+    "original": {
+      "first": "ريتا",
+      "last": "نقولا",
+      "father": "الكسي نقولا",
+      "mother": "عفاف بعيني"
+    },
+    "bilingual": {
+      "first_en": "Rita",
+      "first_ar": "ريتا",
+      "last_en": "Nicolas",
+      "last_ar": "نقولا",
+      "father_en": "Alexi Nicolas",
+      "father_ar": "ألكسي نقولا",
+      "mother_en": "Afaf Beaini",
+      "mother_ar": "عفاف بعيني"
+    }
+  },
+  {
+    "index": 56,
+    "id": "c3fe285f-3fb4-4c4c-ab14-a1875a0998f0",
+    "original": {
+      "first": "ريم",
+      "last": "يزبك",
+      "father": "الخوري جورج يزبك",
+      "mother": "جورجات ضومط يزبك"
+    },
+    "bilingual": {
+      "first_en": "Rim",
+      "first_ar": "ريم",
+      "last_en": "Yazbek",
+      "last_ar": "يزبك",
+      "father_en": "El Khoury Georges Yazbek",
+      "father_ar": "الخوري جورج يزبك",
+      "mother_en": "Georgette Doumit Yazbek",
+      "mother_ar": "جورجات ضومط يزبك"
+    }
+  },
+  {
+    "index": 57,
+    "id": "19853bf9-e8ef-40ca-8359-24180e259029",
+    "original": {
+      "first": "رين",
+      "last": "مرعي",
+      "father": "روبير",
+      "mother": "ريتا سعاده"
+    },
+    "bilingual": {
+      "first_en": "Reine",
+      "first_ar": "رين",
+      "last_en": "Merhi",
+      "last_ar": "مرعي",
+      "father_en": "Robert Merhi",
+      "father_ar": "روبير مرعي",
+      "mother_en": "Rita Saade",
+      "mother_ar": "ريتا سعادة"
+    }
+  },
+  {
+    "index": 58,
+    "id": "9b7452fb-56c4-44c1-b559-2f6b5110fadf",
+    "original": {
+      "first": "ساليا",
+      "last": "زكريا",
+      "father": "تاد",
+      "mother": "لارا كلاس"
+    },
+    "bilingual": {
+      "first_en": "Salia",
+      "first_ar": "ساليا",
+      "last_en": "Zakaria",
+      "last_ar": "زكريا",
+      "father_en": "Ted Zakaria",
+      "father_ar": "تيد زكريا",
+      "mother_en": "Lara Kallab",
+      "mother_ar": "لارا كلاس"
+    }
+  },
+  {
+    "index": 59,
+    "id": "f1dad95d-a129-4264-bf14-d1eb8818e575",
+    "original": {
+      "first": "سيلينا",
+      "last": "ابو سليمان",
+      "father": "ايلى ابو سليمان",
+      "mother": "نانسي كاتور"
+    },
+    "bilingual": {
+      "first_en": "Selena",
+      "first_ar": "سيلينا",
+      "last_en": "Abou Sleiman",
+      "last_ar": "أبو سليمان",
+      "father_en": "Elie Abou Sleiman",
+      "father_ar": "إيلي أبو سليمان",
+      "mother_en": "Nancy Katour",
+      "mother_ar": "نانسي كاتور"
+    }
+  },
+  {
+    "index": 60,
+    "id": "0b195467-1cba-44f0-bbcc-6b70de768c26",
+    "original": {
+      "first": "شارلي",
+      "last": "نصر",
+      "father": "بسام نصر",
+      "mother": "مرسيل صهيون"
+    },
+    "bilingual": {
+      "first_en": "Charly",
+      "first_ar": "شارلي",
+      "last_en": "Nasr",
+      "last_ar": "نصر",
+      "father_en": "Bassam Nasr",
+      "father_ar": "بسام نصر",
+      "mother_en": "Marcelle Sahyoun",
+      "mother_ar": "مرسيل صهيون"
+    }
+  },
+  {
+    "index": 61,
+    "id": "bb5996b9-e224-4435-8ac1-fa43ca6ff107",
+    "original": {
+      "first": "شربل",
+      "last": "سمعان",
+      "father": "ريمون سمعان",
+      "mother": "مونيك طربيه"
+    },
+    "bilingual": {
+      "first_en": "Charbel",
+      "first_ar": "شربل",
+      "last_en": "Semaan",
+      "last_ar": "سمعان",
+      "father_en": "Raymond Semaan",
+      "father_ar": "ريمون سمعان",
+      "mother_en": "Monique Torbey",
+      "mother_ar": "مونيك طربيه"
+    }
+  },
+  {
+    "index": 62,
+    "id": "b9136a25-4f02-4fe2-ba52-a62d32f2d03e",
+    "original": {
+      "first": "شربل",
+      "last": "نهرا",
+      "father": "انطوان نهرا",
+      "mother": "جولي الراعي"
+    },
+    "bilingual": {
+      "first_en": "Charbel",
+      "first_ar": "شربل",
+      "last_en": "Nohra",
+      "last_ar": "نهرا",
+      "father_en": "Antoine Nohra",
+      "father_ar": "أنطوان نهرا",
+      "mother_en": "Julie El Rahi",
+      "mother_ar": "جولي الراعي"
+    }
+  },
+  {
+    "index": 63,
+    "id": "2964d2d9-a365-49c1-9a67-b9cc8de76b4d",
+    "original": {
+      "first": "شربل",
+      "last": "بصبوص",
+      "father": "جواد",
+      "mother": "حنان ابي شر"
+    },
+    "bilingual": {
+      "first_en": "Charbel",
+      "first_ar": "شربل",
+      "last_en": "Basbous",
+      "last_ar": "بصبوص",
+      "father_en": "Jawad Basbous",
+      "father_ar": "جواد بصبوص",
+      "mother_en": "Hanan Abi Charr",
+      "mother_ar": "حنان أبي شر"
+    }
+  },
+  {
+    "index": 64,
+    "id": "7c691013-cb74-4a4c-a1f2-d800941537c6",
+    "original": {
+      "first": "غايا",
+      "last": "زكريا",
+      "father": "تيد زكريا",
+      "mother": "لارا كلاس"
+    },
+    "bilingual": {
+      "first_en": "Gaya",
+      "first_ar": "غايا",
+      "last_en": "Zakaria",
+      "last_ar": "زكريا",
+      "father_en": "Ted Zakaria",
+      "father_ar": "تيد زكريا",
+      "mother_en": "Lara Kallab",
+      "mother_ar": "لارا كلاس"
+    }
+  },
+  {
+    "index": 65,
+    "id": "9cb5572d-0cd9-42c7-8aa4-887f3d0bcc04",
+    "original": {
+      "first": "كاتالينا",
+      "last": "مخلوف",
+      "father": "شربل مخلوف",
+      "mother": "سارة"
+    },
+    "bilingual": {
+      "first_en": "Catalina",
+      "first_ar": "كاتالينا",
+      "last_en": "Makhlouf",
+      "last_ar": "مخلوف",
+      "father_en": "Charbel Makhlouf",
+      "father_ar": "شربل مخلوف",
+      "mother_en": "Sarah",
+      "mother_ar": "سارة"
+    }
+  },
+  {
+    "index": 66,
+    "id": "55c7ead1-4cb8-44d5-82e5-cf37c98acbcd",
+    "original": {
+      "first": "كاترين",
+      "last": "صقر",
+      "father": "يوسف صقر",
+      "mother": "نعمت حواط"
+    },
+    "bilingual": {
+      "first_en": "Catherine",
+      "first_ar": "كاترين",
+      "last_en": "Sakr",
+      "last_ar": "صقر",
+      "father_en": "Youssef Sakr",
+      "father_ar": "يوسف صقر",
+      "mother_en": "Nemat Howat",
+      "mother_ar": "نعمت حواط"
+    }
+  },
+  {
+    "index": 67,
+    "id": "2bad4e72-86d4-41fd-bf78-96886d8b6f8d",
+    "original": {
+      "first": "كرستينا",
+      "last": "نصّار",
+      "father": "بشارة نصّار",
+      "mother": "Mirna Mahfouz"
+    },
+    "bilingual": {
+      "first_en": "Christina",
+      "first_ar": "كرستينا",
+      "last_en": "Nassar",
+      "last_ar": "نصّار",
+      "father_en": "Bechara Nassar",
+      "father_ar": "بشارة نصّار",
+      "mother_en": "Mirna Mahfouz",
+      "mother_ar": "ميرنا محفوظ"
+    }
+  },
+  {
+    "index": 68,
+    "id": "d9c5fd72-71f0-49c6-85dd-c7fd483a7a0c",
+    "original": {
+      "first": "كريس",
+      "last": "زيدان",
+      "father": "وهيب زيدان",
+      "mother": "بولين ابي رعد"
+    },
+    "bilingual": {
+      "first_en": "Chris",
+      "first_ar": "كريس",
+      "last_en": "Zeidan",
+      "last_ar": "زيدان",
+      "father_en": "Wahib Zeidan",
+      "father_ar": "وهيب زيدان",
+      "mother_en": "Pauline Abi Raad",
+      "mother_ar": "بولين أبي رعد"
+    }
+  },
+  {
+    "index": 69,
+    "id": "e74b01d5-64c8-4694-a03d-b7ff58f656ba",
+    "original": {
+      "first": "كلاريتا",
+      "last": "عساف",
+      "father": "طوني",
+      "mother": "حنان عساف"
+    },
+    "bilingual": {
+      "first_en": "Clarita",
+      "first_ar": "كلاريتا",
+      "last_en": "Assaf",
+      "last_ar": "عساف",
+      "father_en": "Tony Assaf",
+      "father_ar": "طوني عساف",
+      "mother_en": "Hanan Assaf",
+      "mother_ar": "حنان عساف"
+    }
+  },
+  {
+    "index": 70,
+    "id": "346a4eed-6b24-4319-86a1-d592cea7e08f",
+    "original": {
+      "first": "كلوويه",
+      "last": "خشان",
+      "father": "كلوفيس",
+      "mother": "يولا بيلان"
+    },
+    "bilingual": {
+      "first_en": "Chloe",
+      "first_ar": "كلوويه",
+      "last_en": "Khachan",
+      "last_ar": "خشان",
+      "father_en": "Clovis Khachan",
+      "father_ar": "كلوفيس خشان",
+      "mother_en": "Yolla Baylan",
+      "mother_ar": "يولا بيلان"
+    }
+  },
+  {
+    "index": 71,
+    "id": "f98cad58-4da2-4af3-9090-81d9c6446e19",
+    "original": {
+      "first": "كلوويه",
+      "last": "خشان",
+      "father": "كلوفيس",
+      "mother": "يولا بيلان"
+    },
+    "bilingual": {
+      "first_en": "Chloe",
+      "first_ar": "كلوويه",
+      "last_en": "Khachan",
+      "last_ar": "خشان",
+      "father_en": "Clovis Khachan",
+      "father_ar": "كلوفيس خشان",
+      "mother_en": "Yolla Baylan",
+      "mother_ar": "يولا بيلان"
+    }
+  },
+  {
+    "index": 72,
+    "id": "d86b12ba-c86f-47cb-ad22-2a7503452a06",
+    "original": {
+      "first": "لانا",
+      "last": "ابراهيم ابو ال شامات",
+      "father": "ابراهيم ابو الشامات",
+      "mother": "نور نتيفة"
+    },
+    "bilingual": {
+      "first_en": "Lana",
+      "first_ar": "لانا",
+      "last_en": "Abou El Chamat",
+      "last_ar": "أبو الشامات",
+      "father_en": "Ibrahim Abou El Chamat",
+      "father_ar": "إبراهيم أبو الشامات",
+      "mother_en": "Nour Ntifeh",
+      "mother_ar": "نور نتيفة"
+    }
+  },
+  {
+    "index": 73,
+    "id": "4cdbd3b2-bc52-4983-858c-084841cc54f7",
+    "original": {
+      "first": "لونا",
+      "last": "بو سعد",
+      "father": "شربل بو سعد",
+      "mother": "ميراي أبي خليل"
+    },
+    "bilingual": {
+      "first_en": "Luna",
+      "first_ar": "لونا",
+      "last_en": "Bou Saad",
+      "last_ar": "بو سعد",
+      "father_en": "Charbel Bou Saad",
+      "father_ar": "شربل بو سعد",
+      "mother_en": "Mireille Abi Khalil",
+      "mother_ar": "ميراي أبي خليل"
+    }
+  },
+  {
+    "index": 74,
+    "id": "b9a8fd80-53bc-4ee3-99e3-20bbd303e848",
+    "original": {
+      "first": "ماتيا",
+      "last": "سلامه مكرزل",
+      "father": "شربل",
+      "mother": "ديالا متى"
+    },
+    "bilingual": {
+      "first_en": "Mattia",
+      "first_ar": "ماتيا",
+      "last_en": "Salameh Mokarzel",
+      "last_ar": "سلامة مكرزل",
+      "father_en": "Charbel Salameh Mokarzel",
+      "father_ar": "شربل سلامة مكرزل",
+      "mother_en": "Diala Matta",
+      "mother_ar": "ديالا متى"
+    }
+  },
+  {
+    "index": 75,
+    "id": "e7a1434a-c39f-48a7-8507-b4315331f409",
+    "original": {
+      "first": "مارتين",
+      "last": "عنتوري",
+      "father": "كريستيان",
+      "mother": "Liliane"
+    },
+    "bilingual": {
+      "first_en": "Martine",
+      "first_ar": "مارتين",
+      "last_en": "Antoury",
+      "last_ar": "عنتوري",
+      "father_en": "Christian Antoury",
+      "father_ar": "كريستيان عنتوري",
+      "mother_en": "Liliane",
+      "mother_ar": "ليليان"
+    }
+  },
+  {
+    "index": 76,
+    "id": "98bea8d9-1351-408a-abf0-b9874c590eab",
+    "original": {
+      "first": "ماريا",
+      "last": "فرنسيس",
+      "father": "إيلي فرنسيس",
+      "mother": "رولا فرنسيس"
+    },
+    "bilingual": {
+      "first_en": "Maria",
+      "first_ar": "ماريا",
+      "last_en": "Francis",
+      "last_ar": "فرنسيس",
+      "father_en": "Elie Francis",
+      "father_ar": "إيلي فرنسيس",
+      "mother_en": "Roula Francis",
+      "mother_ar": "رولا فرنسيس"
+    }
+  },
+  {
+    "index": 77,
+    "id": "4649c214-687c-4dae-b95e-0c60aef38b53",
+    "original": {
+      "first": "ماريانا",
+      "last": "بطرس",
+      "father": "Georges",
+      "mother": "Claudette Nader"
+    },
+    "bilingual": {
+      "first_en": "Mariana",
+      "first_ar": "ماريانا",
+      "last_en": "Boutros",
+      "last_ar": "بطرس",
+      "father_en": "Georges Boutros",
+      "father_ar": "جورج بطرس",
+      "mother_en": "Claudette Nader",
+      "mother_ar": "كلوديت نادر"
+    }
+  },
+  {
+    "index": 78,
+    "id": "9c822b34-e2cf-45aa-8dc5-2a00071a032b",
+    "original": {
+      "first": "ماريتا",
+      "last": "سمعان",
+      "father": "ريمون سمعان",
+      "mother": "مونيك طربيه"
+    },
+    "bilingual": {
+      "first_en": "Marita",
+      "first_ar": "ماريتا",
+      "last_en": "Semaan",
+      "last_ar": "سمعان",
+      "father_en": "Raymond Semaan",
+      "father_ar": "ريمون سمعان",
+      "mother_en": "Monique Torbey",
+      "mother_ar": "مونيك طربيه"
+    }
+  },
+  {
+    "index": 79,
+    "id": "b13e7064-3c1b-41f5-861a-d46f06325186",
+    "original": {
+      "first": "مارييلا",
+      "last": "صقر",
+      "father": "شربل صقر",
+      "mother": "ميرنا طنوس"
+    },
+    "bilingual": {
+      "first_en": "Mariella",
+      "first_ar": "مارييلا",
+      "last_en": "Sakr",
+      "last_ar": "صقر",
+      "father_en": "Charbel Sakr",
+      "father_ar": "شربل صقر",
+      "mother_en": "Mirna Tannous",
+      "mother_ar": "ميرنا طنوس"
+    }
+  },
+  {
+    "index": 80,
+    "id": "9b391b17-8ae0-47e8-9e1d-4472ce97f775",
+    "original": {
+      "first": "مايا",
+      "last": "سمعان/ Maya Elie Semaan",
+      "father": "Elie Raymond Semaan",
+      "mother": "Mariam ibrahim"
+    },
+    "bilingual": {
+      "first_en": "Maya",
+      "first_ar": "مايا",
+      "last_en": "Semaan",
+      "last_ar": "سمعان",
+      "father_en": "Elie Raymond Semaan",
+      "father_ar": "إيلي ريمون سمعان",
+      "mother_en": "Mariam Ibrahim",
+      "mother_ar": "مريم إبراهيم"
+    }
+  },
+  {
+    "index": 81,
+    "id": "455ee595-aea6-4e47-986d-d5043a5022d1",
+    "original": {
+      "first": "مريم",
+      "last": "يزبك",
+      "father": "الخوري جورج يزبك",
+      "mother": "جورجيت ضومط يزبك"
+    },
+    "bilingual": {
+      "first_en": "Maryam",
+      "first_ar": "مريم",
+      "last_en": "Yazbek",
+      "last_ar": "يزبك",
+      "father_en": "El Khoury Georges Yazbek",
+      "father_ar": "الخوري جورج يزبك",
+      "mother_en": "Georgette Doumit Yazbek",
+      "mother_ar": "جورجات ضومط يزبك"
+    }
+  },
+  {
+    "index": 82,
+    "id": "66113c03-1e8b-4e7b-ac49-da5655741ed9",
+    "original": {
+      "first": "ميرا",
+      "last": "زيبق",
+      "father": "اميل",
+      "mother": "اديبة حمادة"
+    },
+    "bilingual": {
+      "first_en": "Mira",
+      "first_ar": "ميرا",
+      "last_en": "Zeibak",
+      "last_ar": "زيبق",
+      "father_en": "Emile Zeibak",
+      "father_ar": "إميل زيبق",
+      "mother_en": "Adiba Hamadeh",
+      "mother_ar": "أديبة حمادة"
+    }
+  },
+  {
+    "index": 83,
+    "id": "b1a66beb-0bba-4147-bc5e-cb3e4ad030de",
+    "original": {
+      "first": "ميريم",
+      "last": "صهيون",
+      "father": "روجيه صهيون",
+      "mother": "نتالي رزق"
+    },
+    "bilingual": {
+      "first_en": "Myriam",
+      "first_ar": "ميريم",
+      "last_en": "Sahyoun",
+      "last_ar": "صهيون",
+      "father_en": "Roger Sahyoun",
+      "father_ar": "روجيه صهيون",
+      "mother_en": "Nathalie Rizk",
+      "mother_ar": "نتالي رزق"
+    }
+  },
+  {
+    "index": 84,
+    "id": "9212a70c-a0fe-4d91-ae62-6fa61b93c900",
+    "original": {
+      "first": "ميشال",
+      "last": "صفير",
+      "father": "ديب صفير",
+      "mother": "ماجدة الغاوي"
+    },
+    "bilingual": {
+      "first_en": "Michelle",
+      "first_ar": "ميشال",
+      "last_en": "Sfeir",
+      "last_ar": "صفير",
+      "father_en": "Dib Sfeir",
+      "father_ar": "ديب صفير",
+      "mother_en": "Majida El Ghawi",
+      "mother_ar": "ماجدة الغاوي"
+    }
+  },
+  {
+    "index": 85,
+    "id": "98bef548-6369-47c3-9f2b-318140fa833b",
+    "original": {
+      "first": "ميكاييلا",
+      "last": "سلامه مكرزل",
+      "father": "شربل",
+      "mother": "ديالا متى"
+    },
+    "bilingual": {
+      "first_en": "Michaela",
+      "first_ar": "ميكاييلا",
+      "last_en": "Salameh Mokarzel",
+      "last_ar": "سلامة مكرزل",
+      "father_en": "Charbel Salameh Mokarzel",
+      "father_ar": "شربل سلامة مكرزل",
+      "mother_en": "Diala Matta",
+      "mother_ar": "ديالا متى"
+    }
+  },
+  {
+    "index": 86,
+    "id": "04832e45-cfce-4643-95d8-d1d7cf734b70",
+    "original": {
+      "first": "ميلاني",
+      "last": "العتيّق",
+      "father": "زياد العتيّق",
+      "mother": "بااريسيا زغيب"
+    },
+    "bilingual": {
+      "first_en": "Melanie",
+      "first_ar": "ميلاني",
+      "last_en": "El Atik",
+      "last_ar": "العتيّق",
+      "father_en": "Ziad El Atik",
+      "father_ar": "زياد العتيّق",
+      "mother_en": "Patricia Zgheib",
+      "mother_ar": "باتريسيا زغيب"
+    }
+  },
+  {
+    "index": 87,
+    "id": "eefac882-3155-46d6-94ba-26d098ee89b3",
+    "original": {
+      "first": "نايا",
+      "last": "العاقوري",
+      "father": "فادي العاقوري",
+      "mother": "عبير البعيني"
+    },
+    "bilingual": {
+      "first_en": "Naya",
+      "first_ar": "نايا",
+      "last_en": "El Akouri",
+      "last_ar": "العاقوري",
+      "father_en": "Fadi El Akouri",
+      "father_ar": "فادي العاقوري",
+      "mother_en": "Abeer El Beaini",
+      "mother_ar": "عبير البعيني"
+    }
+  },
+  {
+    "index": 88,
+    "id": "c75fab66-f9e6-4b66-b442-6477de167d41",
+    "original": {
+      "first": "نور",
+      "last": "صهيون",
+      "father": "روجيه",
+      "mother": "نتالي رزق"
+    },
+    "bilingual": {
+      "first_en": "Nour",
+      "first_ar": "نور",
+      "last_en": "Sahyoun",
+      "last_ar": "صهيون",
+      "father_en": "Roger Sahyoun",
+      "father_ar": "روجيه صهيون",
+      "mother_en": "Nathalie Rizk",
+      "mother_ar": "نتالي رزق"
+    }
+  },
+  {
+    "index": 89,
+    "id": "fab08ef9-b588-4c28-a3ca-853c402ddbab",
+    "original": {
+      "first": "نيرفانا",
+      "last": "نهرا",
+      "father": "انطوان نهرا",
+      "mother": "جولي الراعي"
+    },
+    "bilingual": {
+      "first_en": "Nirvana",
+      "first_ar": "نيرفانا",
+      "last_en": "Nohra",
+      "last_ar": "نهرا",
+      "father_en": "Antoine Nohra",
+      "father_ar": "أنطوان نهرا",
+      "mother_en": "Julie El Rahi",
+      "mother_ar": "جولي الراعي"
+    }
+  },
+  {
+    "index": 90,
+    "id": "f448ccab-155c-465a-8c10-4c4323fae8b6",
+    "original": {
+      "first": "وديع",
+      "last": "ضاهر",
+      "father": "شادي",
+      "mother": "علا بعيني"
+    },
+    "bilingual": {
+      "first_en": "Wadih",
+      "first_ar": "وديع",
+      "last_en": "Daher",
+      "last_ar": "ضاهر",
+      "father_en": "Chady Daher",
+      "father_ar": "شادي ضاهر",
+      "mother_en": "Oula Beainy",
+      "mother_ar": "علا بعيني"
+    }
+  },
+  {
+    "index": 91,
+    "id": "88b611eb-285c-403b-922e-9fa18fc27e0b",
+    "original": {
+      "first": "وليم",
+      "last": "نون",
+      "father": "اندره شربل نون",
+      "mother": "جنيفر نون"
+    },
+    "bilingual": {
+      "first_en": "William",
+      "first_ar": "وليم",
+      "last_en": "Noun",
+      "last_ar": "نون",
+      "father_en": "Andre-Charbel Noun",
+      "father_ar": "أندريه-شربل نون",
+      "mother_en": "Jennifer Saliba",
+      "mother_ar": "جنيفر صليبا"
+    }
+  }
+]

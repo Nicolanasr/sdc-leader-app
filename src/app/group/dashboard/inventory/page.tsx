@@ -10,11 +10,18 @@ export default async function InventoryPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
-  let userTroopId = user?.app_metadata?.troop_id || null
+  let userTroopId = user?.app_metadata?.troop_id || user?.app_metadata?.troop_ids?.[0] || null
 
-  if (!user || !role || !groupId) {
+  if (!user || !groupId) {
     redirect('/login?message=Unauthorized. Leader access only.')
   }
 
@@ -60,7 +67,7 @@ export default async function InventoryPage() {
     'configurator',
   ]
 
-  const hasAccess = strictlyAllowedRoles.includes(role) || isEventStaff || isUnitQuartermaster
+  const hasAccess = roles.some((r) => strictlyAllowedRoles.includes(r)) || isEventStaff || isUnitQuartermaster
 
   if (!hasAccess) {
     redirect('/group/dashboard?message=Access to Inventory is restricted to Quartermasters, Group Leaders, and Troop/Event Leaders.')
@@ -165,6 +172,7 @@ export default async function InventoryPage() {
       groupId={groupId}
       groupName={groupName}
       currentRole={role}
+      roles={roles}
       patrolRole={memberPatrolRole}
       userTroopId={userTroopId}
       userId={user.id}

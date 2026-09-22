@@ -99,6 +99,7 @@ interface Props {
   groupName: string
   groupId: string
   currentRole: string
+  roles?: string[]
   userName: string
   userId: string
   userTroopId: string | null
@@ -275,6 +276,7 @@ export default function PlannerManagement({
   groupName,
   groupId,
   currentRole,
+  roles,
   userName,
   userId,
   userTroopId,
@@ -848,6 +850,7 @@ export default function PlannerManagement({
     <DashboardShell
       groupName={groupName}
       currentRole={currentRole}
+      roles={roles}
       userName={userName}
     >
       <div className="w-full pb-24 space-y-3">

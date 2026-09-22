@@ -10,7 +10,14 @@ export default async function LeadersDirectoryPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const userRoles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
 
   const allowedRoles = [
@@ -20,7 +27,9 @@ export default async function LeadersDirectoryPage() {
     'configurator',
   ]
 
-  if (!user || !role || !groupId || !allowedRoles.includes(role)) {
+  const hasAccess = userRoles.some((r) => allowedRoles.includes(r))
+
+  if (!user || !groupId || !hasAccess) {
     redirect('/group/dashboard?message=Unauthorized. Group Leader and Secretary access only.')
   }
 
@@ -144,6 +153,7 @@ export default async function LeadersDirectoryPage() {
       initialLeaders={leadersList}
       troops={troopsData || []}
       currentRole={role}
+      userRoles={userRoles}
       groupId={groupId}
       groupName={groupName}
       ranks={ranks || []}

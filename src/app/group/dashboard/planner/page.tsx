@@ -16,7 +16,14 @@ export default async function PlannerPage() {
   // 1. Fetch Profile & Role
   const groupId = user?.app_metadata?.group_id || user?.user_metadata?.group_id || null
   const role = user?.app_metadata?.role_scope || user?.app_metadata?.role || user?.user_metadata?.role || 'leader'
-  const userTroopId = user?.app_metadata?.troop_id || user?.user_metadata?.troop_id || null
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
+  const userTroopId = user?.app_metadata?.troop_id || user?.app_metadata?.troop_ids?.[0] || user?.user_metadata?.troop_id || null
 
   const { data: userProfile } = await supabase
     .from('profiles')
@@ -178,6 +185,7 @@ export default async function PlannerPage() {
       groupName={groupName}
       groupId={groupId || ''}
       currentRole={role}
+      roles={roles}
       userName={userName}
       userId={user.id}
       userTroopId={userTroopId || null}

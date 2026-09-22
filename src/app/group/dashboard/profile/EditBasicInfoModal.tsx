@@ -1,9 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Save, Loader2, Phone, Heart, AlertCircle, MapPin, School, Sparkles, User } from 'lucide-react'
+import { X, Save, Loader2, Phone, Heart, AlertCircle, MapPin, School, User } from 'lucide-react'
 
 export interface BasicProfileData {
+  first_name?: string | null
+  last_name?: string | null
+  first_name_ar?: string | null
+  last_name_ar?: string | null
+  father_name?: string | null
+  father_name_ar?: string | null
+  mother_name?: string | null
+  mother_name_ar?: string | null
   phone_number?: string | null
   whatsapp_number?: string | null
   emergency_contact_name?: string | null
@@ -32,6 +40,15 @@ export default function EditBasicInfoModal({
   initialData,
   onSuccess,
 }: Props) {
+  const [firstName, setFirstName] = useState(initialData.first_name || '')
+  const [lastName, setLastName] = useState(initialData.last_name || '')
+  const [firstNameAr, setFirstNameAr] = useState(initialData.first_name_ar || '')
+  const [lastNameAr, setLastNameAr] = useState(initialData.last_name_ar || '')
+  const [fatherName, setFatherName] = useState(initialData.father_name || '')
+  const [fatherNameAr, setFatherNameAr] = useState(initialData.father_name_ar || '')
+  const [motherName, setMotherName] = useState(initialData.mother_name || '')
+  const [motherNameAr, setMotherNameAr] = useState(initialData.mother_name_ar || '')
+
   const [phoneNumber, setPhoneNumber] = useState(initialData.phone_number || '')
   const [whatsappNumber, setWhatsappNumber] = useState(initialData.whatsapp_number || '')
   const [emergencyName, setEmergencyName] = useState(initialData.emergency_contact_name || '')
@@ -56,17 +73,25 @@ export default function EditBasicInfoModal({
 
     try {
       const payload: BasicProfileData = {
-        phone_number: phoneNumber.trim(),
-        whatsapp_number: whatsappNumber.trim(),
-        emergency_contact_name: emergencyName.trim(),
-        emergency_contact_relation: emergencyRelation.trim(),
-        emergency_contact_phone: emergencyPhone.trim(),
-        blood_type: bloodType.trim(),
-        medical_info: medicalInfo.trim(),
-        address: address.trim(),
-        school: school.trim(),
-        hobbies: hobbies.trim(),
-        photo_url: photoUrl.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        first_name_ar: firstNameAr.trim() || null,
+        last_name_ar: lastNameAr.trim() || null,
+        father_name: fatherName.trim() || null,
+        father_name_ar: fatherNameAr.trim() || null,
+        mother_name: motherName.trim() || null,
+        mother_name_ar: motherNameAr.trim() || null,
+        phone_number: phoneNumber.trim() || null,
+        whatsapp_number: whatsappNumber.trim() || null,
+        emergency_contact_name: emergencyName.trim() || null,
+        emergency_contact_relation: emergencyRelation.trim() || null,
+        emergency_contact_phone: emergencyPhone.trim() || null,
+        blood_type: bloodType.trim() || null,
+        medical_info: medicalInfo.trim() || null,
+        address: address.trim() || null,
+        school: school.trim() || null,
+        hobbies: hobbies.trim() || null,
+        photo_url: photoUrl.trim() || null,
       }
 
       const res = await fetch('/api/me/profile', {
@@ -102,7 +127,7 @@ export default function EditBasicInfoModal({
             </div>
             <div>
               <h2 className="text-sm font-black text-slate-900">Edit Personal Information</h2>
-              <p className="text-[11px] text-slate-500">Update your direct contacts and personal notes</p>
+              <p className="text-[11px] text-slate-500">Update your bilingual name, contacts, and personal details</p>
             </div>
           </div>
           <button
@@ -122,8 +147,112 @@ export default function EditBasicInfoModal({
             </div>
           )}
 
-          {/* Section 1: Contact Details */}
+          {/* Section 0: Bilingual Names & Identity */}
           <div className="space-y-3">
+            <div className="flex items-center gap-1.5 text-teal-900 font-bold uppercase tracking-wider text-[10px]">
+              <User className="h-3 w-3" />
+              <span>Bilingual Name & Civil Identity (الاسم بالعربي والإنكليزي)</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">First Name (English)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Peter"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">الاسم الأول (بالعربي)</label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="مثال: بيتر"
+                  value={firstNameAr}
+                  onChange={(e) => setFirstNameAr(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Last Name / Family (English)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Haddad"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">الشهرة / العائلة (بالعربي)</label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="مثال: حداد"
+                  value={lastNameAr}
+                  onChange={(e) => setLastNameAr(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Father Name (English)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Georges Haddad"
+                  value={fatherName}
+                  onChange={(e) => setFatherName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">اسم الأب الكامل (بالعربي)</label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="مثال: جورج حداد"
+                  value={fatherNameAr}
+                  onChange={(e) => setFatherNameAr(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mother Name (English)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Claudette Nader"
+                  value={motherName}
+                  onChange={(e) => setMotherName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">اسم الأم الكامل (بالعربي)</label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="مثال: كلوديت نادر"
+                  value={motherNameAr}
+                  onChange={(e) => setMotherNameAr(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-700 focus:ring-1 focus:ring-teal-700 outline-none text-xs bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 1: Contact Details */}
+          <div className="border-t border-slate-100 pt-3 space-y-3">
             <div className="flex items-center gap-1.5 text-teal-900 font-bold uppercase tracking-wider text-[10px]">
               <Phone className="h-3 w-3" />
               <span>Contact Numbers & Location</span>

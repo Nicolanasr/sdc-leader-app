@@ -64,6 +64,7 @@ interface Props {
   groupId: string
   groupName: string
   currentRole: string
+  roles?: string[]
   userName: string
   userId: string
   canManage: boolean
@@ -86,6 +87,7 @@ const CATEGORIES = [
 export default function LibraryManagement({
   groupName,
   currentRole,
+  roles,
   userName,
   canManage,
   troops = [],
@@ -364,7 +366,7 @@ export default function LibraryManagement({
   }
 
   return (
-    <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+    <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName}>
       <div className="w-full pb-24 space-y-4">
         {/* Hidden Audio Element */}
         <audio

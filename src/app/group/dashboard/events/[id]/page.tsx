@@ -15,7 +15,14 @@ export default async function EventDetailsPage({ params }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
 
   const allowedRoles = [
@@ -30,9 +37,12 @@ export default async function EventDetailsPage({ params }: PageProps) {
     'ka2ed_fer2a',
     'mouse3ed_ka2ed_fer2a',
     'scout_member',
+    'configurator',
   ]
 
-  if (!user || !role || !groupId || !allowedRoles.includes(role)) {
+  const hasAccess = roles.some((r) => allowedRoles.includes(r))
+
+  if (!user || !groupId || !hasAccess) {
     redirect('/login?message=Unauthorized. Event access only.')
   }
 
@@ -188,6 +198,7 @@ export default async function EventDetailsPage({ params }: PageProps) {
       initialShoppingList={initialShoppingList}
       initialPantryRequests={initialPantryRequests}
       currentRole={role}
+      roles={roles}
       patrolRole={memberPatrolRole}
       groupId={groupId}
       groupName={groupName}

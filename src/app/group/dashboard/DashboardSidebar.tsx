@@ -7,11 +7,11 @@ import { X, Landmark, Users, Layers, ClipboardList, Calendar, Wallet, Package, U
 interface Props {
   groupName: string
   currentRole: string
+  roles?: string[]
   patrolRole?: string | null
   onClose?: () => void
   onLogout: () => void
 }
-
 
 const navLink = (href: string, label: string, icon: React.ReactNode, active: boolean, onClick?: () => void) => (
   <Link
@@ -30,24 +30,35 @@ const navLink = (href: string, label: string, icon: React.ReactNode, active: boo
   </Link>
 )
 
-export default function DashboardSidebar({ groupName, currentRole, patrolRole, onClose, onLogout }: Props) {
+export default function DashboardSidebar({ groupName, currentRole, roles = [], patrolRole, onClose, onLogout }: Props) {
   const pathname = usePathname()
-  const isMember = currentRole === 'scout_member'
+
+  // Collect all roles held by the user
+  const allUserRoles = Array.from(
+    new Set([
+      currentRole,
+      ...(Array.isArray(roles) ? roles : []),
+    ].filter(Boolean))
+  )
+
+  const isMember = allUserRoles.includes('scout_member') && allUserRoles.length === 1
 
   const isUnitSecretary = isMember && patrolRole === 'amin_serr'
   const isUnitTreasurer = isMember && patrolRole === 'sandou2'
   const isUnitQuartermaster = isMember && patrolRole === 'tejhizet'
 
-  // Role permissions per view (Supports multi-role leaders & youth unit officers)
-  const canAccessBroadcast = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'configurator'].includes(currentRole)
-  const canAccessLeaders = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
-  const canAccessTroops = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(currentRole)
-  const canAccessMembers = isUnitSecretary || ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
-  const canAccessAttendance = isUnitSecretary || ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
+  const hasRole = (targetRoles: string[]) => allUserRoles.some((r) => targetRoles.includes(r))
+
+  // Role permissions per view (Evaluates union of all roles held by user)
+  const canAccessBroadcast = !isMember && hasRole(['chef_groupe', 'assistant_chef_groupe', 'configurator'])
+  const canAccessLeaders = !isMember && hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
+  const canAccessTroops = !isMember && hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
+  const canAccessMembers = isUnitSecretary || hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessAttendance = isUnitSecretary || hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
   const canAccessEvents = true
-  const canAccessFinances = isUnitTreasurer || ['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
-  const canAccessInventory = isUnitQuartermaster || ['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'].includes(currentRole)
-  const canAccessPantry = !isMember && ['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator'].includes(currentRole)
+  const canAccessFinances = isUnitTreasurer || hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessInventory = isUnitQuartermaster || hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessPantry = !isMember && hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'configurator'])
 
   return (
     <div className="flex flex-col h-full">

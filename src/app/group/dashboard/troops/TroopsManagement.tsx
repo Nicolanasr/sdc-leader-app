@@ -25,6 +25,7 @@ interface Props {
   groupName: string
   groupId: string
   currentRole: string
+  roles?: string[]
   userName?: string
 }
 
@@ -34,6 +35,7 @@ export default function TroopsManagement({
   groupName,
   groupId,
   currentRole,
+  roles,
   userName,
 }: Props) {
   const router = useRouter()
@@ -150,7 +152,7 @@ export default function TroopsManagement({
   const canManage = currentRole === 'chef_groupe' || currentRole === 'amin_serr_group'
 
   return (
-    <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+    <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName}>
         {statusMessage && (
             <div
               className={`mb-6 p-4 rounded-xl border text-sm text-center ${

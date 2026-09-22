@@ -53,6 +53,16 @@ export default async function ProgressionPage() {
     if (troopRole) effectiveTroopId = troopRole.troop_id
   }
 
+  const allowedRoles = [
+    'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
+    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator',
+  ]
+  const hasAccess = allowedRoles.includes(role) || activeScopes.some((s: string) => allowedRoles.includes(s))
+
+  if (!hasAccess) {
+    redirect('/group/dashboard?message=Unauthorized. Progression & Badges access restricted.')
+  }
+
   const isGroupAdmin = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role) || activeScopes.some((s: string) => ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(s))
   const isTroopLeader = !isGroupAdmin && (['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(role) || activeScopes.some((s: string) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(s)))
 
@@ -190,12 +200,22 @@ export default async function ProgressionPage() {
     }))
   }
 
+  const userRoles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+      ...activeScopes,
+    ].filter(Boolean))
+  )
+
   return (
     <Suspense fallback={null}>
       <ProgressionManagement
         groupId={groupId}
         groupName={groupName}
         currentRole={role}
+        roles={userRoles}
         userName={userName}
         userId={user.id}
         userTroopId={effectiveTroopId}

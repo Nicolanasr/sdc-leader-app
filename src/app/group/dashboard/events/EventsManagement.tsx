@@ -98,6 +98,7 @@ interface Props {
     leaders: Leader[]
     members: Member[]
     currentRole: string
+    roles?: string[]
     groupId: string
     groupName: string
     userTroopId: string | null
@@ -144,6 +145,7 @@ export default function EventsManagement({
     leaders,
     members,
     currentRole,
+    roles,
     groupId,
     groupName,
     userTroopId,
@@ -507,7 +509,7 @@ export default function EventsManagement({
     }
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName}>
             {statusMessage && (
                 <div
                     className={`mb-6 p-4 rounded-xl border text-sm text-center ${statusMessage.type === 'success'

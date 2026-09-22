@@ -10,9 +10,16 @@ export default async function EventsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
-  const userTroopId = user?.app_metadata?.troop_id
+  const userTroopId = user?.app_metadata?.troop_id || user?.app_metadata?.troop_ids?.[0] || null
 
   const allowedRoles = [
     'chef_groupe',
@@ -26,9 +33,12 @@ export default async function EventsPage() {
     'ka2ed_fer2a',
     'mouse3ed_ka2ed_fer2a',
     'scout_member',
+    'configurator',
   ]
 
-  if (!user || !role || !groupId || !allowedRoles.includes(role)) {
+  const hasAccess = roles.some((r) => allowedRoles.includes(r))
+
+  if (!user || !groupId || !hasAccess) {
     redirect('/login?message=Unauthorized. Event access only.')
   }
 
@@ -116,6 +126,7 @@ export default async function EventsPage() {
       leaders={leaders || []}
       members={membersData || []}
       currentRole={role}
+      roles={roles}
       groupId={groupId}
       groupName={groupName}
       userTroopId={userTroopId || null}

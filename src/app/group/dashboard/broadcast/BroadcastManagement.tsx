@@ -52,6 +52,7 @@ interface Props {
     groupId: string
     groupName: string
     currentRole: string
+    roles?: string[]
     userName: string
     userId: string
     troops: Troop[]
@@ -142,6 +143,7 @@ export default function BroadcastManagement({
     groupId,
     groupName,
     currentRole,
+    roles,
     userName,
     troops,
     leaders,
@@ -294,7 +296,7 @@ export default function BroadcastManagement({
     }
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName}>
             <div className="max-w-7xl mx-auto space-y-3 pb-12">
                 {/* Status Toast */}
                 {statusMessage && (

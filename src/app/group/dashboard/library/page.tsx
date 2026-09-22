@@ -11,10 +11,17 @@ export default async function LibraryPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
 
-  if (!user || !role || !groupId) {
+  if (!user || !groupId) {
     redirect('/login?message=Unauthorized. Leader access only.')
   }
 
@@ -62,7 +69,7 @@ export default async function LibraryPage() {
   }))
 
   // 5. Permissions: Tiered access
-  const canManage = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(role)
+  const canManage = roles.some((r) => ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'].includes(r))
 
   // 6. Fetch all archive items for this group
   const { data: archiveItems, error } = await adminDb
@@ -81,6 +88,7 @@ export default async function LibraryPage() {
       groupId={groupId}
       groupName={groupName}
       currentRole={role}
+      roles={roles}
       userName={userName}
       userId={user.id}
       canManage={canManage}

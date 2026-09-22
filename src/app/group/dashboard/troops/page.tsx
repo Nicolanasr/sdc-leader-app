@@ -16,6 +16,13 @@ export default async function TroopsPage() {
 
   const groupId = user.app_metadata?.group_id
   const role = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user.app_metadata?.roles || []),
+      ...(user.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
 
   const allowedRoles = [
     'chef_groupe',
@@ -24,7 +31,9 @@ export default async function TroopsPage() {
     'configurator',
   ]
 
-  if (!groupId || !allowedRoles.includes(role)) {
+  const hasAccess = roles.some((r) => allowedRoles.includes(r))
+
+  if (!groupId || !hasAccess) {
     redirect('/group/dashboard?message=Unauthorized. Group Leader and Secretary access only.')
   }
 
@@ -79,6 +88,7 @@ export default async function TroopsPage() {
       groupName={groupName}
       groupId={groupId}
       currentRole={role}
+      roles={roles}
       userName={userName}
     />
   )

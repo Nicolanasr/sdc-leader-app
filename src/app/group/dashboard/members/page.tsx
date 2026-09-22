@@ -59,7 +59,6 @@ export default async function MembersPage() {
 
   const allowedRoles = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
-    'amin_sandou2_group', 'amin_tejhizet_group',
     'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator',
   ]
 
@@ -189,6 +188,15 @@ export default async function MembersPage() {
 
   const userName = userProfile?.full_name || user.email || 'Leader'
 
+  const userRoles: string[] = Array.from(
+    new Set([
+      userRole,
+      ...(user.app_metadata?.roles || []),
+      ...(user.app_metadata?.role_scopes || []),
+      ...activeScopes,
+    ].filter(Boolean))
+  )
+
   return (
     <MembersManagement
       initialMembers={filteredMembers}
@@ -198,6 +206,7 @@ export default async function MembersPage() {
       groupName={groupName}
       groupId={groupId}
       currentRole={userRole}
+      roles={userRoles}
       patrolRole={memberPatrolRole}
       userTroopId={userTroopId}
       userName={userName}

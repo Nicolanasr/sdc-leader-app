@@ -6,6 +6,7 @@ import { Menu, User } from 'lucide-react'
 interface Props {
   userName?: string
   currentRole: string
+  roles?: string[]
   onOpenMobileMenu: () => void
 }
 
@@ -24,8 +25,11 @@ const ROLE_LABELS: Record<string, string> = {
   scout_member: 'Scout Member',
 }
 
-export default function DashboardHeader({ userName, currentRole, onOpenMobileMenu }: Props) {
-  const formattedRole = ROLE_LABELS[currentRole] || currentRole.replace(/_/g, ' ')
+export default function DashboardHeader({ userName, currentRole, roles = [], onOpenMobileMenu }: Props) {
+  const allRoles = Array.from(new Set([currentRole, ...roles].filter(Boolean)))
+  const formattedRoles = allRoles
+    .map((r) => ROLE_LABELS[r] || r.replace(/_/g, ' '))
+    .join(' • ')
 
   return (
     <header className="bg-white/95 backdrop-blur-xs sticky top-0 z-30 border-b border-slate-200 px-3 sm:px-6 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2 sm:py-3 flex items-center justify-between md:justify-end shrink-0">
@@ -48,8 +52,8 @@ export default function DashboardHeader({ userName, currentRole, onOpenMobileMen
               {userName}
             </span>
           )}
-          <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg bg-teal-50 text-teal-900 border border-teal-200/70 truncate max-w-[140px] sm:max-w-none">
-            {formattedRole}
+          <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg bg-teal-50 text-teal-900 border border-teal-200/70 truncate max-w-[200px] sm:max-w-none">
+            {formattedRoles}
           </span>
         </div>
         <div className="w-8 h-8 rounded-xl bg-teal-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs group-hover:scale-105 transition-transform">

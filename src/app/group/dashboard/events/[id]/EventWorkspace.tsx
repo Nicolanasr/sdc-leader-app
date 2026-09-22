@@ -421,6 +421,7 @@ interface Props {
     initialShoppingList?: EventShoppingListItem[]
     initialPantryRequests?: EventPantryRequest[]
     currentRole: string
+    roles?: string[]
     patrolRole?: string | null
     groupId: string
     groupName: string
@@ -466,6 +467,7 @@ export default function EventWorkspace({
     initialShoppingList = [],
     initialPantryRequests = [],
     currentRole,
+    roles,
     patrolRole,
     groupId,
     groupName,
@@ -2073,7 +2075,7 @@ export default function EventWorkspace({
         : '—'
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName} patrolRole={patrolRole}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName} patrolRole={patrolRole}>
             {statusMessage && (
                 <div
                     className={`p-4 rounded-xl border text-sm text-center ${statusMessage.type === 'success'

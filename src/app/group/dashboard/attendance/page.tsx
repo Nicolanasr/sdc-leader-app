@@ -10,7 +10,14 @@ export default async function AttendancePage() {
 
   const groupId = user.app_metadata?.group_id
   const userRole = user.app_metadata?.role_scope || user.app_metadata?.role || 'guest'
-  let userTroopId = user.app_metadata?.troop_id || null
+  let userTroopId = user.app_metadata?.troop_id || user.app_metadata?.troop_ids?.[0] || null
+  const userRoles: string[] = Array.from(
+    new Set([
+      userRole,
+      ...(user.app_metadata?.roles || []),
+      ...(user.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   let memberPatrolRole: string | null = null
 
   if (userRole === 'scout_member') {
@@ -39,17 +46,22 @@ export default async function AttendancePage() {
 
   const allowedRoles = [
     'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group',
-    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'configurator',
+    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator',
   ]
 
-  if (!groupId || (!allowedRoles.includes(userRole) && !isUnitSecretary)) {
+  const hasAccess = userRoles.some((r) => allowedRoles.includes(r)) || isUnitSecretary
+
+  if (!groupId || !hasAccess) {
     redirect('/group/dashboard?message=Unauthorized. Attendance access only.')
   }
 
   const { data: groupData } = await supabase.from('groups').select('name').eq('id', groupId).single()
   const groupName = groupData?.name || 'Scout Group'
 
-  const isTroopLeader = userRole === 'ka2ed_fer2a' || userRole === 'mouse3ed_ka2ed_fer2a' || isUnitSecretary
+  const isTroopLeader =
+    (userRoles.some((r) => ['ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe'].includes(r)) &&
+      !userRoles.some((r) => ['chef_groupe', 'assistant_chef_groupe'].includes(r))) ||
+    isUnitSecretary
 
   // Troops + patrols (scoped for troop leaders and unit secretaries)
   let troopsQuery = supabase
@@ -171,6 +183,7 @@ export default async function AttendancePage() {
       groupId={groupId}
       groupName={groupName}
       currentRole={userRole}
+      roles={userRoles}
       patrolRole={memberPatrolRole}
       userTroopId={userTroopId}
       troops={troopsList}

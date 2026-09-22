@@ -48,6 +48,14 @@ interface Member {
     registry_number?: string | null
     join_date?: string | null
     sibling_ids?: string[] | null
+    first_name_en?: string | null
+    last_name_en?: string | null
+    father_name_en?: string | null
+    mother_name_en?: string | null
+    first_name_ar?: string | null
+    last_name_ar?: string | null
+    father_name_ar?: string | null
+    mother_name_ar?: string | null
 }
 
 const getRanksForSection = (sectionName: string): string[] => {
@@ -99,6 +107,7 @@ interface Props {
     groupName: string
     groupId: string
     currentRole: string
+    roles?: string[]
     patrolRole?: string | null
     userTroopId: string | null
     userName?: string
@@ -112,6 +121,7 @@ export default function MembersManagement({
     groupName,
     groupId,
     currentRole,
+    roles,
     patrolRole: userPatrolRole,
     userTroopId,
     userName,
@@ -139,6 +149,10 @@ export default function MembersManagement({
     // Onboarding / Form fields state
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
+    const [firstNameAr, setFirstNameAr] = useState('')
+    const [lastNameAr, setLastNameAr] = useState('')
+    const [fatherNameAr, setFatherNameAr] = useState('')
+    const [motherNameAr, setMotherNameAr] = useState('')
     const [birthDate, setBirthDate] = useState('')
     const [bloodType, setBloodType] = useState('O+')
     const [medicalInfo, setMedicalInfo] = useState('')
@@ -327,6 +341,12 @@ export default function MembersManagement({
         // Clear inputs
         setFirstName('')
         setLastName('')
+        setFirstNameAr('')
+        setLastNameAr('')
+        setFatherName('')
+        setFatherNameAr('')
+        setMotherName('')
+        setMotherNameAr('')
         setBirthDate('')
         setBloodType('O+')
         setMedicalInfo('')
@@ -338,12 +358,10 @@ export default function MembersManagement({
         setMemberPhone('')
         setSchool('')
         setHobbies('')
-        setFatherName('')
         setFatherBloodType('')
         setFatherBirthDate('')
         setFatherPhone('')
         setFatherJob('')
-        setMotherName('')
         setMotherBloodType('')
         setMotherBirthDate('')
         setMotherPhone('')
@@ -379,8 +397,10 @@ export default function MembersManagement({
         setIsEdit(true)
         setEditMemberId(m.id)
 
-        setFirstName(m.first_name)
-        setLastName(m.last_name)
+        setFirstName(m.first_name_en || m.first_name || '')
+        setLastName(m.last_name_en || m.last_name || '')
+        setFirstNameAr(m.first_name_ar || '')
+        setLastNameAr(m.last_name_ar || '')
         setBirthDate(m.birth_date || '')
         setBloodType(m.blood_type || 'O+')
         setMedicalInfo(m.medical_info || '')
@@ -412,12 +432,14 @@ export default function MembersManagement({
         setMemberPhone(m.member_phone || '')
         setSchool(m.school || '')
         setHobbies(m.hobbies || '')
-        setFatherName(m.father_name || '')
+        setFatherName(m.father_name_en || m.father_name || '')
+        setFatherNameAr(m.father_name_ar || '')
         setFatherBloodType(m.father_blood_type || '')
         setFatherBirthDate(m.father_birth_date || '')
         setFatherPhone(m.father_phone || '')
         setFatherJob(m.father_job || '')
-        setMotherName(m.mother_name || '')
+        setMotherName(m.mother_name_en || m.mother_name || '')
+        setMotherNameAr(m.mother_name_ar || '')
         setMotherBloodType(m.mother_blood_type || '')
         setMotherBirthDate(m.mother_birth_date || '')
         setMotherPhone(m.mother_phone || '')
@@ -456,6 +478,10 @@ export default function MembersManagement({
         const payload: any = {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
+            first_name_en: firstName.trim(),
+            last_name_en: lastName.trim(),
+            first_name_ar: firstNameAr.trim() || null,
+            last_name_ar: lastNameAr.trim() || null,
             birth_date: birthDate || null,
             blood_type: bloodType,
             medical_info: medicalInfo || null,
@@ -473,12 +499,16 @@ export default function MembersManagement({
             member_phone: memberPhone || null,
             school: school || null,
             hobbies: hobbies || null,
-            father_name: fatherName || null,
+            father_name: fatherName.trim() || null,
+            father_name_en: fatherName.trim() || null,
+            father_name_ar: fatherNameAr.trim() || null,
             father_blood_type: fatherBloodType || null,
             father_birth_date: fatherBirthDate || null,
             father_phone: fatherPhone || null,
             father_job: fatherJob || null,
-            mother_name: motherName || null,
+            mother_name: motherName.trim() || null,
+            mother_name_en: motherName.trim() || null,
+            mother_name_ar: motherNameAr.trim() || null,
             mother_blood_type: motherBloodType || null,
             mother_birth_date: motherBirthDate || null,
             mother_phone: motherPhone || null,
@@ -519,6 +549,14 @@ export default function MembersManagement({
             const fallbackPayload = { ...payload }
             delete fallbackPayload.emergency_contacts
             delete fallbackPayload.sibling_ids
+            delete fallbackPayload.first_name_ar
+            delete fallbackPayload.last_name_ar
+            delete fallbackPayload.father_name_ar
+            delete fallbackPayload.mother_name_ar
+            delete fallbackPayload.first_name_en
+            delete fallbackPayload.last_name_en
+            delete fallbackPayload.father_name_en
+            delete fallbackPayload.mother_name_en
 
             if (isEdit && editMemberId) {
                 const { error: retryError } = await supabase.from('members').update(fallbackPayload).eq('id', editMemberId)
@@ -773,8 +811,23 @@ export default function MembersManagement({
 
     // Filter list in UI
     const filteredMembers = members.filter((m) => {
-        const full = `${m.first_name} ${m.last_name}`.toLowerCase()
-        const queryMatch = full.includes(searchQuery.toLowerCase()) || m.current_rank?.toLowerCase().includes(searchQuery.toLowerCase())
+        const q = searchQuery.toLowerCase().trim()
+        if (!q) {
+            const troopMatch = !troopFilter || m.troop_id === troopFilter
+            const rankMatch = !rankFilter || m.current_rank === rankFilter
+            return troopMatch && rankMatch
+        }
+        const fullEn = `${m.first_name || ''} ${m.last_name || ''} ${m.first_name_en || ''} ${m.last_name_en || ''}`.toLowerCase()
+        const fullAr = `${m.first_name_ar || ''} ${m.last_name_ar || ''}`.toLowerCase()
+        const fatherEn = (m.father_name || m.father_name_en || '').toLowerCase()
+        const fatherAr = (m.father_name_ar || '').toLowerCase()
+        const queryMatch =
+            fullEn.includes(q) ||
+            fullAr.includes(q) ||
+            fatherEn.includes(q) ||
+            fatherAr.includes(q) ||
+            (m.current_rank?.toLowerCase().includes(q) ?? false)
+
         const troopMatch = !troopFilter || m.troop_id === troopFilter
         const rankMatch = !rankFilter || m.current_rank === rankFilter
         return queryMatch && troopMatch && rankMatch
@@ -784,7 +837,7 @@ export default function MembersManagement({
     const isUnitSecretary = isMember && userPatrolRole === 'amin_serr'
 
     return (
-        <DashboardShell groupName={groupName} currentRole={currentRole} userName={userName} patrolRole={userPatrolRole}>
+        <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName} patrolRole={userPatrolRole}>
             {statusMessage && (
                 <div
                     className={`p-3.5 rounded-xl border text-sm text-center ${statusMessage.type === 'success'
@@ -916,8 +969,13 @@ export default function MembersManagement({
                                             {member.first_name[0]}{member.last_name[0]}
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="text-sm font-black text-slate-900 leading-tight truncate">
-                                                {member.first_name} {member.last_name}
+                                            <h3 className="text-sm font-black text-slate-900 leading-tight truncate flex items-center gap-1.5 flex-wrap">
+                                                <span>{member.first_name} {member.last_name}</span>
+                                                {member.first_name_ar && (
+                                                    <span className="text-[11px] font-normal text-slate-400" dir="rtl">
+                                                        ({member.first_name_ar} {member.last_name_ar})
+                                                    </span>
+                                                )}
                                             </h3>
                                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                                                 <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.2 rounded-md border border-teal-200/60">
@@ -1038,7 +1096,14 @@ export default function MembersManagement({
                                     return (
                                         <tr key={member.id} className="hover:bg-slate-50/50 cursor-pointer" onClick={() => setSelectedMember(member)}>
                                             <td className="px-4 py-3">
-                                                <span className="font-bold text-slate-900 block">{member.first_name} {member.last_name}</span>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="font-bold text-slate-900">{member.first_name} {member.last_name}</span>
+                                                    {member.first_name_ar && (
+                                                        <span className="text-[11px] text-slate-400 font-medium" dir="rtl">
+                                                            ({member.first_name_ar} {member.last_name_ar})
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <span className={`text-[10px] font-semibold mt-0.5 inline-block px-1.5 py-0.5 rounded ${member.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
                                                     {member.is_active ? 'Active' : 'Inactive'}
                                                 </span>
@@ -1108,7 +1173,14 @@ export default function MembersManagement({
                         </button>
 
                         <div>
-                            <h3 className="text-xl font-extrabold text-slate-900">{selectedMember.first_name} {selectedMember.last_name}</h3>
+                            <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2 flex-wrap">
+                                <span>{selectedMember.first_name} {selectedMember.last_name}</span>
+                                {selectedMember.first_name_ar && (
+                                    <span className="text-sm font-semibold text-slate-500 font-sans" dir="rtl">
+                                        ({selectedMember.first_name_ar} {selectedMember.last_name_ar})
+                                    </span>
+                                )}
+                            </h3>
                             <p className="text-xs text-slate-400 mt-0.5">Scout Registration ID: {selectedMember.id}</p>
                         </div>
 
@@ -1262,7 +1334,16 @@ export default function MembersManagement({
                                 {(selectedMember.father_name || selectedMember.father_phone) && (
                                     <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
                                         <p className="font-bold text-teal-800">Father Information (معلومات الأب)</p>
-                                        {selectedMember.father_name && <p><span className="text-slate-500">Name:</span> <span className="font-medium">{selectedMember.father_name}</span> {selectedMember.father_blood_type ? `(${selectedMember.father_blood_type})` : ''}</p>}
+                                        {selectedMember.father_name && (
+                                            <p>
+                                                <span className="text-slate-500">Name:</span>{' '}
+                                                <span className="font-medium">{selectedMember.father_name}</span>
+                                                {selectedMember.father_name_ar && (
+                                                    <span className="text-slate-500 font-normal ml-1" dir="rtl">({selectedMember.father_name_ar})</span>
+                                                )}
+                                                {selectedMember.father_blood_type ? ` (${selectedMember.father_blood_type})` : ''}
+                                            </p>
+                                        )}
                                         {selectedMember.father_phone && <p><span className="text-slate-500">Phone:</span> <span className="font-medium">{selectedMember.father_phone}</span></p>}
                                         {selectedMember.father_job && <p><span className="text-slate-500">Occupation:</span> <span className="font-medium">{selectedMember.father_job}</span></p>}
                                         {selectedMember.father_birth_date && <p><span className="text-slate-500">Birth Date:</span> <span className="font-medium">{selectedMember.father_birth_date}</span></p>}
@@ -1272,7 +1353,16 @@ export default function MembersManagement({
                                 {(selectedMember.mother_name || selectedMember.mother_phone) && (
                                     <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
                                         <p className="font-bold text-teal-800">Mother Information (معلومات الأم)</p>
-                                        {selectedMember.mother_name && <p><span className="text-slate-500">Name:</span> <span className="font-medium">{selectedMember.mother_name}</span> {selectedMember.mother_blood_type ? `(${selectedMember.mother_blood_type})` : ''}</p>}
+                                        {selectedMember.mother_name && (
+                                            <p>
+                                                <span className="text-slate-500">Name:</span>{' '}
+                                                <span className="font-medium">{selectedMember.mother_name}</span>
+                                                {selectedMember.mother_name_ar && (
+                                                    <span className="text-slate-500 font-normal ml-1" dir="rtl">({selectedMember.mother_name_ar})</span>
+                                                )}
+                                                {selectedMember.mother_blood_type ? ` (${selectedMember.mother_blood_type})` : ''}
+                                            </p>
+                                        )}
                                         {selectedMember.mother_phone && <p><span className="text-slate-500">Phone:</span> <span className="font-medium">{selectedMember.mother_phone}</span></p>}
                                         {selectedMember.mother_job && <p><span className="text-slate-500">Occupation:</span> <span className="font-medium">{selectedMember.mother_job}</span></p>}
                                         {selectedMember.mother_birth_date && <p><span className="text-slate-500">Birth Date:</span> <span className="font-medium">{selectedMember.mother_birth_date}</span></p>}
@@ -1549,7 +1639,7 @@ export default function MembersManagement({
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-700">First Name</label>
+                                            <label className="block text-xs font-semibold text-slate-700">First Name (English)</label>
                                             <input
                                                 type="text"
                                                 value={firstName}
@@ -1560,13 +1650,38 @@ export default function MembersManagement({
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-700">Last Name</label>
+                                            <label className="block text-xs font-semibold text-slate-700">الاسم الأول (بالعربي)</label>
+                                            <input
+                                                type="text"
+                                                dir="rtl"
+                                                value={firstNameAr}
+                                                onChange={(e) => setFirstNameAr(e.target.value)}
+                                                placeholder="مثال: بيتر"
+                                                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-teal-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700">Last Name / Family (English)</label>
                                             <input
                                                 type="text"
                                                 value={lastName}
                                                 onChange={(e) => setLastName(e.target.value)}
                                                 required
-                                                placeholder="e.g. Pan"
+                                                placeholder="e.g. Haddad"
+                                                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-teal-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700">الشهرة / العائلة (بالعربي)</label>
+                                            <input
+                                                type="text"
+                                                dir="rtl"
+                                                value={lastNameAr}
+                                                onChange={(e) => setLastNameAr(e.target.value)}
+                                                placeholder="مثال: حداد"
                                                 className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-teal-500 focus:outline-none"
                                             />
                                         </div>
@@ -1773,14 +1888,24 @@ export default function MembersManagement({
                                     {/* Father Information */}
                                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                                         <h5 className="text-xs font-bold text-slate-800">Father Information (معلومات الأب)</h5>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <input
                                                 type="text"
                                                 value={fatherName}
                                                 onChange={(e) => setFatherName(e.target.value)}
-                                                placeholder="Father Full Name"
+                                                placeholder="Father Name (English)"
                                                 className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
                                             />
+                                            <input
+                                                type="text"
+                                                dir="rtl"
+                                                value={fatherNameAr}
+                                                onChange={(e) => setFatherNameAr(e.target.value)}
+                                                placeholder="اسم الأب الكامل (بالعربي)"
+                                                className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <input
                                                 type="text"
                                                 value={fatherPhone}
@@ -1822,14 +1947,24 @@ export default function MembersManagement({
                                     {/* Mother Information */}
                                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                                         <h5 className="text-xs font-bold text-slate-800">Mother Information (معلومات الأم)</h5>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <input
                                                 type="text"
                                                 value={motherName}
                                                 onChange={(e) => setMotherName(e.target.value)}
-                                                placeholder="Mother Full Name"
+                                                placeholder="Mother Name (English)"
                                                 className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
                                             />
+                                            <input
+                                                type="text"
+                                                dir="rtl"
+                                                value={motherNameAr}
+                                                onChange={(e) => setMotherNameAr(e.target.value)}
+                                                placeholder="اسم الأم الكامل (بالعربي)"
+                                                className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <input
                                                 type="text"
                                                 value={motherPhone}
@@ -1971,8 +2106,11 @@ export default function MembersManagement({
                                                 .filter((m) => {
                                                     if (!siblingSearchQuery.trim()) return true
                                                     const q = siblingSearchQuery.toLowerCase()
+                                                    const fullEn = `${m.first_name || ''} ${m.last_name || ''} ${m.first_name_en || ''} ${m.last_name_en || ''}`.toLowerCase()
+                                                    const fullAr = `${m.first_name_ar || ''} ${m.last_name_ar || ''}`.toLowerCase()
                                                     return (
-                                                        `${m.first_name} ${m.last_name}`.toLowerCase().includes(q) ||
+                                                        fullEn.includes(q) ||
+                                                        fullAr.includes(q) ||
                                                         (m.current_rank && m.current_rank.toLowerCase().includes(q))
                                                     )
                                                 })

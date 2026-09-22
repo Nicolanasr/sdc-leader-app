@@ -17,7 +17,8 @@ export default async function GroupDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = user?.app_metadata?.roles || user?.app_metadata?.role_scopes || [role]
   const groupId = user?.app_metadata?.group_id
 
   const allowedRoles = [
@@ -34,7 +35,9 @@ export default async function GroupDashboardPage() {
     'scout_member',
   ]
 
-  if (!user || !role || !groupId || !allowedRoles.includes(role)) {
+  const hasAnyAllowedRole = roles.some((r) => allowedRoles.includes(r))
+
+  if (!user || !hasAnyAllowedRole || !groupId) {
     redirect('/login?message=Unauthorized. Access restricted.')
   }
 
@@ -52,8 +55,9 @@ export default async function GroupDashboardPage() {
   }
   const commissariatName = (groupData as unknown as GroupWithCommissariat)?.commissariats?.name || 'Saint Jean Marc'
 
-  // ── SCOUT MEMBER SCOPED VIEW ──
-  if (role === 'scout_member') {
+  // ── SCOUT MEMBER SCOPED VIEW (Only if user has solely scout_member role) ──
+  const isPureScoutMember = roles.length === 1 && roles[0] === 'scout_member'
+  if (isPureScoutMember) {
     let memberId = user.app_metadata?.member_id
     if (!memberId) {
       const { data: profile } = await supabase
@@ -283,6 +287,7 @@ export default async function GroupDashboardPage() {
       <DashboardShell
         groupName={groupName}
         currentRole={role}
+        roles={roles}
         patrolRole={memberData?.patrol_role || null}
         userName={userName}
       >
@@ -407,6 +412,7 @@ export default async function GroupDashboardPage() {
       groupName={groupName}
       commissariatName={commissariatName}
       role={role}
+      roles={roles}
       groupId={groupId}
       stats={stats}
       userName={userName}

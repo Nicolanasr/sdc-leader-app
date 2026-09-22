@@ -6,25 +6,28 @@ import { Landmark, Calendar, Users, ClipboardList, Menu, Wallet, User, Package }
 
 interface Props {
   currentRole: string
+  roles?: string[]
   patrolRole?: string | null
   onOpenMenu: () => void
 }
 
-export default function MobileBottomNav({ currentRole, patrolRole, onOpenMenu }: Props) {
+export default function MobileBottomNav({ currentRole, roles = [], patrolRole, onOpenMenu }: Props) {
   const pathname = usePathname()
-  const isMember = currentRole === 'scout_member'
+  const allRoles = Array.from(new Set([currentRole, ...roles].filter(Boolean)))
+  const isMember = allRoles.includes('scout_member') && allRoles.length === 1
 
   const isUnitSecretary = isMember && patrolRole === 'amin_serr'
   const isUnitTreasurer = isMember && patrolRole === 'sandou2'
   const isUnitQuartermaster = isMember && patrolRole === 'tejhizet'
 
-  const canAccessMembers = [
-    'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 
-    'amin_sandou2_group', 'amin_tejhizet_group', 'ka2ed_fer2a', 
-    'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'
-  ].includes(currentRole)
+  const hasRole = (targetRoles: string[]) => allRoles.some((r) => targetRoles.includes(r))
 
-  const isTreasurer = currentRole === 'amin_sandou2_group'
+  const canAccessMembers = hasRole([
+    'chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 
+    'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'
+  ])
+
+  const isTreasurer = hasRole(['amin_sandou2_group'])
 
   const navItems = isMember
     ? [

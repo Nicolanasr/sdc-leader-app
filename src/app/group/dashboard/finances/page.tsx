@@ -10,9 +10,16 @@ export default async function FinancesPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
-  let userTroopId = user?.app_metadata?.troop_id || null
+  let userTroopId = user?.app_metadata?.troop_id || user?.app_metadata?.troop_ids?.[0] || null
   let memberPatrolRole: string | null = null
 
   if (role === 'scout_member') {
@@ -48,7 +55,9 @@ export default async function FinancesPage() {
     'configurator',
   ]
 
-  if (!user || !role || !groupId || (!allowedRoles.includes(role) && !isUnitTreasurer)) {
+  const hasAccess = roles.some((r) => allowedRoles.includes(r)) || isUnitTreasurer
+
+  if (!user || !groupId || !hasAccess) {
     redirect('/group/dashboard?message=Unauthorized. Treasury & Dues access only.')
   }
 
@@ -223,6 +232,7 @@ export default async function FinancesPage() {
       troops={troopsData || []}
       leaders={leaders || []}
       currentRole={role}
+      roles={roles}
       patrolRole={memberPatrolRole}
       groupId={groupId}
       groupName={groupName}

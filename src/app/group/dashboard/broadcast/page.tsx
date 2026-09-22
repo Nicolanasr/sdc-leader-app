@@ -11,15 +11,23 @@ export default async function BroadcastPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const role = user?.app_metadata?.role
+  const role = user?.app_metadata?.role || 'scout_member'
+  const roles: string[] = Array.from(
+    new Set([
+      role,
+      ...(user?.app_metadata?.roles || []),
+      ...(user?.app_metadata?.role_scopes || []),
+    ].filter(Boolean))
+  )
   const groupId = user?.app_metadata?.group_id
 
-  if (!user || !role || !groupId) {
+  if (!user || !groupId) {
     redirect('/login?message=Unauthorized. Leader access only.')
   }
 
   const strictlyAllowedRoles = ['chef_groupe', 'assistant_chef_groupe', 'configurator']
-  if (!strictlyAllowedRoles.includes(role)) {
+  const hasAccess = roles.some((r) => strictlyAllowedRoles.includes(r))
+  if (!hasAccess) {
     redirect('/group/dashboard?message=Access to Broadcast & WhatsApp Communications is restricted to Group Leaders.')
   }
 
@@ -138,6 +146,7 @@ export default async function BroadcastPage() {
       groupId={groupId}
       groupName={groupName}
       currentRole={role}
+      roles={roles}
       userName={userName}
       userId={user.id}
       troops={troopsData || []}
