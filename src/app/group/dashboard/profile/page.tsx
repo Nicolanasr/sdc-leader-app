@@ -87,6 +87,10 @@ export default async function UserProfilePage() {
         hobbies,
         address,
         is_active,
+        totem_animal,
+        totem_adjective,
+        totem_date,
+        totem_location,
         troops:troop_id (
           id,
           name

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle, Sparkles, KeyRound } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle, Sparkles, KeyRound, Clock, MapPin, CheckCircle2 } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
@@ -30,6 +30,10 @@ interface Member {
     is_active: boolean
     troops: any
     patrols: any
+    totem_animal?: string | null
+    totem_adjective?: string | null
+    totem_date?: string | null
+    totem_location?: string | null
     member_phone?: string | null
     school?: string | null
     hobbies?: string | null
@@ -97,6 +101,10 @@ interface HistoryLog {
     old_value: string
     new_value: string
     created_at: string
+    event_date?: string | null
+    event_time?: string | null
+    location?: string | null
+    notes?: string | null
 }
 
 interface Props {
@@ -273,7 +281,29 @@ export default function MembersManagement({
     const [newPatrolName, setNewPatrolName] = useState('')
     const [newPatrolTroopId, setNewPatrolTroopId] = useState('')
 
-    // Manual History Log fields state
+    // Totem form fields state
+    const [totemAnimal, setTotemAnimal] = useState('')
+    const [totemAdjective, setTotemAdjective] = useState('')
+    const [totemDate, setTotemDate] = useState('')
+    const [totemLocation, setTotemLocation] = useState('')
+
+    // Dedicated Milestone & Ceremony Logging Modal states
+    const [showMilestoneModal, setShowMilestoneModal] = useState(false)
+    const [milestoneMember, setMilestoneMember] = useState<Member | null>(null)
+    const [milestoneId, setMilestoneId] = useState<string | null>(null)
+    const [milestoneType, setMilestoneType] = useState<'rank_change' | 'totem_awarded' | 'promise_date_change' | 'custom_milestone'>('rank_change')
+    const [milestoneRank, setMilestoneRank] = useState('')
+    const [milestoneTotemAnimal, setMilestoneTotemAnimal] = useState('')
+    const [milestoneTotemAdjective, setMilestoneTotemAdjective] = useState('')
+    const [milestoneCustomTitle, setMilestoneCustomTitle] = useState('')
+    const [milestoneDate, setMilestoneDate] = useState('')
+    const [milestoneTime, setMilestoneTime] = useState('')
+    const [milestoneLocation, setMilestoneLocation] = useState('')
+    const [milestoneNotes, setMilestoneNotes] = useState('')
+    const [milestoneUpdateProfile, setMilestoneUpdateProfile] = useState(true)
+    const [milestoneSubmitting, setMilestoneSubmitting] = useState(false)
+
+    // Manual History Log fields state (legacy inline)
     const [historyType, setHistoryType] = useState('rank_change')
     const [historyDescription, setHistoryDescription] = useState('')
     const [historyDate, setHistoryDate] = useState('')
@@ -371,6 +401,10 @@ export default function MembersManagement({
         setRegistryNumber('')
         setJoinDate('')
         setSiblingIds([])
+        setTotemAnimal('')
+        setTotemAdjective('')
+        setTotemDate('')
+        setTotemLocation('')
 
         const initialTroopId = isTroopLeader ? (userTroopId || '') : troops[0]?.id || ''
         setSelectedTroopId(initialTroopId)
@@ -449,6 +483,10 @@ export default function MembersManagement({
         setRegistryNumber(m.registry_number || '')
         setJoinDate(m.join_date || '')
         setSiblingIds(m.sibling_ids || [])
+        setTotemAnimal(m.totem_animal || '')
+        setTotemAdjective(m.totem_adjective || '')
+        setTotemDate(m.totem_date || '')
+        setTotemLocation(m.totem_location || '')
 
         // Reset manual history inputs
         setHistoryType('rank_change')
@@ -518,6 +556,10 @@ export default function MembersManagement({
             registry_number: registryNumber || null,
             join_date: joinDate || null,
             sibling_ids: siblingIds.length > 0 ? siblingIds : null,
+            totem_animal: totemAnimal.trim() || null,
+            totem_adjective: totemAdjective.trim() || null,
+            totem_date: totemDate || null,
+            totem_location: totemLocation.trim() || null,
         }
 
         let savedMemberId = editMemberId
@@ -557,6 +599,10 @@ export default function MembersManagement({
             delete fallbackPayload.last_name_en
             delete fallbackPayload.father_name_en
             delete fallbackPayload.mother_name_en
+            delete fallbackPayload.totem_animal
+            delete fallbackPayload.totem_adjective
+            delete fallbackPayload.totem_date
+            delete fallbackPayload.totem_location
 
             if (isEdit && editMemberId) {
                 const { error: retryError } = await supabase.from('members').update(fallbackPayload).eq('id', editMemberId)
@@ -684,76 +730,197 @@ export default function MembersManagement({
         }
     }
 
-    // Save (create or update) a history log entry from within the modal
-    const handleSaveHistoryLog = async () => {
-        if (!historyDescription.trim() || !editMemberId) return
+    // Open milestone & ceremony modal
+    const openMilestoneModal = (
+        m: Member,
+        defaultType: 'rank_change' | 'totem_awarded' | 'promise_date_change' | 'custom_milestone' = 'rank_change'
+    ) => {
+        setMilestoneMember(m)
+        setMilestoneId(null)
+        setMilestoneType(defaultType)
 
-        setLoading(true)
-        if (editingHistoryId) {
-            // Update existing entry
-            const { error } = await supabase
-                .from('member_history')
-                .update({
-                    event_type: historyType,
-                    new_value: historyDescription.trim(),
-                    created_at: historyDate ? new Date(historyDate).toISOString() : undefined,
-                })
-                .eq('id', editingHistoryId)
+        const troopObj = troops.find((t) => t.id === m.troop_id)
+        const troopRanks = getRanksForSection(troopObj?.sectionName || '')
+        setMilestoneRank(m.current_rank || troopRanks[0] || 'None / Scout')
 
-            if (!error) {
+        setMilestoneTotemAnimal(m.totem_animal || '')
+        setMilestoneTotemAdjective(m.totem_adjective || '')
+        setMilestoneCustomTitle('')
+        setMilestoneDate(new Date().toISOString().split('T')[0])
+        setMilestoneTime('')
+        setMilestoneLocation(m.totem_location || '')
+        setMilestoneNotes('')
+        setMilestoneUpdateProfile(true)
+        setShowMilestoneModal(true)
+    }
+
+    // Edit an existing milestone log entry
+    const openEditHistoryLog = (m: Member, log: HistoryLog) => {
+        setMilestoneMember(m)
+        setMilestoneId(log.id)
+        const validTypes: Array<'rank_change' | 'totem_awarded' | 'promise_date_change' | 'custom_milestone'> = [
+            'rank_change', 'totem_awarded', 'promise_date_change', 'custom_milestone'
+        ]
+        const resolvedType = validTypes.includes(log.event_type as any)
+            ? (log.event_type as 'rank_change' | 'totem_awarded' | 'promise_date_change' | 'custom_milestone')
+            : 'custom_milestone'
+        setMilestoneType(resolvedType)
+
+        if (resolvedType === 'totem_awarded') {
+            const parts = (log.new_value || '').trim().split(' ')
+            setMilestoneTotemAnimal(parts[0] || '')
+            setMilestoneTotemAdjective(parts.slice(1).join(' ') || '')
+        } else if (resolvedType === 'rank_change') {
+            setMilestoneRank(log.new_value || '')
+        } else {
+            setMilestoneCustomTitle(log.new_value || '')
+        }
+
+        const dateStr = log.event_date
+            ? new Date(log.event_date).toISOString().split('T')[0]
+            : (log.created_at ? new Date(log.created_at).toISOString().split('T')[0] : '')
+        setMilestoneDate(dateStr)
+        setMilestoneTime(log.event_time || '')
+        setMilestoneLocation(log.location || '')
+        setMilestoneNotes(log.notes || '')
+        setMilestoneUpdateProfile(false) // Editing old historical record defaults to not overriding current profile
+        setShowMilestoneModal(true)
+    }
+
+    // Submit milestone & ceremony log
+    const handleSaveMilestone = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!milestoneMember) return
+
+        let finalNewValue = ''
+        let finalOldValue = ''
+
+        if (milestoneType === 'rank_change') {
+            if (!milestoneRank.trim()) {
+                showStatus('Please specify the new rank.', 'error')
+                return
+            }
+            finalNewValue = milestoneRank.trim()
+            finalOldValue = milestoneMember.current_rank || 'Scout'
+        } else if (milestoneType === 'totem_awarded') {
+            if (!milestoneTotemAnimal.trim()) {
+                showStatus('Please specify the Totem Animal.', 'error')
+                return
+            }
+            finalNewValue = `${milestoneTotemAnimal.trim()} ${milestoneTotemAdjective.trim()}`.trim()
+            finalOldValue = milestoneMember.totem_animal
+                ? `${milestoneMember.totem_animal} ${milestoneMember.totem_adjective || ''}`.trim()
+                : 'None'
+        } else if (milestoneType === 'promise_date_change') {
+            finalNewValue = milestoneDate || 'Scout Promise Taken'
+            finalOldValue = milestoneMember.promise_date || 'None'
+        } else {
+            if (!milestoneCustomTitle.trim()) {
+                showStatus('Please enter a milestone title.', 'error')
+                return
+            }
+            finalNewValue = milestoneCustomTitle.trim()
+            finalOldValue = 'Milestone'
+        }
+
+        setMilestoneSubmitting(true)
+
+        const eventDateIso = milestoneDate
+            ? new Date(milestoneDate).toISOString()
+            : new Date().toISOString()
+
+        const historyPayload = {
+            member_id: milestoneMember.id,
+            event_type: milestoneType,
+            old_value: finalOldValue,
+            new_value: finalNewValue,
+            event_date: eventDateIso,
+            event_time: milestoneTime.trim() || null,
+            location: milestoneLocation.trim() || null,
+            notes: milestoneNotes.trim() || null,
+        }
+
+        try {
+            if (milestoneId) {
+                // Update existing milestone
+                const { error: histErr } = await supabase
+                    .from('member_history')
+                    .update(historyPayload)
+                    .eq('id', milestoneId)
+
+                if (histErr) throw histErr
+
                 setLocalHistoryMap((prev) => ({
                     ...prev,
-                    [editMemberId]: (prev[editMemberId] || []).map((l) =>
-                        l.id === editingHistoryId
+                    [milestoneMember.id]: (prev[milestoneMember.id] || []).map((l) =>
+                        l.id === milestoneId
                             ? {
                                 ...l,
-                                event_type: historyType,
-                                new_value: historyDescription.trim(),
-                                created_at: historyDate ? new Date(historyDate).toISOString() : l.created_at,
+                                ...historyPayload,
                             }
                             : l
                     ),
                 }))
-                showStatus('Milestone updated.', 'success')
+                showStatus('Milestone entry updated successfully.', 'success')
             } else {
-                showStatus(error.message, 'error')
-            }
-        } else {
-            // Create new entry
-            const { data, error } = await supabase
-                .from('member_history')
-                .insert({
-                    member_id: editMemberId,
-                    event_type: historyType,
-                    old_value: 'Manual Entry',
-                    new_value: historyDescription.trim(),
-                    created_at: historyDate ? new Date(historyDate).toISOString() : new Date().toISOString(),
-                })
-                .select()
-                .single()
+                // Insert new milestone
+                const { data: newLog, error: histErr } = await supabase
+                    .from('member_history')
+                    .insert(historyPayload)
+                    .select()
+                    .single()
 
-            if (!error && data) {
+                if (histErr) throw histErr
+
                 setLocalHistoryMap((prev) => ({
                     ...prev,
-                    [editMemberId]: [...(prev[editMemberId] || []), data],
+                    [milestoneMember.id]: [newLog, ...(prev[milestoneMember.id] || [])],
                 }))
-                showStatus('Milestone added.', 'success')
-            } else if (error) {
-                showStatus(error.message, 'error')
+                showStatus('Milestone & ceremony logged successfully!', 'success')
             }
-        }
 
-        // Reset form
-        setHistoryType('rank_change')
-        setHistoryDescription('')
-        setHistoryDate('')
-        setEditingHistoryId(null)
-        setLoading(false)
+            // Sync with active member profile if requested
+            if (milestoneUpdateProfile) {
+                const memberUpdates: Partial<Member> = {}
+                if (milestoneType === 'rank_change') {
+                    memberUpdates.current_rank = milestoneRank.trim()
+                } else if (milestoneType === 'totem_awarded') {
+                    memberUpdates.totem_animal = milestoneTotemAnimal.trim()
+                    memberUpdates.totem_adjective = milestoneTotemAdjective.trim() || null
+                    memberUpdates.totem_date = milestoneDate || null
+                    memberUpdates.totem_location = milestoneLocation.trim() || null
+                } else if (milestoneType === 'promise_date_change') {
+                    memberUpdates.promise_date = milestoneDate || null
+                }
+
+                if (Object.keys(memberUpdates).length > 0) {
+                    const { error: mErr } = await supabase
+                        .from('members')
+                        .update(memberUpdates)
+                        .eq('id', milestoneMember.id)
+
+                    if (!mErr) {
+                        const updatedM = { ...milestoneMember, ...memberUpdates }
+                        setMembers((prev) => prev.map((m) => (m.id === milestoneMember.id ? updatedM : m)))
+                        if (selectedMember?.id === milestoneMember.id) {
+                            setSelectedMember(updatedM)
+                        }
+                    }
+                }
+            }
+
+            setShowMilestoneModal(false)
+            router.refresh()
+        } catch (err: any) {
+            showStatus(err.message || 'Failed to save milestone log.', 'error')
+        } finally {
+            setMilestoneSubmitting(false)
+        }
     }
 
     // Delete a history log entry
     const handleDeleteHistoryLog = async (logId: string, memberId: string) => {
-        if (!confirm('Delete this milestone log entry?')) return
+        if (!confirm('Are you sure you want to delete this milestone entry?')) return
 
         setLoading(true)
         const { error } = await supabase.from('member_history').delete().eq('id', logId)
@@ -766,7 +933,7 @@ export default function MembersManagement({
                 ...prev,
                 [memberId]: (prev[memberId] || []).filter((l) => l.id !== logId),
             }))
-            showStatus('Milestone deleted.', 'success')
+            showStatus('Milestone entry deleted.', 'success')
         }
     }
 
@@ -792,20 +959,25 @@ export default function MembersManagement({
 
     // Friendly log text formatter
     const formatHistoryLog = (log: HistoryLog) => {
-        const time = formatDateDisplay(log.created_at)
         switch (log.event_type) {
+            case 'totem_awarded':
+                return `Totem Awarded: ${log.new_value}`
             case 'rank_change':
-                return `Promoted Rank from ${log.old_value} to ${log.new_value} (on ${time})`
+                return log.old_value && log.old_value !== 'None' && log.old_value !== 'Manual Entry'
+                    ? `Promoted to ${log.new_value} (from ${log.old_value})`
+                    : `Promoted to ${log.new_value}`
             case 'troop_change':
-                return `Transferred Section Unit from ${log.old_value} to ${log.new_value} (on ${time})`
+                return `Transferred Section Unit from ${log.old_value} to ${log.new_value}`
             case 'patrol_change':
-                return `Transferred Patrol from ${log.old_value} to ${log.new_value} (on ${time})`
+                return `Transferred Patrol from ${log.old_value} to ${log.new_value}`
             case 'promise_date_change':
-                return `Scout Promise Date set to ${log.new_value} (on ${time})`
+                return `Scout Promise Ceremony`
             case 'status_change':
-                return `Account Status changed to ${log.new_value} (on ${time})`
+                return `Account Status changed to ${log.new_value}`
+            case 'custom_milestone':
+                return log.new_value || 'Milestone Achievement'
             default:
-                return `Updated member details (on ${time})`
+                return log.new_value || `Updated member details`
         }
     }
 
@@ -981,6 +1153,11 @@ export default function MembersManagement({
                                                 <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.2 rounded-md border border-teal-200/60">
                                                     {member.current_rank || 'Scout'}
                                                 </span>
+                                                {member.totem_animal && (
+                                                    <span className="text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.2 rounded-md border border-amber-200/80">
+                                                        🐾 {member.totem_animal} {member.totem_adjective ? `${member.totem_adjective}` : ''}
+                                                    </span>
+                                                )}
                                                 <span className="text-[10px] text-slate-500 font-medium truncate">
                                                     {troopName || 'General'}
                                                 </span>
@@ -1109,9 +1286,16 @@ export default function MembersManagement({
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-xs font-semibold text-teal-800">
-                                                {member.current_rank && member.current_rank.toLowerCase() !== (troopName || '').toLowerCase()
-                                                    ? member.current_rank
-                                                    : 'Scout'}
+                                                <div>
+                                                    {member.current_rank && member.current_rank.toLowerCase() !== (troopName || '').toLowerCase()
+                                                        ? member.current_rank
+                                                        : 'Scout'}
+                                                </div>
+                                                {member.totem_animal && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80 mt-1">
+                                                        🐾 {member.totem_animal} {member.totem_adjective ? `${member.totem_adjective}` : ''}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-xs">
                                                 {troopName || 'Global (General)'}
@@ -1313,7 +1497,18 @@ export default function MembersManagement({
 
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
-                                        <span className="block text-slate-400 uppercase font-bold text-[10px]">Current Rank</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="block text-slate-400 uppercase font-bold text-[10px]">Current Rank</span>
+                                            {canWrite && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openMilestoneModal(selectedMember, 'rank_change')}
+                                                    className="text-[10px] font-bold text-teal-800 hover:text-teal-900 hover:underline"
+                                                >
+                                                    + Log Promotion
+                                                </button>
+                                            )}
+                                        </div>
                                         <span className="font-bold text-slate-800 text-xs mt-0.5 block">{selectedMember.current_rank || 'Scout'}</span>
                                     </div>
                                     <div>
@@ -1322,6 +1517,43 @@ export default function MembersManagement({
                                             {selectedMember.is_active ? 'Active' : 'Inactive'}
                                         </span>
                                     </div>
+                                </div>
+
+                                {/* Totem Animal Card in Scout Details */}
+                                <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-200/70 text-amber-950 flex items-center justify-center font-bold text-base shrink-0">
+                                            🐾
+                                        </div>
+                                        <div>
+                                            <span className="block text-slate-500 uppercase font-bold text-[10px]">Totem Animal • Totémisation</span>
+                                            {selectedMember.totem_animal ? (
+                                                <>
+                                                    <span className="font-extrabold text-amber-950 text-xs mt-0.5 block">
+                                                        {selectedMember.totem_animal} {selectedMember.totem_adjective ? `• ${selectedMember.totem_adjective}` : ''}
+                                                    </span>
+                                                    {(selectedMember.totem_date || selectedMember.totem_location) && (
+                                                        <span className="text-[10px] text-amber-800/90 font-medium block mt-0.5">
+                                                            {selectedMember.totem_date ? `Ceremony: ${formatDateDisplay(selectedMember.totem_date)}` : ''}
+                                                            {selectedMember.totem_date && selectedMember.totem_location ? ' • ' : ''}
+                                                            {selectedMember.totem_location ? `📍 ${selectedMember.totem_location}` : ''}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic block mt-0.5">No totem animal recorded</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {canWrite && (
+                                        <button
+                                            type="button"
+                                            onClick={() => openMilestoneModal(selectedMember, 'totem_awarded')}
+                                            className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors shrink-0 shadow-xs cursor-pointer"
+                                        >
+                                            {selectedMember.totem_animal ? 'Log Ceremony' : '+ Add Totem'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 {selectedMember.medical_info && (
@@ -1452,33 +1684,129 @@ export default function MembersManagement({
                                 )}
 
                                 <div>
-                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Promotion Log & Timeline</h4>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Promotion Log & Timeline</h4>
+                                        {canWrite && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openMilestoneModal(selectedMember)}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                <span>Log Milestone</span>
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="space-y-3">
                                         {selectedMember.promise_date && (
-                                            <div className="flex gap-3 text-xs items-start">
-                                                <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mt-0.5 shrink-0">
-                                                    ✓
+                                            <div className="flex gap-3 text-xs items-start p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                                <div className="h-7 w-7 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 mt-0.5 shrink-0 text-xs">
+                                                    ⚜️
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-800">Scout Promise Taken</p>
-                                                    <p className="text-[10px] text-slate-400 mt-0.5">Promise Date: {selectedMember.promise_date}</p>
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-slate-900">Scout Promise Taken</p>
+                                                    <p className="text-[11px] text-slate-500 mt-0.5">📅 Promise Date: {selectedMember.promise_date}</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {(historyMap[selectedMember.id] || []).length === 0 ? (
-                                            <p className="text-xs text-slate-400 italic">No promotions logged yet.</p>
-                                        ) : (
-                                            (historyMap[selectedMember.id] || []).map((log) => (
-                                                <div key={log.id} className="flex gap-3 text-xs items-start">
-                                                    <div className="h-6 w-6 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 mt-0.5 shrink-0">
-                                                        <Award className="h-3.5 w-3.5" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-700 leading-normal">{formatHistoryLog(log)}</p>
+                                        {selectedMember.totem_animal && (
+                                            <div className="flex gap-3 text-xs items-start p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/80">
+                                                <div className="h-7 w-7 rounded-full bg-amber-200/80 border border-amber-300 flex items-center justify-center text-amber-900 mt-0.5 shrink-0 text-xs">
+                                                    🐾
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-amber-950">
+                                                        Totem Ceremony: {selectedMember.totem_animal} {selectedMember.totem_adjective ? `• ${selectedMember.totem_adjective}` : ''}
+                                                    </p>
+                                                    <div className="text-[11px] text-amber-800/90 mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                                                        {selectedMember.totem_date && (
+                                                            <span>📅 {formatDateDisplay(selectedMember.totem_date)}</span>
+                                                        )}
+                                                        {selectedMember.totem_location && (
+                                                            <span>📍 {selectedMember.totem_location}</span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            ))
+                                            </div>
+                                        )}
+
+                                        {(localHistoryMap[selectedMember.id] || []).length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic">No promotions or ceremonies logged yet.</p>
+                                        ) : (
+                                            (localHistoryMap[selectedMember.id] || []).map((log) => {
+                                                const isTotem = log.event_type === 'totem_awarded'
+                                                const isRank = log.event_type === 'rank_change'
+                                                const isPromise = log.event_type === 'promise_date_change'
+
+                                                const iconBg = isTotem
+                                                    ? 'bg-amber-100 border-amber-200 text-amber-900'
+                                                    : isRank
+                                                    ? 'bg-teal-100 border-teal-200 text-teal-800'
+                                                    : isPromise
+                                                    ? 'bg-emerald-100 border-emerald-200 text-emerald-800'
+                                                    : 'bg-slate-100 border-slate-200 text-slate-700'
+
+                                                const displayDate = log.event_date || log.created_at
+
+                                                return (
+                                                    <div key={log.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex gap-3 text-xs items-start">
+                                                        <div className={`h-7 w-7 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${iconBg}`}>
+                                                            {isTotem ? '🐾' : isPromise ? '⚜️' : <Award className="h-3.5 w-3.5" />}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <p className="font-bold text-slate-900 leading-snug">{formatHistoryLog(log)}</p>
+                                                                {canWrite && (
+                                                                    <div className="flex items-center gap-1 shrink-0">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => openEditHistoryLog(selectedMember, log)}
+                                                                            className="p-1 text-slate-400 hover:text-teal-700 transition-colors"
+                                                                            title="Edit Milestone"
+                                                                        >
+                                                                            <Edit className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDeleteHistoryLog(log.id, selectedMember.id)}
+                                                                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                                                                            title="Delete Milestone"
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-1">
+                                                                {displayDate && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Calendar className="h-3 w-3 text-slate-400" />
+                                                                        <span>{formatDateDisplay(displayDate)}</span>
+                                                                    </span>
+                                                                )}
+                                                                {log.event_time && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Clock className="h-3 w-3 text-slate-400" />
+                                                                        <span>{log.event_time}</span>
+                                                                    </span>
+                                                                )}
+                                                                {log.location && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <MapPin className="h-3 w-3 text-slate-400" />
+                                                                        <span>{log.location}</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {log.notes && (
+                                                                <p className="text-[11px] text-slate-600 mt-1.5 italic bg-white/70 p-2 rounded-lg border border-slate-200/60 leading-relaxed">
+                                                                    {log.notes}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
                                         )}
                                     </div>
                                 </div>
@@ -1848,6 +2176,59 @@ export default function MembersManagement({
                                                 onChange={(e) => setPromiseDate(e.target.value)}
                                                 className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-teal-500 focus:outline-none"
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Dedicated Totem Animal & Ceremony Section */}
+                                    <div className="pt-3 border-t border-slate-200">
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <span className="text-base">🐾</span>
+                                            <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                                                Totem Animal & Totémisation (الاسم الكشفي / الطوطم)
+                                            </h4>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-700">Totem Animal (حيوان الطوطم)</label>
+                                                <input
+                                                    type="text"
+                                                    value={totemAnimal}
+                                                    onChange={(e) => setTotemAnimal(e.target.value)}
+                                                    placeholder="e.g. Loup, Aigle, Faucon, Panthère, Renard"
+                                                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-amber-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-700">Totem Adjective / Trait (الصفة)</label>
+                                                <input
+                                                    type="text"
+                                                    value={totemAdjective}
+                                                    onChange={(e) => setTotemAdjective(e.target.value)}
+                                                    placeholder="e.g. Solitaire, Vaillant, Audacieux, Fidèle"
+                                                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-amber-500 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-700">Totem Ceremony Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={totemDate}
+                                                    onChange={(e) => setTotemDate(e.target.value)}
+                                                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-amber-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-700">Totem Ceremony Location</label>
+                                                <input
+                                                    type="text"
+                                                    value={totemLocation}
+                                                    onChange={(e) => setTotemLocation(e.target.value)}
+                                                    placeholder="e.g. Summer Camp - Ehden Cedar Forest"
+                                                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-slate-900 text-xs focus:border-amber-500 focus:outline-none"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2296,6 +2677,251 @@ export default function MembersManagement({
                                 >
                                     {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                                     <span>{loading ? 'Creating…' : 'Create Patrol'}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Dedicated Log Milestone & Ceremony Modal */}
+            {showMilestoneModal && milestoneMember && (
+                <div data-modal="true" className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white w-full max-w-lg p-5 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.75rem)] sm:pb-6 max-sm:rounded-t-3xl max-sm:rounded-b-none sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] sm:max-h-[88vh] overflow-y-auto my-0 sm:my-auto animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+                        <div className="sm:hidden w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2" />
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                    <span>{milestoneId ? '✏️ Edit Milestone Entry' : '🎖️ Log Scout Ceremony & Milestone'}</span>
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    For <span className="font-bold text-slate-800">{milestoneMember.first_name} {milestoneMember.last_name}</span>
+                                    {milestoneMember.troops?.name ? ` • ${milestoneMember.troops.name}` : ''}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowMilestoneModal(false)}
+                                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveMilestone} className="space-y-4">
+                            {/* Ceremony Type Selector */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Event / Ceremony Type
+                                </label>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMilestoneType('rank_change')}
+                                        className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                                            milestoneType === 'rank_change'
+                                                ? 'bg-teal-50 border-teal-500 text-teal-900 shadow-2xs'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className="block text-sm">🎖️</span>
+                                        <span>Rank Promotion</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMilestoneType('totem_awarded')}
+                                        className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                                            milestoneType === 'totem_awarded'
+                                                ? 'bg-amber-50 border-amber-500 text-amber-950 shadow-2xs'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className="block text-sm">🐾</span>
+                                        <span>Totem Ceremony</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMilestoneType('promise_date_change')}
+                                        className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                                            milestoneType === 'promise_date_change'
+                                                ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-2xs'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className="block text-sm">⚜️</span>
+                                        <span>Scout Promise</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMilestoneType('custom_milestone')}
+                                        className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                                            milestoneType === 'custom_milestone'
+                                                ? 'bg-purple-50 border-purple-500 text-purple-900 shadow-2xs'
+                                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className="block text-sm">🌟</span>
+                                        <span>Custom Award</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Type Specific Fields */}
+                            {milestoneType === 'rank_change' && (
+                                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/60 space-y-2">
+                                    <label className="block text-xs font-semibold text-teal-900">
+                                        Select New Rank
+                                    </label>
+                                    <select
+                                        value={milestoneRank}
+                                        onChange={(e) => setMilestoneRank(e.target.value)}
+                                        className="block w-full rounded-lg border border-teal-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-teal-500 focus:outline-none"
+                                    >
+                                        {getRanksForSection(troops.find((t) => t.id === milestoneMember.troop_id)?.sectionName || '').map((r) => (
+                                            <option key={r} value={r}>
+                                                {r}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-teal-700">
+                                        Previous rank: <span className="font-bold">{milestoneMember.current_rank || 'Scout'}</span>
+                                    </p>
+                                </div>
+                            )}
+
+                            {milestoneType === 'totem_awarded' && (
+                                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-amber-950">
+                                                Totem Animal (حيوان الطوطم) *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={milestoneTotemAnimal}
+                                                onChange={(e) => setMilestoneTotemAnimal(e.target.value)}
+                                                placeholder="e.g. Loup, Aigle, Faucon, Panthère"
+                                                className="mt-1 block w-full rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 focus:border-amber-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-amber-950">
+                                                Totem Adjective / Trait (الصفة)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={milestoneTotemAdjective}
+                                                onChange={(e) => setMilestoneTotemAdjective(e.target.value)}
+                                                placeholder="e.g. Solitaire, Vaillant, Rapide"
+                                                className="mt-1 block w-full rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 focus:border-amber-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-amber-800">
+                                        Full Totem Name: <span className="font-bold">{milestoneTotemAnimal || '...'} {milestoneTotemAdjective}</span>
+                                    </p>
+                                </div>
+                            )}
+
+                            {milestoneType === 'custom_milestone' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Milestone / Award Title *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={milestoneCustomTitle}
+                                        onChange={(e) => setMilestoneCustomTitle(e.target.value)}
+                                        placeholder="e.g. First Class Scout, Camp Chief Commendation"
+                                        className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 focus:border-teal-500 focus:outline-none"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Ceremony Event Details: Date, Time, Location */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">Ceremony Date *</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={milestoneDate}
+                                        onChange={(e) => setMilestoneDate(e.target.value)}
+                                        className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700">Ceremony Time (Optional)</label>
+                                    <input
+                                        type="time"
+                                        value={milestoneTime}
+                                        onChange={(e) => setMilestoneTime(e.target.value)}
+                                        placeholder="e.g. 21:00"
+                                        className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-500 focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">Ceremony Location / Camp</label>
+                                <input
+                                    type="text"
+                                    value={milestoneLocation}
+                                    onChange={(e) => setMilestoneLocation(e.target.value)}
+                                    placeholder="e.g. Summer Camp - Ehden Cedar Forest, Campfire Circle"
+                                    className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-500 focus:outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700">Ceremony Notes & Context</label>
+                                <textarea
+                                    value={milestoneNotes}
+                                    onChange={(e) => setMilestoneNotes(e.target.value)}
+                                    rows={2}
+                                    placeholder="e.g. Campfire vigil passed with honors. Awarded by Chef Michel."
+                                    className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-500 focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Auto-update profile toggle */}
+                            <label className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={milestoneUpdateProfile}
+                                    onChange={(e) => setMilestoneUpdateProfile(e.target.checked)}
+                                    className="h-4 w-4 rounded border-slate-300 text-teal-800 focus:ring-teal-500"
+                                />
+                                <span className="text-xs text-slate-700 font-medium">
+                                    Update scout&apos;s active profile with this {milestoneType === 'totem_awarded' ? 'totem' : milestoneType === 'rank_change' ? 'rank' : 'milestone'}
+                                </span>
+                            </label>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowMilestoneModal(false)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={milestoneSubmitting}
+                                    className="px-5 py-2 rounded-xl bg-teal-800 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                >
+                                    {milestoneSubmitting ? (
+                                        <>
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            <span>Saving...</span>
+                                        </>
+                                    ) : (
+                                        <span>{milestoneId ? 'Update Milestone' : 'Save Milestone Log'}</span>
+                                    )}
                                 </button>
                             </div>
                         </form>

@@ -69,6 +69,10 @@ export interface MemberRecord {
   last_name_en?: string | null
   first_name_ar?: string | null
   last_name_ar?: string | null
+  totem_animal?: string | null
+  totem_adjective?: string | null
+  totem_date?: string | null
+  totem_location?: string | null
   is_active: boolean
   troops?: {
     id: string
@@ -305,6 +309,12 @@ export default function UserProfileView({
                     {member.current_rank}
                   </span>
                 )}
+                {member?.totem_animal && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-200 border border-amber-400/40 flex items-center gap-1">
+                    <span>🐾</span>
+                    <span>{member.totem_animal} {member.totem_adjective || ''}</span>
+                  </span>
+                )}
               </div>
 
               <h1 className="text-xl sm:text-2xl font-black tracking-tight">{profile.full_name}</h1>
@@ -484,6 +494,29 @@ export default function UserProfileView({
               </span>
             </div>
           </div>
+
+          {member.totem_animal && (
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🐾</span>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900/80 block">
+                    Totem Animal • Totémisation
+                  </span>
+                  <span className="text-xs font-black text-amber-950 block">
+                    {member.totem_animal} {member.totem_adjective ? `• ${member.totem_adjective}` : ''}
+                  </span>
+                  {(member.totem_date || member.totem_location) && (
+                    <span className="text-[11px] text-amber-800/80 font-medium block mt-0.5">
+                      {member.totem_date ? `Ceremony: ${member.totem_date}` : ''}
+                      {member.totem_date && member.totem_location ? ' • ' : ''}
+                      {member.totem_location ? `📍 ${member.totem_location}` : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {member.medical_info && (
             <div className="p-3.5 rounded-2xl bg-rose-50/60 border border-rose-200/70 text-xs text-rose-900 space-y-1">

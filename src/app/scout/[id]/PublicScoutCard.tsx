@@ -35,6 +35,10 @@ export interface PublicScoutData {
   leaderRoles?: string[]
   completedBadgesCount: number
   recentBadges?: Array<{ title: string; category?: string; badgeIcon?: string }>
+  totemAnimal?: string | null
+  totemAdjective?: string | null
+  totemDate?: string | null
+  totemLocation?: string | null
 }
 
 interface Props {
@@ -217,6 +221,13 @@ export default function PublicScoutCard({ scout }: Props) {
                     {scout.troopName}
                   </span>
                 )}
+
+                {scout.totemAnimal && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 text-xs font-bold shadow-2xs">
+                    <span>🐾</span>
+                    <span>{scout.totemAnimal} {scout.totemAdjective || ''}</span>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -293,6 +304,32 @@ export default function PublicScoutCard({ scout }: Props) {
                 </div>
               </div>
             </div>
+
+            {/* Totem Animal Showcase */}
+            {scout.totemAnimal && (
+              <div className="mt-3 p-3.5 rounded-2xl bg-amber-50/80 border border-amber-300/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-200/60 text-amber-950 border border-amber-400/50 flex items-center justify-center text-lg shrink-0">
+                    🐾
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/90 block">
+                      Totem Animal • Totémisation
+                    </span>
+                    <span className="text-sm font-black text-amber-950 block">
+                      {scout.totemAnimal} {scout.totemAdjective ? `• ${scout.totemAdjective}` : ''}
+                    </span>
+                    {(scout.totemDate || scout.totemLocation) && (
+                      <span className="text-[11px] text-amber-800/90 font-medium block mt-0.5">
+                        {scout.totemDate ? `Awarded: ${new Date(scout.totemDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                        {scout.totemDate && scout.totemLocation ? ' • ' : ''}
+                        {scout.totemLocation ? `📍 ${scout.totemLocation}` : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Badges Showcase */}
             {scout.recentBadges && scout.recentBadges.length > 0 && (

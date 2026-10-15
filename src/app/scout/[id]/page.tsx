@@ -54,6 +54,10 @@ async function getScoutData(id: string): Promise<PublicScoutData | null> {
       group_id,
       troop_id,
       patrol_id,
+      totem_animal,
+      totem_adjective,
+      totem_date,
+      totem_location,
       troops:troop_id (
         id,
         name,
@@ -112,6 +116,10 @@ async function getScoutData(id: string): Promise<PublicScoutData | null> {
             group_id,
             troop_id,
             patrol_id,
+            totem_animal,
+            totem_adjective,
+            totem_date,
+            totem_location,
             troops:troop_id (
               id,
               name,
@@ -244,6 +252,10 @@ async function getScoutData(id: string): Promise<PublicScoutData | null> {
     leaderRoles,
     completedBadgesCount,
     recentBadges,
+    totemAnimal: member?.totem_animal || null,
+    totemAdjective: member?.totem_adjective || null,
+    totemDate: member?.totem_date || null,
+    totemLocation: member?.totem_location || null,
   }
 }
 
