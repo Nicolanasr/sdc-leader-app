@@ -74,7 +74,7 @@ export const GEMINI_TOOLS_DECLARATION = [
             },
             limit: {
               type: 'NUMBER',
-              description: 'Number of events to retrieve (defaults to 5)',
+              description: 'Optional number of events to retrieve (leave empty to retrieve all matching events)',
             },
           },
         },
@@ -173,7 +173,7 @@ export async function executeToolCall(
         const troopName = (args.troop_name as string | undefined)?.trim()
         const rank = (args.rank as string | undefined)?.trim()
         const isActive = args.is_active !== false
-        const limit = Number(args.limit) || 20
+        const limitArg = args.limit ? Number(args.limit) : null
 
         let dbQuery = supabase
           .from('members')
@@ -191,7 +191,7 @@ export async function executeToolCall(
             promise_date,
             troops ( id, name ),
             patrols ( id, name )
-          `)
+          `, { count: 'exact' })
           .eq('group_id', groupId)
           .eq('is_deleted', false)
 
@@ -223,7 +223,9 @@ export async function executeToolCall(
           patrols?: { id: string; name: string } | null
         }
 
-        const { data: members, error } = await dbQuery.limit(limit)
+        const { data: members, count: exactMembersCount, error } = limitArg
+          ? await dbQuery.limit(limitArg)
+          : await dbQuery
 
         if (error) throw error
 
@@ -236,11 +238,12 @@ export async function executeToolCall(
         }
 
         // Compute summary metrics
-        const totalMatching = results.length
+        const totalMatching = exactMembersCount ?? results.length
         return {
           success: true,
           data: {
             totalMatching,
+            displayedCount: results.length,
             members: results.map((m) => ({
               id: m.id,
               name: `${m.first_name} ${m.last_name}`,
@@ -272,7 +275,7 @@ export async function executeToolCall(
           .eq('group_id', groupId)
           .eq('is_deleted', false)
           .or(`first_name.ilike.%${memberName}%,last_name.ilike.%${memberName}%`)
-          .limit(3)
+          .limit(10)
 
         if (!members || members.length === 0) {
           return {
@@ -358,7 +361,7 @@ export async function executeToolCall(
       case 'get_events': {
         const timeWindow = (args.time_window as string) || 'upcoming'
         const eventType = args.event_type as string | undefined
-        const limit = Number(args.limit) || 5
+        const limitArg = args.limit ? Number(args.limit) : null
         const nowIso = new Date().toISOString()
 
         let dbQuery = supabase
@@ -375,7 +378,7 @@ export async function executeToolCall(
             participant_fee,
             status,
             troops ( name )
-          `)
+          `, { count: 'exact' })
           .eq('group_id', groupId)
           .eq('is_deleted', false)
 
@@ -404,7 +407,9 @@ export async function executeToolCall(
           troops?: { name: string } | null
         }
 
-        const { data: events, error } = await dbQuery.limit(limit)
+        const { data: events, count: totalMatching, error } = limitArg
+          ? await dbQuery.limit(limitArg)
+          : await dbQuery
         if (error) throw error
 
         const typedEvents = (events || []) as unknown as EventRow[]
@@ -412,7 +417,8 @@ export async function executeToolCall(
         return {
           success: true,
           data: {
-            count: typedEvents.length,
+            totalMatchingEvents: totalMatching ?? typedEvents.length,
+            displayedCount: typedEvents.length,
             events: typedEvents.map((ev) => ({
               id: ev.id,
               title: ev.title,
@@ -444,6 +450,7 @@ export async function executeToolCall(
           .eq('group_id', groupId)
           .eq('is_deleted', false)
           .ilike('title', `%${eventName}%`)
+          .order('start_time', { ascending: false })
           .limit(1)
 
         if (!matchedEvents || matchedEvents.length === 0) {
@@ -532,17 +539,24 @@ export async function executeToolCall(
         const lowStockOnly = Boolean(args.low_stock_only)
 
         if (resourceType === 'equipment') {
+          const { count: totalEquipCount } = await supabase
+            .from('quartermaster_inventory')
+            .select('*', { count: 'exact', head: true })
+            .eq('group_id', groupId)
+            .eq('is_deleted', false)
+
           let dbQuery = supabase
             .from('quartermaster_inventory')
             .select('id, name, category, quantity_total, quantity_available, qty_good, qty_fair, qty_needs_repair, qty_damaged, location_stored')
             .eq('group_id', groupId)
             .eq('is_deleted', false)
+            .order('name', { ascending: true })
 
           if (search) {
             dbQuery = dbQuery.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
           }
 
-          const { data: items, error } = await dbQuery.limit(25)
+          const { data: items, error } = await dbQuery
           if (error) throw error
 
           let results = items || []
@@ -550,11 +564,15 @@ export async function executeToolCall(
             results = results.filter((i) => i.quantity_available <= 1 || i.qty_damaged > 0)
           }
 
+          const totalUnitsInStock = (items || []).reduce((acc, i) => acc + (Number(i.quantity_total) || 0), 0)
+
           return {
             success: true,
             data: {
               category: 'Equipment Inventory',
-              totalItems: results.length,
+              totalDistinctItems: totalEquipCount ?? results.length,
+              totalUnitsInStock,
+              displayedCount: results.length,
               items: results.map((i) => ({
                 name: i.name,
                 category: i.category,
@@ -570,37 +588,166 @@ export async function executeToolCall(
           }
         } else {
           // Central Pantry
-          let dbQuery = supabase
+          const { count: totalProductCount } = await supabase
             .from('group_pantry_items')
-            .select('id, name, category, quantity_total, quantity_available, unit, location_stored, min_threshold, expiry_date')
+            .select('*', { count: 'exact', head: true })
             .eq('group_id', groupId)
             .eq('is_deleted', false)
+
+          let dbQuery = supabase
+            .from('group_pantry_items')
+            .select('id, name, category, quantity_total, quantity_available, unit, location_stored, min_threshold, expiry_date, expiry_batches')
+            .eq('group_id', groupId)
+            .eq('is_deleted', false)
+            .order('name', { ascending: true })
 
           if (search) {
             dbQuery = dbQuery.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
           }
 
-          const { data: pantryItems, error } = await dbQuery.limit(25)
+          const { data: pantryItems, error } = await dbQuery
           if (error) throw error
 
-          let results = pantryItems || []
-          if (lowStockOnly) {
-            results = results.filter((p) => p.quantity_available <= (p.min_threshold || 1))
+          const now = new Date()
+          const nowMs = now.getTime()
+
+          interface RawBatch {
+            id?: string
+            brand?: string
+            quantity?: number
+            expiry_date?: string
+            package_size?: string
+            lot_number?: string
           }
+
+          interface ProcessedPantryItem {
+            id: string
+            name: string
+            category: string
+            unit: string
+            quantity_available: number
+            min_threshold: number
+            location_stored: string
+            expiry_date: string | null
+            batches: Array<{
+              brand: string
+              quantity: number
+              expiryDate: string
+              packageSize: string
+              isExpired: boolean
+              isExpiringSoon: boolean
+              daysToExpiry: number | null
+            }>
+            hasExpired: boolean
+            hasExpiringSoon: boolean
+            isLowStock: boolean
+          }
+
+          const processed: ProcessedPantryItem[] = (pantryItems || []).map((p) => {
+            const rawBatches = (p.expiry_batches || []) as RawBatch[]
+            const batches = rawBatches.map((b) => {
+              const expMs = b.expiry_date ? new Date(b.expiry_date).getTime() : null
+              const isExpired = expMs !== null && expMs < nowMs
+              const days = expMs !== null ? Math.round((expMs - nowMs) / (1000 * 3600 * 24)) : null
+              const isExpiringSoon = days !== null && days >= 0 && days <= 45
+              return {
+                brand: b.brand || 'Standard',
+                quantity: Number(b.quantity) || 0,
+                expiryDate: b.expiry_date || 'None',
+                packageSize: b.package_size || '',
+                isExpired,
+                isExpiringSoon,
+                daysToExpiry: days,
+              }
+            })
+
+            const hasExpiredBatch = batches.some((b) => b.isExpired)
+            const itemExpMs = p.expiry_date ? new Date(p.expiry_date).getTime() : null
+            const hasExpiredItemDate = itemExpMs !== null && itemExpMs < nowMs
+            const hasExpired = hasExpiredBatch || hasExpiredItemDate
+
+            const hasExpSoonBatch = batches.some((b) => b.isExpiringSoon)
+            const itemDays = itemExpMs !== null ? Math.round((itemExpMs - nowMs) / (1000 * 3600 * 24)) : null
+            const hasExpSoonItemDate = itemDays !== null && itemDays >= 0 && itemDays <= 45
+            const hasExpiringSoon = hasExpSoonBatch || hasExpSoonItemDate
+
+            const isLowStock = (Number(p.quantity_available) || 0) <= (p.min_threshold || 1)
+
+            return {
+              id: p.id,
+              name: p.name,
+              category: p.category,
+              unit: p.unit || 'units',
+              quantity_available: Number(p.quantity_available) || 0,
+              min_threshold: p.min_threshold || 1,
+              location_stored: p.location_stored || 'Pantry Shelf',
+              expiry_date: p.expiry_date || null,
+              batches,
+              hasExpired,
+              hasExpiringSoon,
+              isLowStock,
+            }
+          })
+
+          let results = processed
+          if (lowStockOnly) {
+            results = results.filter((p) => p.isLowStock)
+          }
+
+          const totalUnitsInStock = processed.reduce((acc, p) => acc + p.quantity_available, 0)
+          const expiredProducts = processed.filter((p) => p.hasExpired)
+          const expiringSoonProducts = processed.filter((p) => p.hasExpiringSoon)
+          const lowStockProducts = processed.filter((p) => p.isLowStock)
 
           return {
             success: true,
             data: {
               category: 'Central Pantry (Mounet)',
-              totalItems: results.length,
+              totalDistinctProducts: totalProductCount ?? processed.length,
+              totalUnitsInStock,
+              kpiSummary: {
+                allStockUnits: totalUnitsInStock,
+                totalDistinctProducts: processed.length,
+                lowStockCount: lowStockProducts.length,
+                expiringWithin45DaysCount: expiringSoonProducts.length,
+                expiredCount: expiredProducts.length,
+              },
+              expiredProducts: expiredProducts.map((p) => ({
+                name: p.name,
+                category: p.category,
+                totalAvailable: `${p.quantity_available} ${p.unit}`,
+                storedLocation: p.location_stored,
+                earliestExpiryDate: p.expiry_date,
+                expiredBatches: p.batches
+                  .filter((b) => b.isExpired)
+                  .map((b) => `${b.quantity}x ${b.brand} (${b.packageSize || p.unit}) - Expired: ${b.expiryDate}`),
+              })),
+              expiringSoonProducts: expiringSoonProducts.map((p) => ({
+                name: p.name,
+                category: p.category,
+                totalAvailable: `${p.quantity_available} ${p.unit}`,
+                storedLocation: p.location_stored,
+                batchesExpiringSoon: p.batches
+                  .filter((b) => b.isExpiringSoon)
+                  .map((b) => `${b.quantity}x ${b.brand} (${b.packageSize || p.unit}) - Expires in ${b.daysToExpiry} days (${b.expiryDate})`),
+              })),
+              lowStockProducts: lowStockProducts.map((p) => ({
+                name: p.name,
+                available: `${p.quantity_available} ${p.unit}`,
+                minThreshold: `${p.min_threshold} ${p.unit}`,
+              })),
               items: results.map((p) => ({
                 name: p.name,
                 category: p.category,
                 available: `${p.quantity_available} ${p.unit}`,
                 minThreshold: `${p.min_threshold} ${p.unit}`,
-                isLowStock: p.quantity_available <= (p.min_threshold || 1),
-                storedLocation: p.location_stored || 'Pantry Shelf',
-                expiryDate: p.expiry_date || 'None',
+                isLowStock: p.isLowStock,
+                hasExpiredBatches: p.hasExpired,
+                hasExpiringSoonBatches: p.hasExpiringSoon,
+                storedLocation: p.location_stored,
+                earliestExpiryDate: p.expiry_date || 'None',
+                brandsInStock: Array.from(new Set(p.batches.map((b) => b.brand).filter(Boolean))),
+                lotsCount: p.batches.length,
               })),
             },
           }
@@ -622,13 +769,13 @@ export async function executeToolCall(
         }
 
         // Fetch recent group treasury transactions
-        const { data: transactions } = await supabase
+        const { data: transactions, count: totalTransactions } = await supabase
           .from('treasury_transactions')
-          .select('amount, currency, type, category, description, status, created_at')
+          .select('amount, currency, type, category, description, status, created_at', { count: 'exact' })
           .eq('group_id', groupId)
           .eq('is_deleted', false)
           .order('created_at', { ascending: false })
-          .limit(10)
+          .limit(50)
 
         // Compute approximate balances
         let balanceUSD = 0
@@ -657,6 +804,7 @@ export async function executeToolCall(
               USD: `$${balanceUSD.toLocaleString()}`,
               LBP: `${balanceLBP.toLocaleString()} LBP`,
             },
+            totalTransactionsCount: totalTransactions ?? (transactions || []).length,
             recentTransactions: (transactions || []).map((t) => ({
               date: t.created_at,
               type: t.type,

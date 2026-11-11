@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import DashboardShell from './DashboardShell'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
+import { FEATURES } from '@/config/features'
 
 export interface UpcomingEvent {
   id: string
@@ -73,13 +74,13 @@ export default function GroupDashboardLayout({
   const roleInfo = ROLE_LABELS[role] || { label: 'Scout Leader', ar: 'قائد' }
 
   // Role permissions per workspace (Evaluates union of all roles held by user)
-  const canAccessBroadcast = hasRole(['chef_groupe', 'assistant_chef_groupe', 'configurator'])
+  const canAccessCommunications = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
   const canAccessLeaders = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
   const canAccessTroops = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator'])
   const canAccessMembers = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
   const canAccessAttendance = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
   const canAccessFinances = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_sandou2_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
-  const canAccessInventory = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'ka2ed_fer2a', 'mouse3ed_ka2ed_fer2a', 'chef_troupe', 'configurator'])
+  const canAccessInventory = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_tejhizet_group', 'configurator'])
   const canAccessPantry = hasRole(['chef_groupe', 'assistant_chef_groupe', 'amin_mounet_group', 'mas2oul_mounet', 'amin_serr_group', 'configurator'])
 
   // Dynamic Workspace Modules tailored to the active role
@@ -104,7 +105,7 @@ export default function GroupDashboardLayout({
       color: 'bg-blue-50 text-blue-800 border-blue-200 hover:border-blue-400',
       badge: 'Weekly Canevas',
       badgeColor: 'bg-blue-100 text-blue-900',
-      canAccess: true,
+      canAccess: FEATURES.sessionPlanner && canAccessAttendance,
     },
     {
       title: 'Scout Members & Troops',
@@ -137,7 +138,7 @@ export default function GroupDashboardLayout({
       color: 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-400',
       badge: 'Progression',
       badgeColor: 'bg-amber-100 text-amber-900',
-      canAccess: canAccessMembers,
+      canAccess: FEATURES.scoutProgression && canAccessMembers,
     },
     {
       title: 'Quartermaster & Gear',
@@ -195,15 +196,15 @@ export default function GroupDashboardLayout({
       canAccess: canAccessTroops,
     },
     {
-      title: 'Broadcast & Comms',
-      arTitle: 'التعاميم والتواصل',
-      desc: 'Direct announcements, WhatsApp alerts & group bulletins',
+      title: 'Communications & Broadcast',
+      arTitle: 'التعاميم والتواصل الموحد',
+      desc: 'Official WhatsApp circulars, scout templates & instant push alerts',
       href: '/group/dashboard/broadcast',
       icon: Radio,
       color: 'bg-purple-50 text-purple-800 border-purple-200 hover:border-purple-400',
-      badge: 'WhatsApp Sync',
+      badge: 'WhatsApp & Push',
       badgeColor: 'bg-purple-100 text-purple-900',
-      canAccess: canAccessBroadcast,
+      canAccess: canAccessCommunications,
     },
     {
       title: 'Library & Archives',
@@ -253,13 +254,23 @@ export default function GroupDashboardLayout({
 
             {/* Quick action buttons */}
             <div className="flex items-center gap-1.5 shrink-0 pt-1 sm:pt-0">
-              <Link
-                href="/group/dashboard/planner"
-                className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
-              >
-                <ClipboardList className="h-3.5 w-3.5 text-teal-300" />
-                <span>New Canevas</span>
-              </Link>
+              {FEATURES.sessionPlanner ? (
+                <Link
+                  href="/group/dashboard/planner"
+                  className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                >
+                  <ClipboardList className="h-3.5 w-3.5 text-teal-300" />
+                  <span>New Canevas</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/group/dashboard/attendance"
+                  className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                >
+                  <CheckSquare className="h-3.5 w-3.5 text-teal-300" />
+                  <span>Take Attendance</span>
+                </Link>
+              )}
               <Link
                 href="/group/dashboard/events"
                 className="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1 shadow-2xs active:scale-95"

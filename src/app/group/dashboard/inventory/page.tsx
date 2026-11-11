@@ -62,15 +62,13 @@ export default async function InventoryPage() {
     'chef_groupe',
     'assistant_chef_groupe',
     'amin_tejhizet_group',
-    'ka2ed_fer2a',
-    'mouse3ed_ka2ed_fer2a',
     'configurator',
   ]
 
   const hasAccess = roles.some((r) => strictlyAllowedRoles.includes(r)) || isEventStaff || isUnitQuartermaster
 
   if (!hasAccess) {
-    redirect('/group/dashboard?message=Access to Inventory is restricted to Quartermasters, Group Leaders, and Troop/Event Leaders.')
+    redirect('/group/dashboard?message=Access to Inventory is restricted to Quartermasters and Group Leaders.')
   }
 
   // 2. Fetch Group details

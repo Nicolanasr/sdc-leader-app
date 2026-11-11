@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { sendNotification, sendBatchNotification, NotificationPayload } from '@/services/notifications'
-import { telegramProvider } from '@/services/notifications/providers/telegramProvider'
 
 function normalizePhoneNumber(rawNumber: string): string {
   let digits = rawNumber.replace(/\D/g, '')
@@ -31,6 +30,9 @@ async function sendEvolutionWhatsApp(target: string, text: string): Promise<{ su
       headers['Authorization'] = `Bearer ${apiKey}`
     }
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+
     const res = await fetch(webhookUrl, {
       method: 'POST',
       headers,
@@ -38,16 +40,18 @@ async function sendEvolutionWhatsApp(target: string, text: string): Promise<{ su
         number: target,
         text,
       }),
+      signal: controller.signal,
     })
+    clearTimeout(timeoutId)
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}))
-      return { success: false, error: errData?.response?.message || 'Evolution API request failed' }
+      return { success: false, error: errData?.response?.message || `WhatsApp Gateway returned status ${res.status}` }
     }
 
     return { success: true }
   } catch (err: any) {
-    return { success: false, error: err?.message || 'Failed to connect to WhatsApp Gateway' }
+    return { success: false, error: 'Evolution Gateway is unreachable' }
   }
 }
 
@@ -62,15 +66,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized. Please log in.' }, { status: 401 })
     }
 
-    const currentRole = user.app_metadata?.role
-    const groupId = user.app_metadata?.group_id
+    const currentRole = user.app_metadata?.role_scope || user.app_metadata?.role || user.user_metadata?.role
+    let groupId = user.app_metadata?.group_id || user.user_metadata?.group_id
 
-    const allowedRoles = ['chef_groupe', 'assistant_chef_groupe', 'configurator']
-    if (!allowedRoles.includes(currentRole)) {
+    const adminDb = createAdminClient()
+    const { data: prof } = await adminDb.from('profiles').select('rank').eq('id', user.id).maybeSingle()
+    const isConfigurator = prof?.rank === 'Configurator' || user.email === 'nasr528@gmail.com'
+
+    const allowedRoles = ['chef_groupe', 'assistant_chef_groupe', 'amin_serr_group', 'configurator']
+    const hasRole = allowedRoles.includes(currentRole) || isConfigurator
+
+    if (!hasRole) {
       return NextResponse.json(
-        { error: 'Forbidden. Broadcast access is restricted to Group Leaders.' },
+        { error: 'Forbidden. Broadcast access is restricted to Group Leaders and Secretary.' },
         { status: 403 }
       )
+    }
+
+    if (!groupId) {
+      const { data: mainGroup } = await adminDb
+        .from('groups')
+        .select('id')
+        .eq('name', 'Saint Jean Marc')
+        .maybeSingle()
+      groupId = mainGroup?.id || '55482895-82c5-4c4c-be53-9d3afd05eec9'
     }
 
     const body = await req.json()
@@ -112,8 +131,6 @@ _Scouts des Cèdres Leader Portal_`.trim()
     let totalFailed = 0
     const errors: string[] = []
 
-    const adminDb = createAdminClient()
-
     // ── AUDIENCE 1: INDIVIDUAL LEADERS (1-by-1 or Multi-Select) ──
     if (targetAudience === 'individual_leaders') {
       if (!recipientProfileIds || recipientProfileIds.length === 0) {
@@ -140,13 +157,6 @@ _Scouts des Cèdres Leader Portal_`.trim()
           totalFailed++
           errors.push(res.error || 'Failed to send to Leaders WhatsApp Group')
         }
-      }
-
-      if (channels.includes('telegram')) {
-        await telegramProvider.send(
-          { id: 'leaders_group_broadcast', fullName: 'Leaders Group', email: '' },
-          payload
-        )
       }
     }
 

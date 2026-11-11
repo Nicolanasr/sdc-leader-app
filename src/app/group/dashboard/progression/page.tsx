@@ -3,8 +3,13 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { redirect } from 'next/navigation'
 import ProgressionManagement from './ProgressionManagement'
+import { FEATURES } from '@/config/features'
 
 export default async function ProgressionPage() {
+  if (!FEATURES.scoutProgression) {
+    redirect('/group/dashboard')
+  }
+
   const supabase = await createClient()
 
   // 1. Authenticate user

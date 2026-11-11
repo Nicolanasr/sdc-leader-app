@@ -61,21 +61,35 @@ export default async function PantryPage() {
 
   const userName = userProfile?.full_name || user.email || 'Leader'
 
-  // 4. Fetch Central Group Pantry items
-  const { data: pantryData } = await supabase
-    .from('group_pantry_items')
-    .select('*')
-    .eq('group_id', groupId)
-    .eq('is_deleted', false)
-    .order('category', { ascending: true })
-    .order('name', { ascending: true })
+  // 4, 5, 6. Fetch Central Group Pantry items, requests, and audit logs in parallel
+  const adminDb = (await import('@/utils/supabase/admin')).createAdminClient()
 
-  // 5. Fetch Event Pantry Requests
-  const { data: requestsData } = await supabase
-    .from('event_pantry_requests')
-    .select('*, events(id, title, start_time), profiles:requested_by(full_name), group_pantry_items(name, unit)')
-    .eq('group_id', groupId)
-    .order('created_at', { ascending: false })
+  const [
+    { data: pantryData },
+    { data: requestsData },
+    { data: auditLogsData },
+  ] = await Promise.all([
+    supabase
+      .from('group_pantry_items')
+      .select('*')
+      .eq('group_id', groupId)
+      .eq('is_deleted', false)
+      .order('category', { ascending: true })
+      .order('name', { ascending: true }),
+
+    supabase
+      .from('event_pantry_requests')
+      .select('*, events(id, title, start_time), profiles:requested_by(full_name), group_pantry_items(name, unit)')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false }),
+
+    adminDb
+      .from('audit_logs')
+      .select('*')
+      .eq('table_name', 'group_pantry_items')
+      .order('created_at', { ascending: false })
+      .limit(100),
+  ])
 
   return (
     <PantryManagement
@@ -87,6 +101,7 @@ export default async function PantryPage() {
       userId={user.id}
       initialPantry={pantryData || []}
       initialRequests={requestsData || []}
+      initialAuditLogs={auditLogsData || []}
     />
   )
 }

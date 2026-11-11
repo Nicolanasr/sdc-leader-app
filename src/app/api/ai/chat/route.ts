@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { NextResponse, type NextRequest } from 'next/server'
 import { runScoutAIAgent, ChatMessage } from '@/services/ai/gemini'
 
@@ -18,30 +19,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. Extract user context
-    let groupId = user.app_metadata?.group_id
-    const userRole = user.app_metadata?.role || 'scout_leader'
-    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leader'
-
-    // Fallback for configurators or accounts without group_id in app_metadata
-    if (!groupId) {
-      const { data: firstGroup } = await supabase
-        .from('groups')
-        .select('id')
-        .eq('is_deleted', false)
-        .limit(1)
-        .maybeSingle()
-
-      groupId = firstGroup?.id || ''
-    }
-
-    // 3. Parse request body
+    // 2. Parse request body
     const body = await request.json()
     const prompt = (body.message as string)?.trim()
     const history: ChatMessage[] = Array.isArray(body.history) ? body.history : []
 
     if (!prompt) {
       return NextResponse.json({ error: 'Message cannot be empty.' }, { status: 400 })
+    }
+
+    // 3. Extract user context & group
+    let groupId = (body.groupId as string) || user.app_metadata?.group_id || user.user_metadata?.group_id
+    const userRole = user.app_metadata?.role || 'chef_groupe'
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leader'
+
+    // Fallback for configurators or accounts without group_id in app_metadata
+    if (!groupId) {
+      const { data: mainGroup } = await supabase
+        .from('groups')
+        .select('id')
+        .eq('name', 'Saint Jean Marc')
+        .maybeSingle()
+
+      groupId = mainGroup?.id || '55482895-82c5-4c4c-be53-9d3afd05eec9'
     }
 
     // 4. Run AI Agent with Tool Execution
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       userName,
     })
 
-    // 5. Persist Token Usage to Database
+    // 5. Persist Token Usage to Database via audit_logs
     const tokenUsage = result.tokenUsage || {
       promptTokens: 0,
       candidateTokens: 0,
@@ -63,31 +63,40 @@ export async function POST(request: NextRequest) {
     let updatedTotalUsed = tokenUsage.totalTokens
 
     try {
-      await supabase.from('ai_token_usage').insert({
-        group_id: groupId || null,
-        user_id: user.id,
-        prompt_tokens: tokenUsage.promptTokens,
-        candidate_tokens: tokenUsage.candidateTokens,
-        total_tokens: tokenUsage.totalTokens,
-        model_name: result.modelUsed || 'gemini-2.5-flash',
-      })
+      const adminDb = createAdminClient()
+      if (tokenUsage.totalTokens > 0) {
+        await adminDb.from('audit_logs').insert({
+          record_id: crypto.randomUUID(),
+          table_name: 'ai_token_usage',
+          action: 'INSERT',
+          new_data: {
+            group_id: groupId || null,
+            user_id: user.id,
+            prompt_tokens: tokenUsage.promptTokens,
+            candidate_tokens: tokenUsage.candidateTokens,
+            total_tokens: tokenUsage.totalTokens,
+            model_name: result.modelUsed || 'gemini-3.5-flash-lite',
+          },
+          changed_by: user.id,
+          changed_at: new Date().toISOString(),
+        })
+      }
 
       // Query updated total
-      let usageQuery = supabase.from('ai_token_usage').select('total_tokens')
-      if (groupId) {
-        usageQuery = usageQuery.eq('group_id', groupId)
-      } else {
-        usageQuery = usageQuery.eq('user_id', user.id)
-      }
-      const { data: records } = await usageQuery
+      const { data: records } = await adminDb
+        .from('audit_logs')
+        .select('new_data')
+        .eq('table_name', 'ai_token_usage')
+
       if (records && records.length > 0) {
         updatedTotalUsed = records.reduce(
-          (acc: number, row: { total_tokens?: number | null }) => acc + (row.total_tokens || 0),
+          (acc: number, row: { new_data?: { total_tokens?: number } }) =>
+            acc + (Number(row.new_data?.total_tokens) || 0),
           0
         )
       }
     } catch (dbErr) {
-      console.warn('[AIChatRoute] Could not record token usage in DB:', dbErr)
+      console.warn('[AIChatRoute] Could not record token usage in audit_logs:', dbErr)
     }
 
     return NextResponse.json({

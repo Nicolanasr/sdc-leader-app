@@ -21,6 +21,7 @@ import {
 } from '@/utils/scoutMealRecipes'
 import { toLocalDatetimeInputValue, formatLocalDateKey, formatDateDisplay, formatTimeDisplay } from '@/utils/dateTimeUtils'
 import { triggerNotification, triggerRoleNotification } from '@/utils/notifications'
+import { FEATURES } from '@/config/features'
 
 // ─── SEARCHABLE INGREDIENT COMBOBOX COMPONENT ─────────────────────────────────
 interface SearchableIngredientComboboxProps {
@@ -768,7 +769,11 @@ export default function EventWorkspace({
 
         // Prioritize the user's specific staff duty tab if assigned
         if (isCampSecretary) {
-            tabs.push({ key: 'roster', label: 'Scout Roster & Consent', icon: '👥' })
+            tabs.push({
+                key: 'roster',
+                label: FEATURES.eventPermissionSlips ? 'Scout Roster & Consent' : 'Scout Roster & Fees',
+                icon: '👥'
+            })
         }
 
         if (isCampTreasurer) {
@@ -779,7 +784,7 @@ export default function EventWorkspace({
             tabs.push({ key: 'equipment', label: 'Equipment & Logistics', icon: '⛺' })
         }
 
-        if (canAccessProvisions) {
+        if (FEATURES.campMealPlanner && canAccessProvisions) {
             tabs.push({ key: 'provisions', label: 'Provisions & Meals', icon: '🍞' })
         }
 
@@ -792,7 +797,7 @@ export default function EventWorkspace({
         if (isCampSecretary && !isCampLeader) return 'roster'
         if (isCampTreasurer && !isCampLeader) return 'treasury'
         if (canAccessEquipment && !isCampLeader) return 'equipment'
-        if (canAccessProvisions && !isCampLeader) return 'provisions'
+        if (FEATURES.campMealPlanner && canAccessProvisions && !isCampLeader) return 'provisions'
         return availableTabs[0]?.key || 'hierarchy'
     }, [isCampSecretary, isCampTreasurer, canAccessEquipment, canAccessProvisions, isCampLeader, availableTabs])
 
@@ -1147,7 +1152,7 @@ export default function EventWorkspace({
         if (eventCartItems.length === 0) return showStatus('Please add at least one item.', 'error')
 
         setLoading(true)
-        const isDirectHandout = isQuartermaster
+        const isDirectHandout = !FEATURES.depotApprovalFlows || isQuartermaster
         const newCheckouts: any[] = []
 
         try {

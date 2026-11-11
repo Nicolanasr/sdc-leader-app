@@ -68,57 +68,63 @@ export default async function GroupDashboardPage() {
       memberId = profile?.member_id
     }
 
-    const { data: memberData } = await supabase
-      .from('members')
-      .select(`
-        *,
-        troops:troop_id (
-          id,
-          name,
-          section_types:section_type_id (name)
-        ),
-        patrols:patrol_id (
-          id,
-          name
-        )
-      `)
-      .eq('id', memberId)
-      .maybeSingle()
+    const [
+      { data: memberData },
+      { data: participantData },
+      { data: staffData },
+    ] = await Promise.all([
+      supabase
+        .from('members')
+        .select(`
+          *,
+          troops:troop_id (
+            id,
+            name,
+            section_types:section_type_id (name)
+          ),
+          patrols:patrol_id (
+            id,
+            name
+          )
+        `)
+        .eq('id', memberId)
+        .maybeSingle(),
 
-    const { data: participantData } = await supabase
-      .from('event_participants')
-      .select(`
-        id,
-        fee_status,
-        consent_status,
-        events:event_id (
+      supabase
+        .from('event_participants')
+        .select(`
           id,
-          title,
-          description,
-          event_type,
-          start_time,
-          end_time,
-          location
-        )
-      `)
-      .eq('member_id', memberId)
+          fee_status,
+          consent_status,
+          events:event_id (
+            id,
+            title,
+            description,
+            event_type,
+            start_time,
+            end_time,
+            location
+          )
+        `)
+        .eq('member_id', memberId),
 
-    const { data: staffData } = await supabase
-      .from('event_staff')
-      .select(`
-        id,
-        event_role,
-        events:event_id (
+      supabase
+        .from('event_staff')
+        .select(`
           id,
-          title,
-          description,
-          event_type,
-          start_time,
-          end_time,
-          location
-        )
-      `)
-      .eq('profile_id', user.id)
+          event_role,
+          events:event_id (
+            id,
+            title,
+            description,
+            event_type,
+            start_time,
+            end_time,
+            location
+          )
+        `)
+        .eq('profile_id', user.id),
+    ])
 
     const eventsMap = new Map<string, EventItem>()
 
@@ -301,76 +307,89 @@ export default async function GroupDashboardPage() {
     )
   }
 
-  // 3. Fetch summary statistics (Generic & useful for all leaders)
+  // 3, 4 & 5. Fetch summary statistics, upcoming events, and user details in parallel
   const nowIso = new Date().toISOString()
 
-  // A. Total Active Members (Scouts)
-  const { count: scoutCount } = await supabase
-    .from('members')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', groupId)
-    .eq('is_active', true)
-    .eq('is_deleted', false)
+  const [
+    { count: scoutCount },
+    { count: troopCount },
+    { count: leaderCount },
+    { count: upcomingEventsCount },
+    { count: equipmentCount },
+    { count: pantryCount },
+    { data: upcomingEventsData },
+    { data: userProfile },
+    { data: userRoleData },
+  ] = await Promise.all([
+    // A. Total Active Members (Scouts)
+    supabase
+      .from('members')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId)
+      .eq('is_active', true)
+      .eq('is_deleted', false),
 
-  // B. Total Troops in Group
-  const { count: troopCount } = await supabase
-    .from('troops')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', groupId)
-    .eq('is_deleted', false)
+    // B. Total Troops in Group
+    supabase
+      .from('troops')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId)
+      .eq('is_deleted', false),
 
-  // C. Total Active Leaders
-  const { count: leaderCount } = await supabase
-    .from('user_roles')
-    .select('profile_id', { count: 'exact', head: true })
-    .eq('group_id', groupId)
+    // C. Total Active Leaders
+    supabase
+      .from('user_roles')
+      .select('profile_id', { count: 'exact', head: true })
+      .eq('group_id', groupId),
 
-  // D. Total Upcoming Events
-  const { count: upcomingEventsCount } = await supabase
-    .from('events')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', groupId)
-    .eq('is_deleted', false)
-    .gte('start_time', nowIso)
+    // D. Total Upcoming Events
+    supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId)
+      .eq('is_deleted', false)
+      .gte('start_time', nowIso),
 
-  // E. Equipment count
-  const { count: equipmentCount } = await supabase
-    .from('inventory_items')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', groupId)
-    .eq('is_deleted', false)
+    // E. Equipment count
+    supabase
+      .from('inventory_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId)
+      .eq('is_deleted', false),
 
-  // F. Pantry items count
-  const { count: pantryCount } = await supabase
-    .from('group_pantry_items')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_id', groupId)
-    .eq('is_deleted', false)
+    // F. Pantry items count
+    supabase
+      .from('group_pantry_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId)
+      .eq('is_deleted', false),
 
-  // 4. Fetch the next upcoming events (Next 3)
-  const { data: upcomingEventsData } = await supabase
-    .from('events')
-    .select('id, title, event_type, start_time, end_time, location_name, troops(name)')
-    .eq('group_id', groupId)
-    .eq('is_deleted', false)
-    .gte('start_time', nowIso)
-    .order('start_time', { ascending: true })
-    .limit(3)
+    // G. Next upcoming events (Next 3)
+    supabase
+      .from('events')
+      .select('id, title, event_type, start_time, end_time, location_name, troops(name)')
+      .eq('group_id', groupId)
+      .eq('is_deleted', false)
+      .gte('start_time', nowIso)
+      .order('start_time', { ascending: true })
+      .limit(3),
 
-  // 5. Fetch logged in user full_name and assigned troop
-  const { data: userProfile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .single()
+    // H. Logged in user full_name
+    supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single(),
 
-  const { data: userRoleData } = await supabase
-    .from('user_roles')
-    .select('troop_id, troops(name)')
-    .eq('profile_id', user.id)
-    .eq('group_id', groupId)
-    .not('troop_id', 'is', null)
-    .maybeSingle()
+    // I. Assigned troop
+    supabase
+      .from('user_roles')
+      .select('troop_id, troops(name)')
+      .eq('profile_id', user.id)
+      .eq('group_id', groupId)
+      .not('troop_id', 'is', null)
+      .maybeSingle(),
+  ])
 
   const userName = userProfile?.full_name || user.email || 'Leader'
   interface UserRoleTroop {

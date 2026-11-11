@@ -1,8 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import PlannerManagement from './PlannerManagement'
+import { FEATURES } from '@/config/features'
 
 export default async function PlannerPage() {
+  if (!FEATURES.sessionPlanner) {
+    redirect('/group/dashboard')
+  }
+
   const supabase = await createClient()
 
   const {

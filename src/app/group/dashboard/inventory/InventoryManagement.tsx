@@ -11,6 +11,7 @@ import {
 import DashboardShell from '../DashboardShell'
 import { formatLocalDateKey, formatDateDisplay } from '@/utils/dateTimeUtils'
 import { triggerNotification, triggerRoleNotification } from '@/utils/notifications'
+import { FEATURES } from '@/config/features'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -256,9 +257,9 @@ export default function InventoryManagement({
     const [checkouts, setCheckouts] = useState<InventoryCheckout[]>(initialCheckouts)
     const [writeoffs, setWriteoffs] = useState<InventoryWriteoff[]>(initialWriteoffs)
 
-    // Navigation State: Troop leaders land directly on checkouts
+    // Navigation State: Troop leaders land directly on checkouts if loans enabled, otherwise catalog
     const [activeTab, setActiveTab] = useState<'catalog' | 'checkouts' | 'writeoffs' | 'approvals'>(
-        isFullManager ? 'catalog' : 'checkouts'
+        !FEATURES.equipmentLoans || isFullManager ? 'catalog' : 'checkouts'
     )
 
     // Multi-Select Filters
@@ -1714,7 +1715,7 @@ export default function InventoryManagement({
 
                     {/* Row 3: iOS Native Segmented Tab Control */}
                     <div className="bg-slate-100/90 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/70">
-                        {isFullManager && (
+                        {(isFullManager || !FEATURES.equipmentLoans) && (
                             <button
                                 onClick={() => setActiveTab('catalog')}
                                 className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'catalog'
@@ -1727,27 +1728,29 @@ export default function InventoryManagement({
                             </button>
                         )}
 
-                        <button
-                            onClick={() => setActiveTab('checkouts')}
-                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'checkouts'
-                                    ? 'bg-teal-800 text-white shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                        >
-                            <Layers className="h-3.5 w-3.5" />
-                            <span>{isFullManager ? 'Loans' : 'My Loans'}</span>
-                            <span className="opacity-70 font-normal">({checkouts.length})</span>
-                            {pendingCheckoutsCount > 0 && isFullManager && (
-                                <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
-                                    {pendingCheckoutsCount}
-                                </span>
-                            )}
-                            {returnPendingCount > 0 && isFullManager && (
-                                <span className="bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
-                                    {returnPendingCount}
-                                </span>
-                            )}
-                        </button>
+                        {FEATURES.equipmentLoans && (
+                            <button
+                                onClick={() => setActiveTab('checkouts')}
+                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'checkouts'
+                                        ? 'bg-teal-800 text-white shadow-2xs'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                            >
+                                <Layers className="h-3.5 w-3.5" />
+                                <span>{isFullManager ? 'Loans' : 'My Loans'}</span>
+                                <span className="opacity-70 font-normal">({checkouts.length})</span>
+                                {pendingCheckoutsCount > 0 && isFullManager && (
+                                    <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
+                                        {pendingCheckoutsCount}
+                                    </span>
+                                )}
+                                {returnPendingCount > 0 && isFullManager && (
+                                    <span className="bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
+                                        {returnPendingCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
 
                         {isFullManager && (
                             <button
@@ -1782,7 +1785,7 @@ export default function InventoryManagement({
                     </div>
 
                     {/* Search & Filter Bar (Quartermaster Catalog Tab Only) */}
-                    {activeTab === 'catalog' && isFullManager && (
+                    {activeTab === 'catalog' && (isFullManager || !FEATURES.equipmentLoans) && (
                         <div className="space-y-1.5 pt-1 border-t border-slate-100">
                             <div className="flex items-center gap-1.5">
                                 <div className="relative flex-1">
@@ -1884,7 +1887,7 @@ export default function InventoryManagement({
                 {/* ═══════════════════════════════════════════════════════════════════════
             TAB 1: EQUIPMENT CATALOG (MINIMALIST COMPACT CARDS)
         ═══════════════════════════════════════════════════════════════════════ */}
-                {activeTab === 'catalog' && isFullManager && (
+                {activeTab === 'catalog' && (isFullManager || !FEATURES.equipmentLoans) && (
                     <div className="space-y-2">
                         {filteredInventory.length === 0 ? (
                             <div className="bg-white rounded-2xl border border-slate-200/90 p-8 text-center text-slate-400 space-y-1.5 shadow-2xs">

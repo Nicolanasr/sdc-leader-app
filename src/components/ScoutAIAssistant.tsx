@@ -188,29 +188,56 @@ export default function ScoutAIAssistant() {
     setMessages([])
   }
 
+  const [isDocked, setIsDocked] = useState(false)
+
   return (
     <>
-      {/* ── FLOATING ACTION BUTTON ── */}
-      <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 sm:bottom-6 sm:right-6 z-40">
+      {/* ── FLOATING ACTION BUTTON (DOCKABLE & COMPACT ON MOBILE) ── */}
+      {isDocked ? (
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative group flex items-center gap-2 bg-gradient-to-r from-teal-800 via-teal-700 to-slate-900 text-white p-3.5 sm:px-4 sm:py-3.5 rounded-full shadow-xl border border-teal-500/40 hover:scale-105 active:scale-95 transition-all focus:outline-none"
-          title="Scout AI Operations Assistant"
+          onClick={() => {
+            setIsDocked(false)
+            setIsOpen(true)
+          }}
+          className="fixed bottom-24 right-0 z-40 bg-slate-900/95 text-amber-400 pl-2.5 pr-1.5 py-1.5 rounded-l-2xl border-l-2 border-y border-amber-400/80 shadow-2xl flex items-center gap-1.5 text-xs font-black cursor-pointer hover:bg-slate-800 transition-all active:scale-95 animate-in slide-in-from-right-2"
+          title="Open Cedars Scout AI"
         >
-          <div className="relative">
-            <span className="text-base">⚜️</span>
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
-            </span>
-          </div>
-
-          <span className="hidden sm:inline-block text-xs font-black tracking-wide">
-            Hermès AI
-          </span>
+          <span>⚜️</span>
+          <span className="text-[10px] text-white font-extrabold pr-0.5">AI</span>
         </button>
-      </div>
+      ) : (
+        <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="relative group flex items-center justify-center gap-2 bg-gradient-to-r from-teal-800 via-teal-700 to-slate-900 text-white w-11 h-11 sm:w-auto sm:h-auto p-0 sm:px-4 sm:py-3.5 rounded-full shadow-xl border border-teal-500/40 hover:scale-105 active:scale-95 transition-all focus:outline-none cursor-pointer"
+            title="Cedars Scout AI Assistant"
+          >
+            <div className="relative">
+              <span className="text-base">⚜️</span>
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+              </span>
+            </div>
+
+            <span className="hidden sm:inline-block text-xs font-black tracking-wide">
+              Cedars Scout AI
+            </span>
+          </button>
+
+          {/* Mobile quick-dock handle to tuck to screen edge if blocking UI */}
+          <button
+            type="button"
+            onClick={() => setIsDocked(true)}
+            className="sm:hidden w-5 h-5 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700 hover:text-white flex items-center justify-center text-[10px] shadow-sm cursor-pointer"
+            title="Dock to screen edge"
+          >
+            ›
+          </button>
+        </div>
+      )}
 
       {/* ── CHAT DRAWER / POPUP ── */}
       {isOpen && (
@@ -224,13 +251,13 @@ export default function ScoutAIAssistant() {
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-xs sm:text-sm font-black tracking-tight">Hermès AI</h3>
+                    <h3 className="text-xs sm:text-sm font-black tracking-tight">Cedars Scout AI ⚜️</h3>
                     <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-400 text-slate-950">
-                      Live Verified
+                      مرشد الأرز
                     </span>
                   </div>
                   <p className="text-[10px] text-teal-200/80">
-                    Direct database accuracy • Zero hallucinations
+                    Groupe Saint Jean Marc • Byblos • Live DB Sync
                   </p>
                 </div>
               </div>
@@ -264,7 +291,7 @@ export default function ScoutAIAssistant() {
               <div className="flex items-center justify-between text-[10px] tracking-wide">
                 <span className="text-teal-200/90 font-medium flex items-center gap-1.5">
                   <Sparkles className="h-3 w-3 text-amber-400 shrink-0" />
-                  <span>AI Usage</span>
+                  <span>Google Gemini Tokens</span>
                 </span>
                 <span className="font-semibold text-slate-200">
                   used <span className="text-amber-300 font-bold">{formatTokens(usage.used)}</span> / {formatTokens(usage.limit)}
@@ -410,7 +437,7 @@ export default function ScoutAIAssistant() {
                 type="text"
                 value={inputPrompt}
                 onChange={(e) => setInputPrompt(e.target.value)}
-                placeholder="Ask Hermès in English, French, or Arabic..."
+                placeholder="Ask Cedars Scout AI (عربي, Français, English)..."
                 disabled={loading}
                 className="flex-1 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600 disabled:bg-slate-50"
               />

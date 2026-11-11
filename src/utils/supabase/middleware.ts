@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { FEATURES } from '@/config/features'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -60,6 +61,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   const isScoutMember = user?.app_metadata?.role === 'scout_member'
+
+  if (isScoutMember && !FEATURES.scoutMemberLogin) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('message', 'Member portal is currently disabled. Leader access only.')
+    return NextResponse.redirect(url)
+  }
 
   if (isScoutMember) {
     // Strictly administrative leader routes that scout members cannot access

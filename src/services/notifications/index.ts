@@ -72,7 +72,7 @@ export async function sendNotification(
   // Default channels if not explicitly overridden
   const activeChannels: NotificationChannel[] = payload.channels && payload.channels.length > 0
     ? payload.channels
-    : ['in_app', 'email', 'whatsapp', 'telegram']
+    : ['in_app', 'email', 'whatsapp']
 
   const channelPromises = activeChannels.map(async (channel): Promise<ChannelResult> => {
     const provider = providers[channel]
@@ -154,25 +154,9 @@ export async function sendRoleNotification(
     let profileIds = (userRoles || []).map((ur: any) => ur.profile_id)
     profileIds = Array.from(new Set(profileIds.filter(Boolean)))
 
-    // Always dispatch group-wide Telegram broadcast alert
-    try {
-      await telegramProvider.send(
-        { id: 'group_broadcast', fullName: 'Leaders Group', email: '' },
-        payload
-      )
-    } catch (tErr) {
-      console.warn('[NotificationService] Telegram broadcast alert error:', tErr)
-    }
-
     if (profileIds.length === 0) {
-      console.log(`[NotificationService] No specific profiles mapped for role '${roleName}'. Telegram alert broadcasted.`)
-      return [
-        {
-          recipientId: 'group_broadcast',
-          recipientName: 'Leaders Group',
-          channels: [{ channel: 'telegram', success: true }],
-        },
-      ]
+      console.log(`[NotificationService] No specific profiles mapped for role '${roleName}'.`)
+      return []
     }
 
     console.log(`[NotificationService] Dispatching to ${profileIds.length} leader profiles:`, profileIds)

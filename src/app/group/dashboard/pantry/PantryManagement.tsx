@@ -81,6 +81,7 @@ interface Props {
     userId?: string
     initialPantry: PantryItem[]
     initialRequests?: EventPantryRequest[]
+    initialAuditLogs?: any[]
 }
 
 // ── Smart Aggregator for Total Weight (kg/g), Volume (L/ml), Sachets, Pieces ──
@@ -258,12 +259,47 @@ export default function PantryManagement({
     userId,
     initialPantry,
     initialRequests = [],
+    initialAuditLogs = [],
 }: Props) {
     const supabase = createClient()
 
-    const [activeView, setActiveView] = useState<'inventory' | 'requests'>('inventory')
+    const [activeView, setActiveView] = useState<'inventory' | 'requests' | 'logs'>('inventory')
     const [pantryList, setPantryList] = useState<PantryItem[]>(() => initialPantry.map(normalizePantryItem))
     const [requestsList, setRequestsList] = useState<EventPantryRequest[]>(initialRequests)
+    const [auditLogs, setAuditLogs] = useState<any[]>(initialAuditLogs)
+    const [logsSearch, setLogsSearch] = useState('')
+    const [logsActionFilter, setLogsActionFilter] = useState<'all' | 'add' | 'remove' | 'update' | 'delete'>('all')
+
+    // ── Quick Stock Adjuster States (Mobile & Desktop) ──
+    const [quickAdjustItem, setQuickAdjustItem] = useState<PantryItem | null>(null)
+    const [quickAdjustAction, setQuickAdjustAction] = useState<'add' | 'remove'>('remove')
+    const [quickAdjustAmount, setQuickAdjustAmount] = useState<number>(1)
+    const [quickAdjustReason, setQuickAdjustReason] = useState<string>('Camp / Activity')
+    const [quickAdjustNotes, setQuickAdjustNotes] = useState<string>('')
+    const [quickAdjustBatchId, setQuickAdjustBatchId] = useState<string>('')
+    const [quickAdjustBrand, setQuickAdjustBrand] = useState<string>('')
+    const [quickAdjustExpiryDate, setQuickAdjustExpiryDate] = useState<string>('')
+    const [quickAdjustPackageSize, setQuickAdjustPackageSize] = useState<string>('')
+    const [isAdjusting, setIsAdjusting] = useState<boolean>(false)
+
+    const openQuickAdjust = (item: PantryItem, action: 'add' | 'remove') => {
+        setQuickAdjustItem(item)
+        setQuickAdjustAction(action)
+        setQuickAdjustAmount(1)
+        setQuickAdjustReason(action === 'remove' ? 'Camp / Activity' : 'Store Purchase')
+        setQuickAdjustNotes('')
+        setQuickAdjustBatchId('')
+
+        const existingBrands = Array.from(
+            new Set((item.expiry_batches || []).map((b) => b.brand).filter(Boolean))
+        ) as string[]
+        setQuickAdjustBrand(existingBrands[0] || '')
+        setQuickAdjustExpiryDate('')
+        setQuickAdjustPackageSize('')
+    }
+
+    // ── Streamlined Add Mode ──
+    const [addFormMode, setAddFormMode] = useState<'quick' | 'advanced'>('quick')
     
     // ── Search & Filter States ──
     const [search, setSearch] = useState('')
@@ -525,8 +561,21 @@ export default function PantryManagement({
 
         let finalQty = qty
         let finalExpiry = parseExpiryInput(formExpiryDate) || null
+        let resolvedBatches = formBatches
 
-        if (formBatches.length > 0) {
+        if (addFormMode === 'quick' && !editingItem) {
+            finalQty = qty
+            resolvedBatches = [
+                {
+                    id: 'batch_' + Date.now(),
+                    quantity: finalQty,
+                    package_size: '',
+                    brand: '',
+                    expiry_date: finalExpiry || '',
+                    lot_number: 'Batch #1',
+                },
+            ]
+        } else if (formBatches.length > 0) {
             finalQty = formBatches.reduce((acc, b) => acc + (parseFloat(String(b.quantity)) || 0), 0)
             const sortedDates = formBatches
                 .map((b) => b.expiry_date)
@@ -535,6 +584,7 @@ export default function PantryManagement({
             if (sortedDates.length > 0) {
                 finalExpiry = sortedDates[0]
             }
+            resolvedBatches = formBatches
         }
 
         try {
@@ -545,7 +595,7 @@ export default function PantryManagement({
                     quantity_available: finalQty,
                     unit: formUnit,
                     expiry_date: finalExpiry,
-                    expiry_batches: formBatches.length > 0 ? formBatches : null,
+                    expiry_batches: resolvedBatches.length > 0 ? resolvedBatches : null,
                     location_stored: formLocation.trim() || null,
                     notes: formNotes.trim() || null,
                 }
@@ -560,8 +610,8 @@ export default function PantryManagement({
                 if (res.error && (res.error.message?.includes('expiry_batches') || res.error.message?.includes('min_threshold'))) {
                     const safePayload = { ...payload }
                     delete safePayload.expiry_batches
-                    if (formBatches.length > 0) {
-                        const batchNote = `[Batches: ${formBatches.map(b => `${b.quantity}x ${b.brand ? b.brand + ' ' : ''}${b.package_size ? b.package_size + ' ' : ''}exp ${b.expiry_date}`).join(', ')}]`
+                    if (resolvedBatches.length > 0) {
+                        const batchNote = `[Batches: ${resolvedBatches.map(b => `${b.quantity}x ${b.brand ? b.brand + ' ' : ''}${b.package_size ? b.package_size + ' ' : ''}exp ${b.expiry_date}`).join(', ')}]`
                         safePayload.notes = safePayload.notes ? `${safePayload.notes} | ${batchNote}` : batchNote
                     }
                     res = await supabase
@@ -574,7 +624,7 @@ export default function PantryManagement({
 
                 if (res.error) throw res.error
                 const data = res.data
-                setPantryList((prev) => prev.map((i) => (i.id === data.id ? { ...data, expiry_batches: formBatches } : i)))
+                setPantryList((prev) => prev.map((i) => (i.id === data.id ? { ...data, expiry_batches: resolvedBatches } : i)))
                 showStatus(`Updated "${data.name}" successfully!`, 'success')
             } else {
                 const payload: any = {
@@ -585,7 +635,7 @@ export default function PantryManagement({
                     quantity_total: finalQty,
                     unit: formUnit,
                     expiry_date: finalExpiry,
-                    expiry_batches: formBatches.length > 0 ? formBatches : null,
+                    expiry_batches: resolvedBatches.length > 0 ? resolvedBatches : null,
                     location_stored: formLocation.trim() || 'Pantry Shelf A',
                     notes: formNotes.trim() || null,
                 }
@@ -599,8 +649,8 @@ export default function PantryManagement({
                 if (res.error && (res.error.message?.includes('expiry_batches') || res.error.message?.includes('min_threshold'))) {
                     const safePayload = { ...payload }
                     delete safePayload.expiry_batches
-                    if (formBatches.length > 0) {
-                        const batchNote = `[Batches: ${formBatches.map(b => `${b.quantity}x ${b.brand ? b.brand + ' ' : ''}${b.package_size ? b.package_size + ' ' : ''}exp ${b.expiry_date}`).join(', ')}]`
+                    if (resolvedBatches.length > 0) {
+                        const batchNote = `[Batches: ${resolvedBatches.map(b => `${b.quantity}x ${b.brand ? b.brand + ' ' : ''}${b.package_size ? b.package_size + ' ' : ''}exp ${b.expiry_date}`).join(', ')}]`
                         safePayload.notes = safePayload.notes ? `${safePayload.notes} | ${batchNote}` : batchNote
                     }
                     res = await supabase
@@ -612,7 +662,7 @@ export default function PantryManagement({
 
                 if (res.error) throw res.error
                 const data = res.data
-                setPantryList((prev) => [{ ...data, expiry_batches: formBatches }, ...prev])
+                setPantryList((prev) => [{ ...data, expiry_batches: resolvedBatches }, ...prev])
                 showStatus(`Added "${data.name}" to Group Pantry!`, 'success')
             }
             setIsModalOpen(false)
@@ -639,6 +689,83 @@ export default function PantryManagement({
             showStatus('Failed to delete item from database.', 'error')
         } else {
             showStatus(`"${itemName}" deleted.`, 'success')
+            // Add local delete audit log
+            setAuditLogs((prev) => [
+                {
+                    id: crypto.randomUUID(),
+                    record_id: itemId,
+                    table_name: 'group_pantry_items',
+                    action: 'DELETE',
+                    changed_fields: { item_name: itemName, is_deleted: { old: false, new: true } },
+                    performed_by_email: userName,
+                    created_at: new Date().toISOString(),
+                },
+                ...prev,
+            ])
+        }
+    }
+
+    // ── Quick Stock Adjuster Handler (Mobile & Desktop) ──
+    const handleConfirmQuickAdjust = async () => {
+        if (!quickAdjustItem) return
+        if (quickAdjustAmount <= 0) {
+            showStatus('Please specify an amount greater than 0', 'error')
+            return
+        }
+        setIsAdjusting(true)
+        try {
+            const res = await fetch('/api/group/pantry/adjust', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    itemId: quickAdjustItem.id,
+                    actionType: quickAdjustAction,
+                    amount: quickAdjustAmount,
+                    reason: quickAdjustReason,
+                    notes: quickAdjustNotes,
+                    batchId: quickAdjustAction === 'remove' && quickAdjustBatchId ? quickAdjustBatchId : undefined,
+                    brand: quickAdjustAction === 'add' && quickAdjustBrand ? quickAdjustBrand : undefined,
+                    expiryDate: quickAdjustAction === 'add' && quickAdjustExpiryDate ? quickAdjustExpiryDate : undefined,
+                    packageSize: quickAdjustAction === 'add' && quickAdjustPackageSize ? quickAdjustPackageSize : undefined,
+                }),
+            })
+            const data = await res.json()
+            if (!res.ok || data.error) {
+                throw new Error(data.error || 'Failed to adjust stock')
+            }
+
+            // Update local pantry list with new quantity, batches, and earliest expiry
+            setPantryList((prev) =>
+                prev.map((item) =>
+                    item.id === quickAdjustItem.id
+                        ? {
+                            ...item,
+                            quantity_available: data.newQuantity,
+                            expiry_batches: data.updatedBatches !== undefined ? data.updatedBatches : item.expiry_batches,
+                            expiry_date: data.earliestExpiry !== undefined ? data.earliestExpiry : item.expiry_date,
+                          }
+                        : item
+                )
+            )
+
+            // Prepend new audit log
+            if (data.log) {
+                setAuditLogs((prev) => [data.log, ...prev])
+            }
+
+            const actionLabel = quickAdjustAction === 'add' ? `Added +${quickAdjustAmount}` : `Removed -${Math.abs(data.delta || quickAdjustAmount)}`
+            showStatus(`${actionLabel} ${quickAdjustItem.unit} of "${quickAdjustItem.name}"`, 'success')
+            setQuickAdjustItem(null)
+            setQuickAdjustAmount(1)
+            setQuickAdjustNotes('')
+            setQuickAdjustBatchId('')
+            setQuickAdjustBrand('')
+            setQuickAdjustExpiryDate('')
+            setQuickAdjustPackageSize('')
+        } catch (err: any) {
+            showStatus(err.message || 'Error adjusting stock', 'error')
+        } finally {
+            setIsAdjusting(false)
         }
     }
 
@@ -1632,6 +1759,73 @@ export default function PantryManagement({
         return pantryList.reduce((acc, item) => acc + (Number(item.quantity_available) || 0), 0)
     }, [pantryList])
 
+    const filteredLogs = useMemo(() => {
+        return auditLogs
+            .map((log) => {
+                const fields = log.changed_fields || {}
+                const action = log.action
+                const actionType = fields.action_type || (fields.delta > 0 ? 'add' : fields.delta < 0 ? 'remove' : null)
+
+                let itemName = fields.item_name
+                let unit = fields.unit || ''
+                if (!itemName) {
+                    const matched = pantryList.find((p) => p.id === log.record_id)
+                    if (matched) {
+                        itemName = matched.name
+                        unit = matched.unit || ''
+                    } else {
+                        itemName = log.new_data?.name || log.old_data?.name || 'Pantry Item'
+                        unit = log.new_data?.unit || log.old_data?.unit || ''
+                    }
+                }
+
+                const qtyOld = fields.quantity_available?.old
+                const qtyNew = fields.quantity_available?.new
+                const delta = fields.delta ?? (qtyOld !== undefined && qtyNew !== undefined ? qtyNew - qtyOld : null)
+
+                let type: 'add' | 'remove' | 'update' | 'delete' | 'create' = 'update'
+                if (action === 'DELETE' || fields.is_deleted?.new === true) {
+                    type = 'delete'
+                } else if (action === 'INSERT') {
+                    type = 'create'
+                } else if (actionType === 'add' || (delta !== null && delta > 0)) {
+                    type = 'add'
+                } else if (actionType === 'remove' || (delta !== null && delta < 0)) {
+                    type = 'remove'
+                }
+
+                const reason = fields.reason || fields.notes || ''
+                const performedBy = log.performed_by_email || 'Leader'
+
+                return {
+                    id: log.id,
+                    type,
+                    itemName,
+                    unit,
+                    qtyOld,
+                    qtyNew,
+                    delta,
+                    reason,
+                    performedBy,
+                    createdAt: log.created_at,
+                }
+            })
+            .filter((item) => {
+                if (logsActionFilter === 'add' && item.type !== 'add') return false
+                if (logsActionFilter === 'remove' && item.type !== 'remove') return false
+                if (logsActionFilter === 'delete' && item.type !== 'delete') return false
+                if (logsActionFilter === 'update' && item.type !== 'update' && item.type !== 'create') return false
+                if (logsSearch.trim()) {
+                    const q = logsSearch.toLowerCase()
+                    const matchName = item.itemName.toLowerCase().includes(q)
+                    const matchUser = item.performedBy.toLowerCase().includes(q)
+                    const matchReason = (item.reason || '').toLowerCase().includes(q)
+                    if (!matchName && !matchUser && !matchReason) return false
+                }
+                return true
+            })
+    }, [auditLogs, pantryList, logsActionFilter, logsSearch])
+
     const getCategoryObj = (catId: string) => {
         return allCategories.find((c) => c.id === catId) || {
             id: catId,
@@ -1755,24 +1949,39 @@ export default function PantryManagement({
                     </div>
                 </div>
 
-                {/* ── SEGMENTED VIEW BAR: INVENTORY vs CAMP REQUESTS ── */}
-                {requestsList.length > 0 && (
-                    <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-2xs">
-                        <button
-                            onClick={() => setActiveView('inventory')}
-                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                                activeView === 'inventory'
-                                    ? 'bg-white text-teal-900 shadow-xs font-black'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            <Package className="h-3.5 w-3.5" />
-                            <span>Central Inventory ({pantryList.length})</span>
-                        </button>
+                {/* ── SEGMENTED VIEW BAR: INVENTORY vs LOGS vs CAMP REQUESTS ── */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-2xs gap-1">
+                    <button
+                        type="button"
+                        onClick={() => setActiveView('inventory')}
+                        className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            activeView === 'inventory'
+                                ? 'bg-white text-teal-900 shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                        <Package className="h-3.5 w-3.5" />
+                        <span>Central Stock ({pantryList.length})</span>
+                    </button>
 
+                    <button
+                        type="button"
+                        onClick={() => setActiveView('logs')}
+                        className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            activeView === 'logs'
+                                ? 'bg-white text-teal-900 shadow-xs font-black'
+                                : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                    >
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>📋 Activity Logs ({auditLogs.length})</span>
+                    </button>
+
+                    {requestsList.length > 0 && (
                         <button
+                            type="button"
                             onClick={() => setActiveView('requests')}
-                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 activeView === 'requests'
                                     ? 'bg-white text-teal-900 shadow-xs font-black'
                                     : 'text-slate-600 hover:text-slate-900'
@@ -1785,8 +1994,8 @@ export default function PantryManagement({
                                 </span>
                             )}
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* ══════════════════════════════════════════════════════════
                     VIEW 1: CENTRAL PANTRY INVENTORY
@@ -2271,26 +2480,59 @@ export default function PantryManagement({
                                                 )}
                                             </div>
 
-                                            {/* Action Strip: Edit & Delete (Subtle Minimalist) */}
-                                            <div className="pt-1.5 border-t border-slate-100 flex items-center justify-end gap-1">
-                                                {isProvisionsLeader && (
-                                                    <>
+                                            {/* Action Strip: Quick Adjust & Management */}
+                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                                                {isProvisionsLeader ? (
+                                                    <div className="flex items-center gap-1">
                                                         <button
-                                                            onClick={() => handleOpenEditModal(item)}
-                                                            className="p-1 text-slate-400 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
-                                                            title="Edit item & batches"
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openQuickAdjust(item, 'remove')
+                                                            }}
+                                                            className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-800 border border-rose-200/80 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                                                            title="Quick deduct / consume stock"
                                                         >
-                                                            <Edit className="h-3.5 w-3.5" />
+                                                            <Minus className="h-3 w-3 stroke-[3]" />
+                                                            <span>Take</span>
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeletePantryItem(item.id, item.name)}
-                                                            className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                            title="Delete item"
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openQuickAdjust(item, 'add')
+                                                            }}
+                                                            className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-200/80 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                                                            title="Quick add / restock"
                                                         >
-                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            <Plus className="h-3 w-3 stroke-[3]" />
+                                                            <span>Add</span>
                                                         </button>
-                                                    </>
-                                                )}
+                                                    </div>
+                                                ) : <div />}
+
+                                                <div className="flex items-center gap-1">
+                                                    {isProvisionsLeader && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleOpenEditModal(item)}
+                                                                className="p-1 text-slate-400 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer"
+                                                                title="Edit full item & batches"
+                                                            >
+                                                                <Edit className="h-3.5 w-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeletePantryItem(item.id, item.name)}
+                                                                className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                                                title="Delete item"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )
@@ -2593,6 +2835,154 @@ export default function PantryManagement({
                 )}
 
                 {/* ══════════════════════════════════════════════════════════
+                    VIEW 3: ACTIVITY & AUDIT LOGS (سجل الحركات والمؤونة)
+                ══════════════════════════════════════════════════════════ */}
+                {activeView === 'logs' && (
+                    <div className="space-y-4">
+                        {/* Filters & Search Header */}
+                        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+                            <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by item, leader email, or reason…"
+                                        value={logsSearch}
+                                        onChange={(e) => setLogsSearch(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                    />
+                                </div>
+                                <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap self-end sm:self-auto">
+                                    Showing {filteredLogs.length} events
+                                </span>
+                            </div>
+
+                            {/* Action Filter Pills */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+                                {[
+                                    { id: 'all', label: 'All Actions' },
+                                    { id: 'add', label: '🟢 Stock Added' },
+                                    { id: 'remove', label: '🔴 Consumed / Taken' },
+                                    { id: 'update', label: '✏️ Product Updates' },
+                                    { id: 'delete', label: '🗑️ Deleted Items' },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setLogsActionFilter(tab.id as any)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                            logsActionFilter === tab.id
+                                                ? 'bg-teal-800 text-white shadow-2xs'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Logs List */}
+                        {filteredLogs.length === 0 ? (
+                            <div className="p-10 text-center bg-white rounded-3xl border border-slate-200/80 space-y-2">
+                                <FileText className="h-8 w-8 text-slate-300 mx-auto" />
+                                <h3 className="text-sm font-bold text-slate-700">No activity logs recorded</h3>
+                                <p className="text-xs text-slate-400">
+                                    {logsSearch || logsActionFilter !== 'all'
+                                        ? 'No records match your filter criteria.'
+                                        : 'Stock adjustments and pantry operations will appear here.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {filteredLogs.map((log) => {
+                                    const isAdd = log.type === 'add'
+                                    const isRemove = log.type === 'remove'
+                                    const isDelete = log.type === 'delete'
+                                    const isCreate = log.type === 'create'
+
+                                    return (
+                                        <div
+                                            key={log.id}
+                                            className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/70 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                                        >
+                                            <div className="flex items-start gap-3 min-w-0">
+                                                <div
+                                                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-black ${
+                                                        isAdd
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : isRemove
+                                                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                            : isDelete
+                                                            ? 'bg-red-50 text-red-700 border border-red-200'
+                                                            : isCreate
+                                                            ? 'bg-teal-50 text-teal-800 border border-teal-200'
+                                                            : 'bg-slate-50 text-slate-700 border border-slate-200'
+                                                    }`}
+                                                >
+                                                    {isAdd ? '+' : isRemove ? '−' : isDelete ? '✕' : isCreate ? '★' : '•'}
+                                                </div>
+
+                                                <div className="min-w-0 space-y-0.5">
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                                                            {log.itemName}
+                                                        </h4>
+                                                        {log.delta !== null && log.delta !== undefined ? (
+                                                            <span
+                                                                className={`px-2 py-0.5 rounded-md text-[11px] font-black ${
+                                                                    log.delta > 0
+                                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                                        : 'bg-rose-100 text-rose-800'
+                                                                }`}
+                                                            >
+                                                                {log.delta > 0 ? `+${log.delta}` : log.delta} {log.unit}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-slate-100 text-slate-700">
+                                                                {isCreate ? 'Created' : isDelete ? 'Deleted' : 'Updated'}
+                                                            </span>
+                                                        )}
+                                                        {log.qtyOld !== undefined && log.qtyNew !== undefined && (
+                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                                ({log.qtyOld} ➔ {log.qtyNew} {log.unit})
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {log.reason && (
+                                                        <p className="text-[11px] text-slate-600 font-medium">
+                                                            <span className="text-slate-400 font-normal">Reason: </span>
+                                                            {log.reason}
+                                                        </p>
+                                                    )}
+
+                                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 pt-0.5">
+                                                        <span>By: {log.performedBy}</span>
+                                                        <span>•</span>
+                                                        <span>
+                                                            {new Date(log.createdAt).toLocaleDateString('en-GB', {
+                                                                day: '2-digit',
+                                                                month: 'short',
+                                                                year: 'numeric',
+                                                            })}{' '}
+                                                            {new Date(log.createdAt).toLocaleTimeString([], {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
                     MODAL: ADD / EDIT PANTRY ITEM & MULTI-BATCHES
                 ══════════════════════════════════════════════════════════ */}
                 {isModalOpen && (
@@ -2612,6 +3002,34 @@ export default function PantryManagement({
                                     ✕
                                 </button>
                             </div>
+
+                            {/* Mode Switcher */}
+                            {!editingItem && (
+                                <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddFormMode('quick')}
+                                        className={`py-1.5 rounded-lg text-xs font-black transition-all ${
+                                            addFormMode === 'quick'
+                                                ? 'bg-white text-teal-900 shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        ⚡ Quick Add (سريع)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddFormMode('advanced')}
+                                        className={`py-1.5 rounded-lg text-xs font-black transition-all ${
+                                            addFormMode === 'advanced'
+                                                ? 'bg-white text-teal-900 shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        📋 Detailed Lots (مفصّل)
+                                    </button>
+                                </div>
+                            )}
 
                             <form onSubmit={handleSavePantryItem} className="space-y-3">
                                 {/* Item Name */}
@@ -2756,7 +3174,40 @@ export default function PantryManagement({
                                     </div>
                                 </div>
 
+                                {/* Quick Mode Quantity & Expiry Row */}
+                                {addFormMode === 'quick' && !editingItem && (
+                                    <div className="grid grid-cols-2 gap-2 p-3 bg-teal-50/70 border border-teal-200/90 rounded-2xl">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-teal-900 uppercase mb-0.5">
+                                                Quantity ({formUnit}) *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0.1"
+                                                step="any"
+                                                required
+                                                value={formQuantity}
+                                                onChange={(e) => setFormQuantity(e.target.value)}
+                                                className="w-full px-3 py-1.5 text-sm font-black rounded-xl border border-teal-300 bg-white focus:outline-none focus:border-teal-700"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-teal-900 uppercase mb-0.5">
+                                                Expiry (MM/YY or Date)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. 12/26 or 2026-12-31"
+                                                value={formExpiryDate}
+                                                onChange={(e) => setFormExpiryDate(e.target.value)}
+                                                className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-teal-300 bg-white focus:outline-none focus:border-teal-700"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* ── BATCHES & GRAMMAGE LOT BUILDER ── */}
+                                {(addFormMode === 'advanced' || editingItem) && (
                                 <div className="p-3 bg-amber-50/70 border border-amber-200/90 rounded-2xl space-y-2.5 shadow-2xs">
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-1.5 min-w-0">
@@ -2886,6 +3337,7 @@ export default function PantryManagement({
                                         </div>
                                     )}
                                 </div>
+                                )}
 
                                 <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
                                     <button
@@ -3512,6 +3964,318 @@ export default function PantryManagement({
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════════
+                    MODAL: QUICK STOCK ADJUSTER (سحب أو إضافة سريعة للمؤونة)
+                ══════════════════════════════════════════════════════════ */}
+                {quickAdjustItem && (
+                    <div className="fixed inset-0 z-[75] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
+                        <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4 animate-in slide-in-from-bottom duration-200">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                                                quickAdjustAction === 'remove'
+                                                    ? 'bg-rose-100 text-rose-800'
+                                                    : 'bg-emerald-100 text-emerald-800'
+                                            }`}
+                                        >
+                                            {quickAdjustAction === 'remove'
+                                                ? 'Take / Consume (سحب)'
+                                                : 'Add / Restock (إضافة)'}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-slate-400">Quick Adjust</span>
+                                    </div>
+                                    <h3 className="text-base font-black text-slate-900 mt-0.5">
+                                        {quickAdjustItem.name}
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={() => setQuickAdjustItem(null)}
+                                    className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Action Switch Tabs */}
+                            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setQuickAdjustAction('remove')
+                                        setQuickAdjustReason('Camp / Activity')
+                                    }}
+                                    className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                        quickAdjustAction === 'remove'
+                                            ? 'bg-white text-rose-700 shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <span>🔴 Take / Consume (سحب)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setQuickAdjustAction('add')
+                                        setQuickAdjustReason('Store Purchase')
+                                    }}
+                                    className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                        quickAdjustAction === 'add'
+                                            ? 'bg-white text-emerald-700 shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <span>🟢 Add / Restock (إضافة)</span>
+                                </button>
+                            </div>
+
+                            {/* Stepper & Number Input */}
+                            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    Quantity ({quickAdjustItem.unit || 'units'})
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuickAdjustAmount(Math.max(1, quickAdjustAmount - 1))}
+                                        className="w-12 h-12 rounded-xl bg-white border border-slate-200 text-slate-700 font-black text-xl hover:bg-slate-100 active:scale-95 shadow-2xs flex items-center justify-center"
+                                    >
+                                        −
+                                    </button>
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="any"
+                                        value={quickAdjustAmount}
+                                        onChange={(e) => setQuickAdjustAmount(parseFloat(e.target.value) || 0)}
+                                        className="flex-1 h-12 text-center text-xl font-black rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-teal-700 text-slate-900"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuickAdjustAmount(quickAdjustAmount + 1)}
+                                        className="w-12 h-12 rounded-xl bg-white border border-slate-200 text-slate-700 font-black text-xl hover:bg-slate-100 active:scale-95 shadow-2xs flex items-center justify-center"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+
+                                {/* Preset chips */}
+                                <div className="flex items-center gap-1.5 pt-1">
+                                    <span className="text-[10px] font-bold text-slate-400">Presets:</span>
+                                    {[1, 2, 5, 10, 20].map((preset) => (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => setQuickAdjustAmount(preset)}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                                                quickAdjustAmount === preset
+                                                    ? 'bg-teal-800 text-white'
+                                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {preset}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Stock Transition Preview */}
+                            {(() => {
+                                const currentStock = Number(quickAdjustItem.quantity_available) || 0
+                                const delta = quickAdjustAction === 'remove' ? -quickAdjustAmount : quickAdjustAmount
+                                const resultingStock = Math.max(0, currentStock + delta)
+                                return (
+                                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs font-bold text-slate-600">
+                                        <span>Current: <strong className="text-slate-900">{currentStock} {quickAdjustItem.unit}</strong></span>
+                                        <span>➔</span>
+                                        <span>New: <strong className={resultingStock <= 0 ? 'text-rose-600 font-black' : 'text-emerald-700 font-black'}>{resultingStock} {quickAdjustItem.unit}</strong></span>
+                                    </div>
+                                )
+                            })()}
+
+                            {/* Batch / Brand Selection for Deducting (Remove) */}
+                            {quickAdjustAction === 'remove' && quickAdjustItem.expiry_batches && quickAdjustItem.expiry_batches.length > 0 && (
+                                <div className="space-y-1.5 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                            Deduct from Specific Lot / Brand (اختيار الماركة وتاريخ الصلاحية)
+                                        </label>
+                                        <span className="text-[10px] font-bold text-teal-800">
+                                            {quickAdjustItem.expiry_batches.length} lots in stock
+                                        </span>
+                                    </div>
+                                    <select
+                                        value={quickAdjustBatchId}
+                                        onChange={(e) => setQuickAdjustBatchId(e.target.value)}
+                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-bold text-slate-800 focus:outline-none focus:border-teal-700 cursor-pointer"
+                                    >
+                                        <option value="">⚡ Auto FIFO (Oldest expiration lot first)</option>
+                                        {quickAdjustItem.expiry_batches.map((b) => {
+                                            const exp = b.expiry_date ? new Date(b.expiry_date) : null
+                                            const isExp = exp ? exp.getTime() < Date.now() : false
+                                            return (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.brand || 'Standard'} • {b.quantity} {quickAdjustItem.unit} (Exp: {b.expiry_date || 'No Date'}) {isExp ? '⚠️ EXPIRED' : ''}
+                                                </option>
+                                            )
+                                        })}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Brand & Expiry Lot Addition (Add) */}
+                            {quickAdjustAction === 'add' && (
+                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                            Brand & Expiry (الماركة وتاريخ الصلاحية)
+                                        </label>
+                                        <span className="text-[10px] text-teal-800 font-bold">Specify Lot Details</span>
+                                    </div>
+
+                                    {/* Existing Brand Chips */}
+                                    {(() => {
+                                        const existingBrands = Array.from(
+                                            new Set((quickAdjustItem.expiry_batches || []).map((b) => b.brand).filter(Boolean))
+                                        ) as string[]
+                                        if (existingBrands.length === 0) return null
+                                        return (
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] font-bold text-slate-400 block">Existing brands for this item:</span>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {existingBrands.map((b) => (
+                                                        <button
+                                                            key={b}
+                                                            type="button"
+                                                            onClick={() => setQuickAdjustBrand(b)}
+                                                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                                                quickAdjustBrand.toLowerCase() === b.toLowerCase()
+                                                                    ? 'bg-teal-800 text-white shadow-2xs'
+                                                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                                                            }`}
+                                                        >
+                                                            {b}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                Brand Name (الماركة)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Kiane, Mutlu, Carry..."
+                                                value={quickAdjustBrand}
+                                                onChange={(e) => setQuickAdjustBrand(e.target.value)}
+                                                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white font-bold text-slate-800 focus:outline-none focus:border-teal-700"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                Expiry Date (تاريخ الصلاحية)
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={quickAdjustExpiryDate}
+                                                onChange={(e) => setQuickAdjustExpiryDate(e.target.value)}
+                                                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white font-bold text-slate-800 focus:outline-none focus:border-teal-700"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                            Package Size / Weight (e.g. 185g, 1kg - Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. 185g, 500g, 1kg..."
+                                            value={quickAdjustPackageSize}
+                                            onChange={(e) => setQuickAdjustPackageSize(e.target.value)}
+                                            className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-teal-700"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* One-tap Reason Tags */}
+                            <div className="space-y-1.5">
+                                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    Reason (السبب)
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {(quickAdjustAction === 'remove'
+                                        ? ['Camp / Activity', 'Cook / Meal Prep', 'Damaged / Expired', 'Depot Correction']
+                                        : ['Store Purchase', 'Scout Donation', 'Leftover Return', 'Depot Correction']
+                                    ).map((tag) => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => setQuickAdjustReason(tag)}
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                                quickAdjustReason === tag
+                                                    ? 'bg-slate-800 text-white shadow-2xs'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Optional Note */}
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Optional note / details (e.g. Cedar patrol lunch)…"
+                                    value={quickAdjustNotes}
+                                    onChange={(e) => setQuickAdjustNotes(e.target.value)}
+                                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setQuickAdjustItem(null)}
+                                    className="flex-1 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isAdjusting || quickAdjustAmount <= 0}
+                                    onClick={handleConfirmQuickAdjust}
+                                    className={`flex-[2] py-2.5 text-xs font-black text-white rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                                        quickAdjustAction === 'remove'
+                                            ? 'bg-rose-700 hover:bg-rose-800'
+                                            : 'bg-emerald-700 hover:bg-emerald-800'
+                                    }`}
+                                >
+                                    <Check className="h-4 w-4" />
+                                    <span>
+                                        {isAdjusting
+                                            ? 'Updating Stock…'
+                                            : quickAdjustAction === 'remove'
+                                            ? `Confirm Take (${quickAdjustAmount} ${quickAdjustItem.unit})`
+                                            : `Confirm Add (+${quickAdjustAmount} ${quickAdjustItem.unit})`}
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

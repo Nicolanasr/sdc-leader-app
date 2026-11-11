@@ -150,7 +150,19 @@ export default async function MembersPage() {
     membersQuery = membersQuery.eq('troop_id', userTroopId)
   }
 
-  const { data: membersData } = await membersQuery
+  // Cross-troop sibling candidate list: all active youth in the group
+  const allGroupMembersQuery = supabase
+    .from('members')
+    .select('id, first_name, last_name, first_name_en, last_name_en, first_name_ar, last_name_ar, current_rank, troop_id, troops:troop_id (id, name)')
+    .eq('group_id', groupId)
+    .eq('is_deleted', false)
+    .order('first_name', { ascending: true })
+
+  const [{ data: membersData }, { data: allGroupMembersData }] = await Promise.all([
+    membersQuery,
+    allGroupMembersQuery,
+  ])
+  const allGroupMembers = allGroupMembersData || []
 
   // 6. Fetch promotion history logs for all members
   const memberIdsList = (membersData || []).map((m) => m.id)
@@ -208,6 +220,7 @@ export default async function MembersPage() {
   return (
     <MembersManagement
       initialMembers={filteredMembers}
+      allGroupMembers={allGroupMembers}
       troops={troopsList}
       patrols={patrolsData}
       historyMap={historyMap}

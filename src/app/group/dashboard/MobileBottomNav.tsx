@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Landmark, Calendar, Users, ClipboardList, Menu, Wallet, User, Package } from 'lucide-react'
+import { FEATURES } from '@/config/features'
 
 interface Props {
   currentRole: string
@@ -112,12 +113,21 @@ export default function MobileBottomNav({ currentRole, roles = [], patrolRole, o
                 active: pathname.startsWith('/group/dashboard/finances'),
               },
             ]
-          : [
+          : FEATURES.sessionPlanner
+          ? [
               {
                 label: 'Planner',
                 href: '/group/dashboard/planner',
                 icon: ClipboardList,
                 active: pathname.startsWith('/group/dashboard/planner'),
+              },
+            ]
+          : [
+              {
+                label: 'Attendance',
+                href: '/group/dashboard/attendance',
+                icon: ClipboardList,
+                active: pathname.startsWith('/group/dashboard/attendance'),
               },
             ]),
       ]

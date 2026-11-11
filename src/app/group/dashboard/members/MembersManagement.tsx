@@ -109,6 +109,7 @@ interface HistoryLog {
 
 interface Props {
     initialMembers: Member[]
+    allGroupMembers?: any[]
     troops: Troop[]
     patrols: Patrol[]
     historyMap: Record<string, HistoryLog[]>
@@ -123,6 +124,7 @@ interface Props {
 
 export default function MembersManagement({
     initialMembers,
+    allGroupMembers,
     troops,
     patrols,
     historyMap,
@@ -140,6 +142,7 @@ export default function MembersManagement({
     // Layout navigation controls
     const [isMobileOpen, setIsMobileOpen] = useState(false)
     const [members, setMembers] = useState<Member[]>(initialMembers)
+    const siblingCandidates = (allGroupMembers && allGroupMembers.length > 0) ? allGroupMembers : members
 
     // UI filter controls
     const [searchQuery, setSearchQuery] = useState('')
@@ -621,7 +624,7 @@ export default function MembersManagement({
 
         // Reciprocal Sibling Syncing in member_history table
         if (savedMemberId) {
-            const currentMemberObj = members.find((m) => m.id === savedMemberId)
+            const currentMemberObj = siblingCandidates.find((m: any) => m.id === savedMemberId) || members.find((m) => m.id === savedMemberId)
             const oldSiblings: string[] = currentMemberObj?.sibling_ids || []
 
             // Delete old sibling links for savedMemberId
@@ -1666,8 +1669,9 @@ export default function MembersManagement({
                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Brothers & Sisters (Siblings)</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {selectedMember.sibling_ids.map((sibId) => {
-                                                const sib = members.find((m) => m.id === sibId)
+                                                const sib = siblingCandidates.find((m: any) => m.id === sibId) || members.find((m) => m.id === sibId)
                                                 if (!sib) return null
+                                                const troopLabel = (sib.troops as any)?.name ? ` • ${(sib.troops as any).name}` : ''
                                                 return (
                                                     <button
                                                         key={sib.id}
@@ -1675,7 +1679,7 @@ export default function MembersManagement({
                                                         className="px-3 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
                                                     >
                                                         <span>👦👧</span>
-                                                        <span>{sib.first_name} {sib.last_name} ({sib.current_rank || 'Scout'})</span>
+                                                        <span>{sib.first_name} {sib.last_name} ({sib.current_rank || 'Scout'}{troopLabel})</span>
                                                     </button>
                                                 )
                                             })}
@@ -2513,9 +2517,9 @@ export default function MembersManagement({
                                             className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-teal-500 focus:outline-none"
                                         />
                                         <div className="space-y-1.5 max-h-36 overflow-y-auto border border-slate-200 rounded-lg p-2.5 bg-slate-50">
-                                            {members
-                                                .filter((m) => m.id !== editMemberId)
-                                                .filter((m) => {
+                                            {siblingCandidates
+                                                .filter((m: any) => m.id !== editMemberId)
+                                                .filter((m: any) => {
                                                     if (!siblingSearchQuery.trim()) return true
                                                     const q = siblingSearchQuery.toLowerCase()
                                                     const fullEn = `${m.first_name || ''} ${m.last_name || ''} ${m.first_name_en || ''} ${m.last_name_en || ''}`.toLowerCase()
@@ -2526,8 +2530,9 @@ export default function MembersManagement({
                                                         (m.current_rank && m.current_rank.toLowerCase().includes(q))
                                                     )
                                                 })
-                                                .map((sib) => {
+                                                .map((sib: any) => {
                                                     const isSelected = siblingIds.includes(sib.id)
+                                                    const troopName = sib.troops?.name ? ` • ${sib.troops.name}` : ''
                                                     return (
                                                         <label key={sib.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer hover:text-teal-800">
                                                             <input
@@ -2540,7 +2545,7 @@ export default function MembersManagement({
                                                                 }}
                                                                 className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                                                             />
-                                                            <span>{sib.first_name} {sib.last_name} ({sib.current_rank || 'Scout'})</span>
+                                                            <span>{sib.first_name} {sib.last_name} ({sib.current_rank || 'Scout'}{troopName})</span>
                                                         </label>
                                                     )
                                                 })}

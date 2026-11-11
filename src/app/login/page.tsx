@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import LoginForm from './LoginForm'
 import TestLoginModal, { TestUser } from './TestLoginModal'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { FEATURES } from '@/config/features'
 
 const ROLE_DISPLAY_NAMES: Record<string, string> = {
   chef_groupe: 'Chef de Groupe (قائد الفوج)',
@@ -92,6 +93,10 @@ export default async function LoginPage({
           rank: p.rank || null,
         }
       })
+
+      if (!FEATURES.scoutMemberLogin) {
+        testUsers = testUsers.filter((u) => u.role !== 'scout_member')
+      }
     } catch (fetchErr) {
       console.warn('[LoginPage] Error fetching test users list:', fetchErr)
     }
@@ -135,6 +140,11 @@ export default async function LoginPage({
     }
 
     const role = data.user?.app_metadata?.role || data.user?.app_metadata?.role_scope
+
+    if (!FEATURES.scoutMemberLogin && role === 'scout_member') {
+      await supabase.auth.signOut()
+      return redirect('/login?message=Member portal is currently disabled. Leader access only.')
+    }
 
     if (role === 'configurator') {
       redirect('/configurator')
