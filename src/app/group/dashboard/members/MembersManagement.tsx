@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle, Sparkles, KeyRound, Clock, MapPin, CheckCircle2 } from 'lucide-react'
+import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert, Award, Loader2, ExternalLink, Users, Phone, MessageCircle, Sparkles, KeyRound, Clock, MapPin, CheckCircle2, Download } from 'lucide-react'
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
 import { FEATURES } from '@/config/features'
+import { downloadCsv } from '@/utils/exportCsv'
 
 interface Member {
     id: string
@@ -1009,6 +1010,25 @@ export default function MembersManagement({
         return queryMatch && troopMatch && rankMatch
     })
 
+    const handleExportRosterCSV = () => {
+        const nestedName = (val: any) => (Array.isArray(val) ? val[0]?.name : val?.name) || ''
+        downloadCsv(
+            `youth-roster-${new Date().toISOString().slice(0, 10)}.csv`,
+            ['First Name', 'Last Name', 'Arabic Name', 'Troop', 'Patrol', 'Rank', 'Blood Type', 'Parent Phone', 'Emergency Contact'],
+            filteredMembers.map((m) => [
+                m.first_name,
+                m.last_name,
+                [m.first_name_ar, m.last_name_ar].filter(Boolean).join(' '),
+                nestedName(m.troops),
+                nestedName(m.patrols),
+                m.current_rank || '',
+                m.blood_type || '',
+                m.father_phone || m.mother_phone || '',
+                [m.emergency_contact_name, m.emergency_contact_phone].filter(Boolean).join(' - '),
+            ])
+        )
+    }
+
     const isMember = currentRole === 'scout_member'
     const isUnitSecretary = isMember && userPatrolRole === 'amin_serr'
 
@@ -1050,28 +1070,39 @@ export default function MembersManagement({
                     </div>
                 </div>
 
-                {canWrite && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                            onClick={() => {
-                                setNewPatrolName('')
-                                setNewPatrolTroopId(isTroopLeader ? (userTroopId || '') : troops[0]?.id || '')
-                                setShowPatrolModal(true)
-                            }}
-                            className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-3 py-2 min-h-[38px] rounded-xl border border-slate-300 transition-all text-xs flex items-center gap-1 cursor-pointer"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Create</span> Patrol
-                        </button>
-                        <button
-                            onClick={openAddModal}
-                            className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl shadow-2xs transition-all text-xs flex items-center gap-1 cursor-pointer"
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                            <span>Add Scout</span>
-                        </button>
-                    </div>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                        type="button"
+                        onClick={handleExportRosterCSV}
+                        className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold px-2.5 sm:px-3 py-2 min-h-[38px] rounded-xl border border-slate-300 transition-all text-xs flex items-center gap-1 cursor-pointer"
+                        title="Export filtered roster to CSV"
+                    >
+                        <Download className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">CSV</span>
+                    </button>
+                    {canWrite && (
+                        <>
+                            <button
+                                onClick={() => {
+                                    setNewPatrolName('')
+                                    setNewPatrolTroopId(isTroopLeader ? (userTroopId || '') : troops[0]?.id || '')
+                                    setShowPatrolModal(true)
+                                }}
+                                className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-3 py-2 min-h-[38px] rounded-xl border border-slate-300 transition-all text-xs flex items-center gap-1 cursor-pointer"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Create</span> Patrol
+                            </button>
+                            <button
+                                onClick={openAddModal}
+                                className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl shadow-2xs transition-all text-xs flex items-center gap-1 cursor-pointer"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>Add Scout</span>
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Filters Bar */}

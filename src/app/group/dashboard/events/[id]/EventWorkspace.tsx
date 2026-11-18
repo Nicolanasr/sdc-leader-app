@@ -8,8 +8,9 @@ import {
     Menu, X, ArrowLeft, Calendar, MapPin, DollarSign, Users, FileText,
     CheckCircle2, XCircle, Clock, ShieldAlert, Trash2, Plus, ExternalLink, Filter, Layers, Award, Edit, Edit3, Loader2, UploadCloud, FileSpreadsheet, Paperclip,
     Package, ShoppingCart, Send, Minus, RefreshCw, Search, UtensilsCrossed, Apple, ShoppingBag, Check, CheckSquare, Square, ChefHat, Sparkles, BookOpen, History, ChevronRight, UserPlus, Key, Copy,
-    Link2, FolderOpen, Image as ImageIcon
+    Link2, FolderOpen, Image as ImageIcon, Download
 } from 'lucide-react'
+import { downloadCsv } from '@/utils/exportCsv'
 import DashboardShell from '../../DashboardShell'
 import DashboardSidebar from '../../DashboardSidebar'
 import {
@@ -2561,15 +2562,39 @@ export default function EventWorkspace({
                                 ))}
                             </div>
 
-                            {isCampSecretary && (
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button
-                                    onClick={() => setIsEditRosterModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 bg-teal-800 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition-colors"
+                                    type="button"
+                                    onClick={() =>
+                                        downloadCsv(
+                                            `${eventItem.title.replace(/[^a-z0-9_-]/gi, '_')}-roster.csv`,
+                                            ['First Name', 'Last Name', 'Section / Unit', 'Rank', 'Attendance'],
+                                            participantsGroupedByTroop.flatMap((g) =>
+                                                g.participants.map((p) => [
+                                                    p.members?.first_name || '',
+                                                    p.members?.last_name || '',
+                                                    g.troopName,
+                                                    p.members?.current_rank || '',
+                                                    p.attendance_status === 'present' ? 'Present' : 'Absent',
+                                                ])
+                                            )
+                                        )
+                                    }
+                                    className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold px-3 min-h-[38px] rounded-xl border border-slate-300 transition-all cursor-pointer"
                                 >
-                                    <Plus className="h-3.5 w-3.5" />
-                                    Add / Remove Scouts
+                                    <Download className="h-3.5 w-3.5" />
+                                    <span>Export CSV</span>
                                 </button>
-                            )}
+                                {isCampSecretary && (
+                                    <button
+                                        onClick={() => setIsEditRosterModalOpen(true)}
+                                        className="inline-flex items-center gap-1.5 bg-teal-800 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold px-3 min-h-[38px] rounded-xl shadow transition-all cursor-pointer"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Add / Remove Scouts
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
 

@@ -1,9 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
-import { getEmailAliases, resolveDeliverableEmail } from '@/utils/emailDelivery'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import LoginForm from './LoginForm'
-import { FEATURES } from '@/config/features'
+import { signIn, sendMagicLink } from './actions'
 
 export default async function LoginPage({
   searchParams,
@@ -14,7 +12,9 @@ export default async function LoginPage({
   const supabase = await createClient()
 
   // Auto-redirect if already logged in
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (user) {
     const role = user.app_metadata?.role || user.app_metadata?.role_scope
     if (role === 'configurator') {
@@ -22,94 +22,6 @@ export default async function LoginPage({
     } else {
       redirect('/group/dashboard')
     }
-  }
-
-  // ── SERVER ACTION 1: Sign in with password ──
-  async function signIn(formData: FormData) {
-    'use server'
-
-    const rawEmail = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    if (!rawEmail || !password) {
-      return redirect('/login?message=Email and password are required')
-    }
-
-    const serverSupabase = await createClient()
-    const candidateEmails = getEmailAliases(rawEmail)
-
-    let authResult = await serverSupabase.auth.signInWithPassword({
-      email: candidateEmails[0],
-      password,
-    })
-
-    // Try alternate domain alias if first attempt failed (@sdcsjm.org <-> @sdcsaintjeanmarc.org)
-    if (authResult.error && candidateEmails.length > 1) {
-      const secondAttempt = await serverSupabase.auth.signInWithPassword({
-        email: candidateEmails[1],
-        password,
-      })
-      if (!secondAttempt.error) {
-        authResult = secondAttempt
-      }
-    }
-
-    const { data, error } = authResult
-
-    if (error) {
-      console.error('Login error:', error)
-      return redirect(`/login?message=${encodeURIComponent(error.message)}`)
-    }
-
-    const role = data.user?.app_metadata?.role || data.user?.app_metadata?.role_scope
-
-    if (!FEATURES.scoutMemberLogin && role === 'scout_member') {
-      await supabase.auth.signOut()
-      return redirect('/login?message=Member portal is currently disabled. Leader access only.')
-    }
-
-    if (role === 'configurator') {
-      redirect('/configurator')
-    } else {
-      redirect('/group/dashboard')
-    }
-  }
-
-  // ── SERVER ACTION 2: Send Magic Link email ──
-  async function sendMagicLink(formData: FormData) {
-    'use server'
-
-    const rawEmail = formData.get('email') as string
-    if (!rawEmail) {
-      return { error: 'Email address is required.' }
-    }
-
-    const deliverable = resolveDeliverableEmail(rawEmail)
-    const serverSupabase = await createClient()
-
-    const headersList = await headers()
-    const host = headersList.get('host') || 'localhost:3000'
-    const protocol = host.includes('localhost') ? 'http' : 'https'
-    const siteUrl = `${protocol}://${host}`
-
-    const { error } = await serverSupabase.auth.signInWithOtp({
-      email: deliverable,
-      options: {
-        emailRedirectTo: `${siteUrl}/auth/callback?next=/group/dashboard`,
-      },
-    })
-
-    if (error) {
-      console.error('Magic link dispatch error:', error)
-      if (error.message.toLowerCase().includes('rate limit')) {
-        return {
-          error: 'Email rate limit reached for this hour. Please use password login.',
-        }
-      }
-      return { error: error.message }
-    }
-
-    return { success: true }
   }
 
   return (
@@ -135,8 +47,16 @@ export default async function LoginPage({
           onSendMagicLink={sendMagicLink}
         />
 
-        <div className="text-center text-[11px] text-slate-400">
-          Groupe Saint Jean Marc • Authorized Leader Access Only
+        <div className="text-center space-y-2 pt-1">
+          <a
+            href="/roles"
+            className="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+          >
+            📖 Leader Roles & Onboarding Guide
+          </a>
+          <div className="text-[11px] text-slate-400">
+            Groupe Saint Jean Marc • Authorized Leader Access Only
+          </div>
         </div>
       </div>
     </div>

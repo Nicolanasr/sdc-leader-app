@@ -83,6 +83,34 @@ export default async function LibraryPage() {
     console.error('[LibraryPage] Error fetching archive items:', error)
   }
 
+  // 7. Fetch all event media & documents for this group
+  const { data: eventDocsData, error: eventDocsErr } = await adminDb
+    .from('event_documents')
+    .select(`
+      id,
+      title,
+      file_url,
+      created_at,
+      uploaded_by,
+      profiles:uploaded_by (full_name),
+      events!inner (
+        id,
+        title,
+        event_type,
+        start_date,
+        group_id,
+        target_troop_ids,
+        is_deleted
+      )
+    `)
+    .eq('events.group_id', groupId)
+    .eq('events.is_deleted', false)
+    .order('created_at', { ascending: false })
+
+  if (eventDocsErr) {
+    console.error('[LibraryPage] Error fetching event documents:', eventDocsErr)
+  }
+
   return (
     <LibraryManagement
       groupId={groupId}
@@ -94,6 +122,7 @@ export default async function LibraryPage() {
       canManage={canManage}
       troops={troopsList}
       initialItems={archiveItems || []}
+      initialEventMedia={(eventDocsData || []) as any}
     />
   )
 }

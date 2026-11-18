@@ -30,7 +30,27 @@ import {
   VolumeX,
   Pencil,
   Link2,
+  Calendar,
+  FolderOpen,
+  Image as ImageIcon,
 } from 'lucide-react'
+import Link from 'next/link'
+
+export interface EventMediaItem {
+  id: string
+  title: string
+  file_url: string
+  created_at: string
+  uploaded_by?: string | null
+  profiles?: { full_name?: string } | null
+  events: {
+    id: string
+    title: string
+    event_type: string
+    start_date: string
+    target_troop_ids?: string[] | null
+  }
+}
 
 export interface ArchiveItem {
   id: string
@@ -70,6 +90,7 @@ interface Props {
   canManage: boolean
   troops: Troop[]
   initialItems: ArchiveItem[]
+  initialEventMedia?: EventMediaItem[]
 }
 
 const CATEGORIES = [
@@ -84,6 +105,14 @@ const CATEGORIES = [
   { id: 'admin_archives', label: 'Archives', icon: FolderArchive },
 ]
 
+function detectMediaKind(title: string, url: string): 'photo' | 'video' | 'doc' | 'link' {
+  const s = `${title} ${url}`.toLowerCase()
+  if (/\.(jpg|jpeg|png|webp|heic|gif)(\?|$)|photo|image/.test(s)) return 'photo'
+  if (/\.(mp4|mov|webm)(\?|$)|youtube\.com|youtu\.be|video/.test(s)) return 'video'
+  if (/\.(pdf|docx?|xlsx?|pptx?|csv)(\?|$)/.test(s)) return 'doc'
+  return 'link'
+}
+
 export default function LibraryManagement({
   groupName,
   currentRole,
@@ -92,11 +121,68 @@ export default function LibraryManagement({
   canManage,
   troops = [],
   initialItems,
+  initialEventMedia = [],
 }: Props) {
+  const [archiveView, setArchiveView] = useState<'library' | 'events'>('library')
   const [itemsList, setItemsList] = useState<ArchiveItem[]>(initialItems)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedBranch, setSelectedBranch] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+
+  // Event Media Archive facet filters
+  const [eventSearch, setEventSearch] = useState<string>('')
+  const [eventYearFilter, setEventYearFilter] = useState<string>('all')
+  const [eventTroopFilter, setEventTroopFilter] = useState<string>('all')
+  const [eventMediaKindFilter, setEventMediaKindFilter] = useState<'all' | 'photo' | 'video' | 'doc' | 'link'>('all')
+
+  const eventYears = useMemo(() => {
+    const yrs = new Set<string>()
+    for (const m of initialEventMedia) {
+      const y = (m.events?.start_date || m.created_at || '').slice(0, 4)
+      if (/^\d{4}$/.test(y)) yrs.add(y)
+    }
+    return Array.from(yrs).sort((a, b) => b.localeCompare(a))
+  }, [initialEventMedia])
+
+  const groupedEventMedia = useMemo(() => {
+    const q = eventSearch.trim().toLowerCase()
+    const filtered = initialEventMedia.filter((m) => {
+      const year = (m.events?.start_date || m.created_at || '').slice(0, 4)
+      if (eventYearFilter !== 'all' && year !== eventYearFilter) return false
+      if (eventTroopFilter !== 'all') {
+        const tids = m.events?.target_troop_ids || []
+        if (!tids.includes(eventTroopFilter)) return false
+      }
+      if (eventMediaKindFilter !== 'all' && detectMediaKind(m.title, m.file_url) !== eventMediaKindFilter) {
+        return false
+      }
+      if (q) {
+        const hay = `${m.title} ${m.events?.title || ''} ${m.events?.event_type || ''} ${m.profiles?.full_name || ''}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+      return true
+    })
+
+    // Group: Year -> Event ID -> { event, items }
+    const byYear = new Map<string, Map<string, { event: EventMediaItem['events']; items: EventMediaItem[] }>>()
+    for (const item of filtered) {
+      const year = (item.events?.start_date || item.created_at || '').slice(0, 4) || 'Other'
+      if (!byYear.has(year)) byYear.set(year, new Map())
+      const eventsMap = byYear.get(year)!
+      const evId = item.events?.id || 'unknown'
+      if (!eventsMap.has(evId)) eventsMap.set(evId, { event: item.events, items: [] })
+      eventsMap.get(evId)!.items.push(item)
+    }
+
+    return Array.from(byYear.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([year, evMap]) => ({
+        year,
+        events: Array.from(evMap.values()).sort((a, b) =>
+          (b.event?.start_date || '').localeCompare(a.event?.start_date || '')
+        ),
+      }))
+  }, [initialEventMedia, eventSearch, eventYearFilter, eventTroopFilter, eventMediaKindFilter])
 
   const branchOptions = useMemo(() => {
     return [
@@ -416,10 +502,10 @@ export default function LibraryManagement({
             </div>
           </div>
 
-          {canManage && (
+          {canManage && archiveView === 'library' && (
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1 shrink-0"
+              className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1 shrink-0"
             >
               <Plus className="h-3.5 w-3.5" />
               <span><span className="hidden sm:inline">Add</span> Resource</span>
@@ -427,6 +513,36 @@ export default function LibraryManagement({
           )}
         </div>
 
+        {/* ── SEGMENTED VIEW SWITCHER: GROUP LIBRARY vs EVENT MEDIA ARCHIVE ── */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-2xs gap-1">
+          <button
+            type="button"
+            onClick={() => setArchiveView('library')}
+            className={`flex-1 min-h-[40px] py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+              archiveView === 'library'
+                ? 'bg-white text-teal-900 shadow-xs font-black'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span>Library ({itemsList.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setArchiveView('events')}
+            className={`flex-1 min-h-[40px] py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+              archiveView === 'events'
+                ? 'bg-white text-teal-900 shadow-xs font-black'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <FolderOpen className="h-4 w-4 shrink-0" />
+            <span>Event Media ({initialEventMedia.length})</span>
+          </button>
+        </div>
+
+        {archiveView === 'library' ? (
+        <>
         {/* ── SEARCH & FILTER BAR ── */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
@@ -668,6 +784,193 @@ export default function LibraryManagement({
               )
             })}
           </div>
+        )}
+        </>
+        ) : (
+        <div className="space-y-3">
+          {/* Faceted Event Media Search & Filters */}
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search file name, event title, or uploader..."
+                  value={eventSearch}
+                  onChange={(e) => setEventSearch(e.target.value)}
+                  className="w-full h-10 pl-9 pr-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-teal-700 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
+                <select
+                  value={eventYearFilter}
+                  onChange={(e) => setEventYearFilter(e.target.value)}
+                  className="h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:border-teal-700"
+                >
+                  <option value="all">All Years</option>
+                  {eventYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={eventTroopFilter}
+                  onChange={(e) => setEventTroopFilter(e.target.value)}
+                  className="h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:border-teal-700"
+                >
+                  <option value="all">All Units</option>
+                  {troops.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
+              {[
+                { id: 'all', label: 'All Files' },
+                { id: 'photo', label: '📷 Photos' },
+                { id: 'doc', label: '📄 Docs & PDFs' },
+                { id: 'video', label: '🎬 Videos' },
+                { id: 'link', label: '🔗 Drive / Links' },
+              ].map((kind) => (
+                <button
+                  key={kind.id}
+                  type="button"
+                  onClick={() => setEventMediaKindFilter(kind.id as any)}
+                  className={`min-h-[34px] px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all active:scale-95 cursor-pointer ${
+                    eventMediaKindFilter === kind.id
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
+                  }`}
+                >
+                  {kind.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Year -> Event Folder Archive */}
+          {groupedEventMedia.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-2 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <FolderOpen className="h-5 w-5" />
+              </div>
+              <h3 className="font-bold text-slate-800 text-sm">No event media found</h3>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                Upload photos, PDFs, or Drive links inside any Event&apos;s Documents tab and they will be archived here automatically.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {groupedEventMedia.map(({ year, events }) => (
+                <div key={year} className="space-y-2.5">
+                  <div className="flex items-center gap-2 px-1">
+                    <Calendar className="h-4 w-4 text-teal-800" />
+                    <h2 className="text-sm font-black text-slate-900">{year} Season</h2>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                      {events.length} {events.length === 1 ? 'event' : 'events'}
+                    </span>
+                  </div>
+
+                  {events.map(({ event, items }) => {
+                    const troopNames = (event.target_troop_ids || [])
+                      .map((id) => troops.find((t) => t.id === id)?.name)
+                      .filter(Boolean)
+                    return (
+                      <div
+                        key={event.id}
+                        className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden"
+                      >
+                        {/* Event Folder Header */}
+                        <div className="bg-slate-50/90 px-3.5 py-2.5 border-b border-slate-200/80 flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <FolderOpen className="h-4 w-4 text-amber-600 shrink-0" />
+                              <h3 className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                                {event.title}
+                              </h3>
+                              <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-teal-100 text-teal-900">
+                                {event.event_type?.replace(/_/g, ' ')}
+                              </span>
+                              {troopNames.slice(0, 2).map((tn) => (
+                                <span
+                                  key={tn}
+                                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700"
+                                >
+                                  {tn}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {event.start_date ? new Date(event.start_date).toLocaleDateString() : ''} • {items.length}{' '}
+                              {items.length === 1 ? 'file' : 'files'}
+                            </p>
+                          </div>
+
+                          <Link
+                            href={`/group/dashboard/events/${event.id}`}
+                            className="min-h-[34px] px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-teal-800 text-xs font-bold flex items-center gap-1 shrink-0"
+                          >
+                            <span>Event</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        </div>
+
+                        {/* Files inside Event Folder */}
+                        <div className="divide-y divide-slate-100">
+                          {items.map((doc) => {
+                            const kind = detectMediaKind(doc.title, doc.file_url)
+                            return (
+                              <div
+                                key={doc.id}
+                                className="px-3.5 py-2.5 flex items-center justify-between gap-2.5 hover:bg-slate-50/70"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                                    {kind === 'photo' ? (
+                                      <ImageIcon className="h-4 w-4 text-emerald-700" />
+                                    ) : kind === 'video' ? (
+                                      <Video className="h-4 w-4 text-rose-600" />
+                                    ) : kind === 'doc' ? (
+                                      <FileText className="h-4 w-4 text-blue-700" />
+                                    ) : (
+                                      <Link2 className="h-4 w-4 text-teal-700" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                      {doc.title}
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 truncate">
+                                      {doc.profiles?.full_name || 'Leader'} •{' '}
+                                      {new Date(doc.created_at).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <a
+                                  href={doc.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="min-h-[36px] px-3 py-1.5 rounded-xl bg-teal-800 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold flex items-center gap-1 shrink-0"
+                                >
+                                  <span>Open</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         )}
 
         {/* ── FLOATING MOBILE AUDIO PLAYER BAR ── */}

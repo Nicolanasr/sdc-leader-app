@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { WifiOff } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import DashboardSidebar from './DashboardSidebar'
 import DashboardHeader from './DashboardHeader'
@@ -20,8 +21,20 @@ interface Props {
 
 export default function DashboardShell({ groupName, currentRole, roles, userName, patrolRole, children }: Props) {
     const [isMobileOpen, setIsMobileOpen] = useState(false)
+    const [isOffline, setIsOffline] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+
+    useEffect(() => {
+        const update = () => setIsOffline(!navigator.onLine)
+        update()
+        window.addEventListener('online', update)
+        window.addEventListener('offline', update)
+        return () => {
+            window.removeEventListener('online', update)
+            window.removeEventListener('offline', update)
+        }
+    }, [])
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
@@ -63,6 +76,12 @@ export default function DashboardShell({ groupName, currentRole, roles, userName
                     onOpenMobileMenu={() => setIsMobileOpen(true)}
                 />
                 <div className="px-2 sm:px-6 py-2 sm:py-4 flex-1 flex flex-col space-y-2.5 sm:space-y-4 max-w-7xl w-full mx-auto">
+                    {isOffline && (
+                        <div className="bg-amber-50 border border-amber-300 text-amber-950 px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-2xs">
+                            <WifiOff className="h-4 w-4 text-amber-700 shrink-0" />
+                            <span>You are offline — changes won&apos;t save until reconnected.</span>
+                        </div>
+                    )}
                     <PWAInstallPrompt />
                     {children}
                 </div>

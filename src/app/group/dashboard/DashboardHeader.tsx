@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, User, BellRing } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Menu, User, RotateCw } from 'lucide-react'
 
 interface Props {
   userName?: string
@@ -26,6 +28,15 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export default function DashboardHeader({ userName, currentRole, roles = [], onOpenMobileMenu }: Props) {
+  const router = useRouter()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    router.refresh()
+    setTimeout(() => setIsRefreshing(false), 600)
+  }
+
   const allRoles = Array.from(new Set([currentRole, ...roles].filter(Boolean)))
   const formattedRoles = allRoles
     .map((r) => ROLE_LABELS[r] || r.replace(/_/g, ' '))
@@ -41,7 +52,17 @@ export default function DashboardHeader({ userName, currentRole, roles = [], onO
         <Menu className="h-5 w-5" />
       </button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={handleRefresh}
+          aria-label="Refresh page data"
+          title="Refresh"
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-teal-900 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer shrink-0"
+        >
+          <RotateCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-teal-800' : ''}`} />
+        </button>
+
         <Link
           href="/group/dashboard/profile"
           className="flex items-center gap-2 text-right hover:bg-slate-100/70 active:bg-slate-100 p-1.5 -mr-1 rounded-xl transition-all group cursor-pointer"
