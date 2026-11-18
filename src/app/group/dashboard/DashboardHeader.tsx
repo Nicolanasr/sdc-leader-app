@@ -35,7 +35,7 @@ export default function DashboardHeader({ userName, currentRole, roles = [], onO
     <header className="bg-white/95 backdrop-blur-xs sticky top-0 z-30 border-b border-slate-200 px-3 sm:px-6 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2 sm:py-3 flex items-center justify-between md:justify-end shrink-0">
       <button
         onClick={onOpenMobileMenu}
-        className="md:hidden text-teal-900 p-1.5 -ml-1 rounded-lg hover:bg-slate-100 transition-colors focus:outline-none"
+        className="md:hidden text-teal-900 w-10 h-10 flex items-center justify-center -ml-1.5 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors focus:outline-none cursor-pointer"
         aria-label="Open Mobile Menu"
       >
         <Menu className="h-5 w-5" />
@@ -44,7 +44,7 @@ export default function DashboardHeader({ userName, currentRole, roles = [], onO
       <div className="flex items-center gap-2">
         <Link
           href="/group/dashboard/profile"
-          className="flex items-center gap-2 text-right hover:bg-slate-100/70 p-1.5 -mr-1.5 rounded-xl transition-all group cursor-pointer"
+          className="flex items-center gap-2 text-right hover:bg-slate-100/70 active:bg-slate-100 p-1.5 -mr-1 rounded-xl transition-all group cursor-pointer"
           title="View My Profile"
         >
           <div className="flex flex-col items-end">
@@ -57,7 +57,7 @@ export default function DashboardHeader({ userName, currentRole, roles = [], onO
               {formattedRoles}
             </span>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-teal-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl bg-teal-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs group-hover:scale-105 active:scale-95 transition-transform">
             <User className="h-4 w-4" />
           </div>
         </Link>

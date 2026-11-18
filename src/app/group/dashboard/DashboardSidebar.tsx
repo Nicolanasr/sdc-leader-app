@@ -21,7 +21,7 @@ const navLink = (href: string, label: string, icon: React.ReactNode, active: boo
     prefetch={true}
     onClick={onClick}
     suppressHydrationWarning
-    className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] ${
+    className={`flex items-center gap-3 px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-semibold transition-all duration-150 active:scale-[0.98] cursor-pointer ${
       active
         ? 'bg-teal-700 text-white shadow-xs'
         : 'text-teal-100 hover:bg-teal-800 hover:text-white'
@@ -78,7 +78,11 @@ export default function DashboardSidebar({ groupName, currentRole, roles = [], p
           </p>
         </div>
         {onClose && (
-          <button className="md:hidden text-teal-200" onClick={onClose}>
+          <button
+            className="md:hidden text-teal-200 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-teal-800 active:bg-teal-700 transition-colors cursor-pointer"
+            onClick={onClose}
+            aria-label="Close menu"
+          >
             <X className="h-6 w-6" />
           </button>
         )}
@@ -163,7 +167,7 @@ export default function DashboardSidebar({ groupName, currentRole, roles = [], p
       <div className="p-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] border-t border-teal-800">
         <button
           onClick={onLogout}
-          className="w-full text-center px-4 py-2 rounded-lg text-sm font-semibold text-teal-200 hover:bg-teal-800 hover:text-white transition-colors"
+          className="w-full text-center px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold text-teal-200 hover:bg-teal-800 hover:text-white active:bg-teal-700 transition-all cursor-pointer"
         >
           Log Out
         </button>

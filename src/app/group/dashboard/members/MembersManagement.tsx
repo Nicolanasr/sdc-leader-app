@@ -1057,14 +1057,14 @@ export default function MembersManagement({
                                 setNewPatrolTroopId(isTroopLeader ? (userTroopId || '') : troops[0]?.id || '')
                                 setShowPatrolModal(true)
                             }}
-                            className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-2.5 py-1.5 rounded-xl border border-slate-300 transition-all text-xs flex items-center gap-1"
+                            className="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold px-3 py-2 min-h-[38px] rounded-xl border border-slate-300 transition-all text-xs flex items-center gap-1 cursor-pointer"
                         >
                             <Plus className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Create</span> Patrol
                         </button>
                         <button
                             onClick={openAddModal}
-                            className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl shadow-2xs transition-all text-xs flex items-center gap-1"
+                            className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl shadow-2xs transition-all text-xs flex items-center gap-1 cursor-pointer"
                         >
                             <Plus className="h-3.5 w-3.5" />
                             <span>Add Scout</span>
@@ -1076,13 +1076,13 @@ export default function MembersManagement({
             {/* Filters Bar */}
             <div className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-2xl shadow-2xs flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between mb-2">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
+                    <Search className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Search by scout name or rank…"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
+                        className="pl-8 pr-3 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
                     />
                 </div>
                 <div className="flex flex-wrap gap-1.5 shrink-0">
@@ -1090,7 +1090,7 @@ export default function MembersManagement({
                         <select
                             value={troopFilter}
                             onChange={(e) => setTroopFilter(e.target.value)}
-                            className="rounded-xl border border-slate-200 bg-slate-50 text-xs px-2.5 py-1.5 text-slate-700 font-bold focus:border-teal-700 focus:outline-none"
+                            className="h-10 rounded-xl border border-slate-200 bg-slate-50 text-xs px-3 text-slate-700 font-bold focus:border-teal-700 focus:outline-none cursor-pointer"
                         >
                             <option value="">-- All Units --</option>
                             {troops.map((t) => (
@@ -1103,7 +1103,7 @@ export default function MembersManagement({
                     <select
                         value={rankFilter}
                         onChange={(e) => setRankFilter(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white text-xs sm:text-sm px-3 py-2 text-slate-700"
+                        className="h-10 rounded-xl border border-slate-200 bg-slate-50 text-xs px-3 text-slate-700 font-bold focus:border-teal-700 focus:outline-none cursor-pointer"
                     >
                         <option value="">-- All Ranks --</option>
                         <option value="Jaramiz">Jaramiz</option>
@@ -1196,23 +1196,23 @@ export default function MembersManagement({
 
                                 {/* Mobile Action Buttons Bar */}
                                 <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5">
                                         {cleanPhone && (
                                             <>
                                                 <a
                                                     href={`tel:${cleanPhone}`}
-                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-50 text-teal-800 hover:bg-teal-100 text-xs font-bold border border-teal-200/60 active:scale-95"
+                                                    className="flex items-center gap-1 px-3 py-1.5 min-h-[36px] rounded-xl bg-teal-50 text-teal-800 hover:bg-teal-100 text-xs font-bold border border-teal-200/60 active:scale-95 cursor-pointer"
                                                 >
-                                                    <Phone className="h-3 w-3" />
+                                                    <Phone className="h-3.5 w-3.5" />
                                                     <span>Call</span>
                                                 </a>
                                                 <a
                                                     href={`https://wa.me/${cleanPhone.replace('+', '')}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-bold border border-emerald-200/60 active:scale-95"
+                                                    className="flex items-center gap-1 px-3 py-1.5 min-h-[36px] rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-bold border border-emerald-200/60 active:scale-95 cursor-pointer"
                                                 >
-                                                    <MessageCircle className="h-3 w-3" />
+                                                    <MessageCircle className="h-3.5 w-3.5" />
                                                     <span>WhatsApp</span>
                                                 </a>
                                             </>
@@ -1222,18 +1222,18 @@ export default function MembersManagement({
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={() => setSelectedMember(member)}
-                                            className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95"
+                                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 cursor-pointer"
                                             title="View Profile"
                                         >
-                                            <Eye className="h-3.5 w-3.5" />
+                                            <Eye className="h-4 w-4" />
                                         </button>
                                         {canWrite && (
                                             <button
                                                 onClick={() => openEditModal(member)}
-                                                className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95"
+                                                className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 cursor-pointer"
                                                 title="Edit Scout"
                                             >
-                                                <Edit className="h-3.5 w-3.5" />
+                                                <Edit className="h-4 w-4" />
                                             </button>
                                         )}
                                     </div>

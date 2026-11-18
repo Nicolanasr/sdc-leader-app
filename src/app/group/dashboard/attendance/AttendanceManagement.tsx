@@ -364,11 +364,11 @@ export default function AttendanceManagement({
 function StatusToggle({ status, onChange }: { status: string; onChange: (st: string) => void }) {
     const s = status || 'present'
     return (
-        <div className="flex gap-1">
+        <div className="flex gap-1.5 shrink-0">
             <button
                 type="button"
                 onClick={() => onChange('present')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${s === 'present'
+                className={`px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer ${s === 'present'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                         : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                     }`}
@@ -378,7 +378,7 @@ function StatusToggle({ status, onChange }: { status: string; onChange: (st: str
             <button
                 type="button"
                 onClick={() => onChange('absent')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${s === 'absent'
+                className={`px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer ${s === 'absent'
                         ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
                         : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                     }`}
@@ -399,7 +399,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
             <select
                 value={selectValue}
                 onChange={(e) => onChange(e.target.value)}
-                className="flex-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700 focus:border-teal-500 focus:outline-none"
+                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 h-9 text-xs text-slate-700 focus:border-teal-500 focus:outline-none"
             >
                 <option value="">-- Select reason / excuse --</option>
                 {ABSENCE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -409,7 +409,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                     type="text"
                     value={personReason === 'Other' ? '' : personReason}
                     placeholder="Specify custom reason…"
-                    className="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="flex-1 rounded-xl border border-slate-300 bg-white px-2.5 h-9 text-xs text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                     onChange={(e) => onChange(e.target.value || 'Other')}
                 />
             )}
@@ -450,7 +450,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
 
                                 <button
                                     onClick={() => setView('new')}
-                                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1 shrink-0"
+                                    className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs transition-all shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer"
                                 >
                                     <Plus className="h-3.5 w-3.5" />
                                     <span>New Session</span>
@@ -600,14 +600,14 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                                 <div className="flex items-center gap-1.5 shrink-0">
                                     <Link
                                         href="/group/dashboard/planner"
-                                        className="bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-2.5 py-1.5 rounded-xl text-xs border border-amber-200 transition-all flex items-center gap-1 shadow-2xs"
+                                        className="bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-3 py-2 min-h-[38px] rounded-xl text-xs border border-amber-200 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
                                     >
                                         <span>📋 Canevas</span>
                                     </Link>
                                     <button
                                         onClick={handleSaveSheet}
                                         disabled={loading}
-                                        className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs shadow-2xs transition-all disabled:opacity-50"
+                                        className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs shadow-2xs transition-all disabled:opacity-50 cursor-pointer"
                                     >
                                         {loading ? 'Saving…' : 'Save Sheet'}
                                     </button>

@@ -58,7 +58,7 @@ export default function LoginForm({
             setAuthMode('password')
             setFeedback(null)
           }}
-          className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+          className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             authMode === 'password'
               ? 'bg-white text-slate-900 shadow-2xs'
               : 'text-slate-500 hover:text-slate-800'
@@ -74,7 +74,7 @@ export default function LoginForm({
             setAuthMode('magiclink')
             setFeedback(null)
           }}
-          className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+          className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             authMode === 'magiclink'
               ? 'bg-white text-slate-900 shadow-2xs'
               : 'text-slate-500 hover:text-slate-800'
@@ -115,7 +115,7 @@ export default function LoginForm({
               name="email"
               required
               placeholder="leader@sdcsaintjeanmarc.org"
-              className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600"
+              className="block w-full h-11 rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600"
             />
           </div>
 
@@ -126,7 +126,7 @@ export default function LoginForm({
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-semibold text-teal-800 hover:text-teal-950 transition-colors"
+                className="text-xs font-semibold text-teal-800 hover:text-teal-950 transition-colors py-1"
               >
                 Forgot password?
               </Link>
@@ -138,12 +138,12 @@ export default function LoginForm({
                 name="password"
                 required
                 placeholder="••••••••"
-                className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600 pr-10"
+                className="block w-full h-11 rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600 pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -152,7 +152,7 @@ export default function LoginForm({
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-teal-700 transition-all active:scale-[0.98]"
+            className="flex w-full min-h-[46px] items-center justify-center gap-2 rounded-xl bg-teal-800 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-teal-700 transition-all active:scale-[0.98] cursor-pointer"
           >
             <span>Sign In with Password</span>
             <ArrowRight className="h-4 w-4" />
@@ -172,7 +172,7 @@ export default function LoginForm({
               name="email"
               required
               placeholder="leader@sdcsaintjeanmarc.org"
-              className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600"
+              className="block w-full h-11 rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600"
             />
             <p className="text-[10px] text-slate-400 mt-1">
               We will send you a passwordless 1-click login link directly to your inbox.
@@ -182,7 +182,7 @@ export default function LoginForm({
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-800 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-teal-700 transition-all active:scale-[0.98] disabled:opacity-60"
+            className="flex w-full min-h-[46px] items-center justify-center gap-2 rounded-xl bg-teal-800 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-teal-700 transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
           >
             {loading ? (
               <>

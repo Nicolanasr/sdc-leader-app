@@ -1673,9 +1673,9 @@ export default function InventoryManagement({
                                 setCartItems([])
                                 setIsCheckoutModalOpen(true)
                             }}
-                            className="col-span-1 bg-teal-800 active:bg-teal-900 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95"
+                            className="col-span-1 bg-teal-800 active:bg-teal-900 text-white font-bold py-2 px-2 min-h-[40px] rounded-xl text-xs transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
                         >
-                            <Send className="h-3 w-3" />
+                            <Send className="h-3.5 w-3.5" />
                             <span>Request</span>
                         </button>
 
@@ -1683,9 +1683,9 @@ export default function InventoryManagement({
                             <>
                                 <button
                                     onClick={handleStartAudit}
-                                    className="bg-purple-50 active:bg-purple-100 text-purple-900 font-bold py-1.5 px-2 rounded-xl text-[11px] border border-purple-200 transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95"
+                                    className="bg-purple-50 active:bg-purple-100 text-purple-900 font-bold py-2 px-2 min-h-[40px] rounded-xl text-xs border border-purple-200 transition-all flex items-center justify-center gap-1 shadow-2xs active:scale-95 cursor-pointer"
                                 >
-                                    <ClipboardCheck className="h-3 w-3 text-purple-700" />
+                                    <ClipboardCheck className="h-3.5 w-3.5 text-purple-700" />
                                     <span>Jard Count</span>
                                 </button>
 
@@ -1704,9 +1704,9 @@ export default function InventoryManagement({
                                         setFormDescription('')
                                         setIsAddEditModalOpen(true)
                                     }}
-                                    className="bg-slate-900 active:bg-slate-800 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95"
+                                    className="bg-slate-900 active:bg-slate-800 text-white font-bold py-2 px-2 min-h-[40px] rounded-xl text-xs transition-all shadow-2xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
                                 >
-                                    <Plus className="h-3 w-3" />
+                                    <Plus className="h-3.5 w-3.5" />
                                     <span>New Item</span>
                                 </button>
                             </>
@@ -1714,11 +1714,11 @@ export default function InventoryManagement({
                     </div>
 
                     {/* Row 3: iOS Native Segmented Tab Control */}
-                    <div className="bg-slate-100/90 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/70">
+                    <div className="bg-slate-100/90 p-1 rounded-2xl flex items-center gap-1 border border-slate-200/70">
                         {(isFullManager || !FEATURES.equipmentLoans) && (
                             <button
                                 onClick={() => setActiveTab('catalog')}
-                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'catalog'
+                                className={`flex-1 py-2 min-h-[38px] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${activeTab === 'catalog'
                                         ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
@@ -1731,7 +1731,7 @@ export default function InventoryManagement({
                         {FEATURES.equipmentLoans && (
                             <button
                                 onClick={() => setActiveTab('checkouts')}
-                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'checkouts'
+                                className={`flex-1 py-2 min-h-[38px] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${activeTab === 'checkouts'
                                         ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
@@ -1755,7 +1755,7 @@ export default function InventoryManagement({
                         {isFullManager && (
                             <button
                                 onClick={() => setActiveTab('writeoffs')}
-                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === 'writeoffs'
+                                className={`flex-1 py-2 min-h-[38px] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${activeTab === 'writeoffs'
                                         ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
@@ -1768,7 +1768,7 @@ export default function InventoryManagement({
                         {isGroupLeader && (
                             <button
                                 onClick={() => setActiveTab('approvals')}
-                                className={`py-1.5 px-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 shrink-0 ${activeTab === 'approvals'
+                                className={`py-2 px-3 min-h-[38px] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 shrink-0 cursor-pointer active:scale-95 ${activeTab === 'approvals'
                                         ? 'bg-teal-800 text-white shadow-2xs'
                                         : 'text-slate-600 hover:text-slate-900'
                                     }`}
@@ -1789,32 +1789,32 @@ export default function InventoryManagement({
                         <div className="space-y-1.5 pt-1 border-t border-slate-100">
                             <div className="flex items-center gap-1.5">
                                 <div className="relative flex-1">
-                                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+                                    <Search className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-400" />
                                     <input
                                         type="text"
                                         placeholder="Search gear by name, category, depot…"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-7 pr-3 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
+                                        className="w-full pl-8 pr-3 h-10 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
                                     />
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600"
+                                            className="absolute right-2.5 top-2.5 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
                                         >
-                                            <X className="h-3 w-3" />
+                                            <X className="h-3.5 w-3.5" />
                                         </button>
                                     )}
                                 </div>
 
                                 <button
                                     onClick={() => setIsFilterSheetOpen(true)}
-                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 shrink-0 ${activeFiltersCount > 0
+                                    className={`px-3 h-10 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${activeFiltersCount > 0
                                             ? 'bg-teal-800 text-white border-teal-900 shadow-2xs'
                                             : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                                         }`}
                                 >
-                                    <SlidersHorizontal className="h-3 w-3" />
+                                    <SlidersHorizontal className="h-3.5 w-3.5" />
                                     <span>Filters {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}</span>
                                 </button>
                             </div>

@@ -241,7 +241,7 @@ export default function ScoutAIAssistant() {
 
       {/* ── CHAT DRAWER / POPUP ── */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[420px] sm:h-[600px] z-50 flex flex-col bg-white sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in sm:zoom-in-95">
+        <div data-modal="true" className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[420px] sm:h-[600px] z-50 flex flex-col bg-white sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in sm:zoom-in-95">
           {/* Header */}
           <div className="p-3.5 sm:p-4 pt-[max(env(safe-area-inset-top),0.875rem)] bg-gradient-to-r from-slate-900 via-teal-950 to-teal-900 text-white flex flex-col shrink-0 shadow-xs gap-2.5">
             <div className="flex items-center justify-between">
@@ -439,13 +439,13 @@ export default function ScoutAIAssistant() {
                 onChange={(e) => setInputPrompt(e.target.value)}
                 placeholder="Ask Cedars Scout AI (عربي, Français, English)..."
                 disabled={loading}
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600 disabled:bg-slate-50"
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-3.5 h-11 text-sm text-slate-900 shadow-2xs focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600 disabled:bg-slate-50"
               />
 
               <button
                 type="submit"
                 disabled={loading || !inputPrompt.trim()}
-                className="shrink-0 w-9 h-9 rounded-xl bg-teal-800 hover:bg-teal-700 text-white flex items-center justify-center transition-all shadow-2xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="shrink-0 w-11 h-11 rounded-xl bg-teal-800 hover:bg-teal-700 text-white flex items-center justify-center transition-all shadow-2xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

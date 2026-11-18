@@ -221,7 +221,7 @@ export default function GroupDashboardLayout({
 
   return (
     <DashboardShell groupName={groupName} currentRole={role} roles={allUserRoles} userName={userName}>
-      <div className="w-full pb-20 space-y-3 sm:space-y-4">
+      <div className="w-full pb-6 sm:pb-8 space-y-3 sm:space-y-4">
         {/* ── 1. WELCOME & LEADER IDENTITY HERO CARD ── */}
         <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white p-4 sm:p-5 rounded-3xl shadow-sm border border-teal-950/40 relative overflow-hidden">
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -253,11 +253,11 @@ export default function GroupDashboardLayout({
             </div>
 
             {/* Quick action buttons */}
-            <div className="flex items-center gap-1.5 shrink-0 pt-1 sm:pt-0">
+            <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-0">
               {FEATURES.sessionPlanner ? (
                 <Link
                   href="/group/dashboard/planner"
-                  className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                  className="bg-white/10 hover:bg-white/20 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
                 >
                   <ClipboardList className="h-3.5 w-3.5 text-teal-300" />
                   <span>New Canevas</span>
@@ -265,7 +265,7 @@ export default function GroupDashboardLayout({
               ) : (
                 <Link
                   href="/group/dashboard/attendance"
-                  className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                  className="bg-white/10 hover:bg-white/20 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs backdrop-blur-xs border border-white/15 transition-all flex items-center gap-1 shadow-2xs active:scale-95"
                 >
                   <CheckSquare className="h-3.5 w-3.5 text-teal-300" />
                   <span>Take Attendance</span>
@@ -273,7 +273,7 @@ export default function GroupDashboardLayout({
               )}
               <Link
                 href="/group/dashboard/events"
-                className="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1 shadow-2xs active:scale-95"
+                className="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs transition-all flex items-center gap-1 shadow-2xs active:scale-95"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>New Event</span>

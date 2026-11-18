@@ -1960,12 +1960,12 @@ export default function FinancesManagement({
                             </div>
 
                             {/* Row 3: Fast Jump Months Pill Strip */}
-                            <div className="overflow-x-auto no-scrollbar -mx-1 px-1 flex items-center gap-1">
+                            <div className="overflow-x-auto no-scrollbar -mx-1 px-1 flex items-center gap-1 py-0.5">
                                 {MONTHS_ORDER.map((m) => (
                                     <button
                                         key={m.key}
                                         onClick={() => setDuesMonth(m.key)}
-                                        className={`px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all shrink-0 ${duesMonth === m.key
+                                        className={`px-2.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95 ${duesMonth === m.key
                                             ? 'bg-teal-800 text-white shadow-2xs'
                                             : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                                             }`}
@@ -1978,13 +1978,13 @@ export default function FinancesManagement({
                             {/* Row 4: Search & Status Filter Chips */}
                             <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div className="relative w-full sm:max-w-xs">
-                                    <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
+                                    <Search className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-400" />
                                     <input
                                         type="text"
                                         placeholder="Search scout name…"
                                         value={duesScoutSearch}
                                         onChange={(e) => setDuesScoutSearch(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-1 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
+                                        className="w-full pl-8 pr-3 h-10 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-teal-600 font-medium"
                                     />
                                 </div>
 
@@ -2130,7 +2130,7 @@ export default function FinancesManagement({
                                                                         })
                                                                         setQuickPayAmount(String(targetPerMonth))
                                                                     }}
-                                                                    className="px-2.5 py-1 rounded-lg bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1"
+                                                                    className="px-3.5 py-1.5 min-h-[36px] rounded-xl bg-teal-800 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
                                                                 >
                                                                     <span>Pay ${targetPerMonth}</span>
                                                                 </button>

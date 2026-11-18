@@ -1961,7 +1961,7 @@ export default function BroadcastManagement({
 
         {/* ── CONFIRMATION MODAL FOR WHATSAPP DISPATCH ── */}
         {showConfirmModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div data-modal="true" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0">
@@ -2038,7 +2038,7 @@ export default function BroadcastManagement({
         {/* MODAL: SCOUT TEMPLATE BUILDER (صانع النماذج الكشفية)      */}
         {/* ═════════════════════════════════════════════════════════ */}
         {showTemplateBuilder && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div data-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <div className="bg-white rounded-3xl max-w-xl w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2">

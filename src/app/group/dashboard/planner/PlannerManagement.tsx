@@ -977,15 +977,15 @@ export default function PlannerManagement({
                     placeholder="Search by theme, title, or date…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
+                    className="pl-8 pr-3 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-medium focus:border-teal-700 focus:outline-none"
                   />
                 </div>
 
                 {/* Troop Selector Chips (Mobile scrollable) */}
-                <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
                   <button
                     onClick={() => setSelectedTroopFilter('all')}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                    className={`px-3 py-1.5 min-h-[34px] rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer active:scale-95 ${
                       selectedTroopFilter === 'all'
                         ? 'bg-teal-800 text-white shadow-2xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1000,7 +1000,7 @@ export default function PlannerManagement({
                       <button
                         key={t.id}
                         onClick={() => setSelectedTroopFilter(t.id)}
-                        className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
+                        className={`px-3 py-1.5 min-h-[34px] rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
                           selectedTroopFilter === t.id
                             ? 'bg-teal-800 text-white shadow-2xs'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
