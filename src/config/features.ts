@@ -9,6 +9,9 @@ export const FEATURES = {
   // Scout Progression & Badges - /group/dashboard/progression
   scoutProgression: false,
 
+  // Public Scout Passport & shareable QR digital ID (/scout/[id])
+  publicPassport: false,
+
   // Equipment Loans & Activity Folders in /group/dashboard/inventory (Catalog + Jard + Writeoffs remain active)
   equipmentLoans: false,
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { FEATURES } from '@/config/features'
 import {
   User,
   Shield,
@@ -324,15 +325,17 @@ export default function UserProfileView({
 
           {/* Action buttons: Public Passport + Share + Edit Basic Info */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Link
-              href={`/scout/${passportTargetId}`}
-              target="_blank"
-              className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-2xl bg-teal-500/20 hover:bg-teal-500/30 active:scale-95 text-teal-200 text-xs font-bold flex items-center justify-center gap-1.5 border border-teal-400/30 transition-all shadow-xs"
-              title="Open Public Passport"
-            >
-              <span>Public Passport</span>
-              <ExternalLink className="h-3 w-3 opacity-70" />
-            </Link>
+            {FEATURES.publicPassport && (
+              <Link
+                href={`/scout/${passportTargetId}`}
+                target="_blank"
+                className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-2xl bg-teal-500/20 hover:bg-teal-500/30 active:scale-95 text-teal-200 text-xs font-bold flex items-center justify-center gap-1.5 border border-teal-400/30 transition-all shadow-xs"
+                title="Open Public Passport"
+              >
+                <span>Public Passport</span>
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </Link>
+            )}
 
             <button
               type="button"

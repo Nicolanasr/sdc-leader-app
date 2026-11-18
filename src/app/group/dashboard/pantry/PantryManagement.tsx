@@ -2986,76 +2986,79 @@ export default function PantryManagement({
                     MODAL: ADD / EDIT PANTRY ITEM & MULTI-BATCHES
                 ══════════════════════════════════════════════════════════ */}
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
-                        <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92vh] overflow-y-auto my-auto animate-in fade-in">
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <div data-modal="true" className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
+                        <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0">
+                            <div className="w-10 h-1 rounded-full bg-slate-300 mx-auto mt-2.5 sm:hidden shrink-0" />
+                            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 shrink-0">
                                 <div className="flex items-center gap-2">
                                     <UtensilsCrossed className="h-4 w-4 text-teal-800" />
-                                    <h3 className="text-sm font-black text-slate-900">
-                                        {editingItem ? 'Edit Provision Item' : 'Add Pantry Item (المؤونة)'}
+                                    <h3 className="text-base font-black text-slate-900">
+                                        {editingItem ? 'Edit Provision Item' : 'Add Pantry Item'}
                                     </h3>
                                 </div>
                                 <button
+                                    type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                                    className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-95 text-sm font-bold"
                                 >
                                     ✕
                                 </button>
                             </div>
 
-                            {/* Mode Switcher */}
-                            {!editingItem && (
-                                <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAddFormMode('quick')}
-                                        className={`py-1.5 rounded-lg text-xs font-black transition-all ${
-                                            addFormMode === 'quick'
-                                                ? 'bg-white text-teal-900 shadow-2xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        ⚡ Quick Add (سريع)
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAddFormMode('advanced')}
-                                        className={`py-1.5 rounded-lg text-xs font-black transition-all ${
-                                            addFormMode === 'advanced'
-                                                ? 'bg-white text-teal-900 shadow-2xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        📋 Detailed Lots (مفصّل)
-                                    </button>
-                                </div>
-                            )}
+                            <form onSubmit={handleSavePantryItem} className="flex-1 flex flex-col min-h-0">
+                                <div className="flex-1 overflow-y-auto px-4 py-3.5 sm:p-5 space-y-3.5">
+                                {/* Mode Switcher */}
+                                {!editingItem && (
+                                    <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setAddFormMode('quick')}
+                                            className={`min-h-[38px] py-1.5 rounded-lg text-xs font-black transition-all ${
+                                                addFormMode === 'quick'
+                                                    ? 'bg-white text-teal-900 shadow-2xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            ⚡ Quick Add
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAddFormMode('advanced')}
+                                            className={`min-h-[38px] py-1.5 rounded-lg text-xs font-black transition-all ${
+                                                addFormMode === 'advanced'
+                                                    ? 'bg-white text-teal-900 shadow-2xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            📋 Detailed Lots
+                                        </button>
+                                    </div>
+                                )}
 
-                            <form onSubmit={handleSavePantryItem} className="space-y-3">
                                 {/* Item Name */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
                                         Item Name / Product *
                                     </label>
                                     <input
                                         type="text"
                                         required
-                                        placeholder="e.g. Powdered Milk (حليب), Salt (ملح), Farfalle Pasta, Rice…"
+                                        placeholder="e.g. Powdered Milk (حليب), Rice…"
                                         value={formName}
                                         onChange={(e) => setFormName(e.target.value)}
-                                        className="w-full px-3 py-1.5 text-xs sm:text-sm font-black rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                        className="w-full h-11 px-3 text-sm font-bold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
                                     />
                                 </div>
 
                                 {/* Dynamic Searchable Category Selector */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div className="relative" ref={categoryDropdownRef}>
-                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
                                             Category *
                                         </label>
                                         <div
                                             onClick={() => setIsCategoryDropdownOpen(true)}
-                                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between cursor-pointer focus-within:border-teal-700 focus-within:bg-white"
+                                            className="w-full h-11 px-3 text-sm font-bold rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between cursor-pointer focus-within:border-teal-700 focus-within:bg-white"
                                         >
                                             <span className="truncate">
                                                 {getCategoryObj(formCategory).label}
@@ -3124,13 +3127,13 @@ export default function PantryManagement({
                                     </div>
 
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
-                                            Default Unit of Measure *
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                                            Default Unit *
                                         </label>
                                         <select
                                             value={formUnit}
                                             onChange={(e) => setFormUnit(e.target.value)}
-                                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-teal-700 focus:outline-none"
+                                            className="w-full h-11 px-3 text-sm font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-teal-700 focus:outline-none"
                                         >
                                             <option value="cans">cans (علبة)</option>
                                             <option value="packs">packs / bags (كيس / باكيت)</option>
@@ -3146,40 +3149,40 @@ export default function PantryManagement({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
-                                            Storage Shelf / Depot
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div className="min-w-0">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                                            Shelf / Depot
                                         </label>
                                         <input
                                             type="text"
-                                            placeholder="e.g. Shelf A, Bin 2"
+                                            placeholder="e.g. Shelf A"
                                             value={formLocation}
                                             onChange={(e) => setFormLocation(e.target.value)}
-                                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:border-teal-700 focus:outline-none"
+                                            className="w-full h-11 px-3 text-sm font-bold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
-                                            Low Stock Alert Level
+                                    <div className="min-w-0">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                                            Low Stock Alert
                                         </label>
                                         <input
                                             type="number"
                                             min="0"
                                             value={formMinThreshold}
                                             onChange={(e) => setFormMinThreshold(e.target.value)}
-                                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:border-teal-700 focus:outline-none"
+                                            className="w-full h-11 px-3 text-sm font-bold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Quick Mode Quantity & Expiry Row */}
                                 {addFormMode === 'quick' && !editingItem && (
-                                    <div className="grid grid-cols-2 gap-2 p-3 bg-teal-50/70 border border-teal-200/90 rounded-2xl">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-teal-900 uppercase mb-0.5">
-                                                Quantity ({formUnit}) *
+                                    <div className="grid grid-cols-2 gap-2.5 p-3 bg-teal-50/70 border border-teal-200/90 rounded-2xl">
+                                        <div className="min-w-0">
+                                            <label className="block text-[11px] font-bold text-teal-900 uppercase mb-1">
+                                                Qty ({formUnit}) *
                                             </label>
                                             <input
                                                 type="number"
@@ -3188,19 +3191,19 @@ export default function PantryManagement({
                                                 required
                                                 value={formQuantity}
                                                 onChange={(e) => setFormQuantity(e.target.value)}
-                                                className="w-full px-3 py-1.5 text-sm font-black rounded-xl border border-teal-300 bg-white focus:outline-none focus:border-teal-700"
+                                                className="w-full h-11 px-3 text-sm font-black rounded-xl border border-teal-300 bg-white focus:outline-none focus:border-teal-700"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-teal-900 uppercase mb-0.5">
-                                                Expiry (MM/YY or Date)
+                                        <div className="min-w-0">
+                                            <label className="block text-[11px] font-bold text-teal-900 uppercase mb-1">
+                                                Expiry (MM/YY)
                                             </label>
                                             <input
                                                 type="text"
-                                                placeholder="e.g. 12/26 or 2026-12-31"
+                                                placeholder="e.g. 12/26"
                                                 value={formExpiryDate}
                                                 onChange={(e) => setFormExpiryDate(e.target.value)}
-                                                className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-teal-300 bg-white focus:outline-none focus:border-teal-700"
+                                                className="w-full h-11 px-3 text-sm font-bold rounded-xl border border-teal-300 bg-white focus:outline-none focus:border-teal-700"
                                             />
                                         </div>
                                     </div>
@@ -3208,16 +3211,16 @@ export default function PantryManagement({
 
                                 {/* ── BATCHES & GRAMMAGE LOT BUILDER ── */}
                                 {(addFormMode === 'advanced' || editingItem) && (
-                                <div className="p-3 bg-amber-50/70 border border-amber-200/90 rounded-2xl space-y-2.5 shadow-2xs">
+                                <div className="pt-2 border-t border-slate-100 space-y-3">
                                     <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <Layers className="h-4 w-4 text-amber-800 shrink-0" />
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <Layers className="h-4 w-4 text-amber-700 shrink-0" />
                                             <div>
                                                 <h4 className="text-xs font-black text-slate-900 leading-tight">
-                                                    Package Lots & Formats ({formBatches.length})
+                                                    Stock Lots ({formBatches.length})
                                                 </h4>
-                                                <span className="text-[10px] text-amber-900">
-                                                    Track different brands, sizes (e.g. 1kg, 400g, sachet, 5L), and expiry dates
+                                                <span className="text-[11px] text-slate-500">
+                                                    Brand, package size, quantity & expiry
                                                 </span>
                                             </div>
                                         </div>
@@ -3225,81 +3228,72 @@ export default function PantryManagement({
                                         <button
                                             type="button"
                                             onClick={handleAddBatch}
-                                            className="text-xs font-bold bg-amber-800 hover:bg-amber-700 active:scale-95 text-white px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 shrink-0 shadow-2xs"
+                                            className="min-h-[38px] text-xs font-bold bg-amber-800 hover:bg-amber-700 active:scale-95 text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shrink-0 shadow-2xs"
                                         >
-                                            <Plus className="h-3 w-3" />
+                                            <Plus className="h-3.5 w-3.5" />
                                             <span>Add Lot</span>
                                         </button>
                                     </div>
 
-                                    {/* Quick format suggestion chips */}
-                                    <div className="flex flex-wrap items-center gap-1.5 pb-0.5 pt-0.5">
-                                        <span className="text-[9px] font-bold text-amber-800 uppercase shrink-0">Quick sizes:</span>
-                                        {['1kg', '400g', '750g', '900g', '500g', '185g', '300g', '700g', 'sachet', '1L', '5L'].map((sz) => (
-                                            <button
-                                                key={sz}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (formBatches.length > 0) {
-                                                        const lastIdx = formBatches.length - 1
-                                                        handleUpdateBatch(formBatches[lastIdx].id, 'package_size', sz)
-                                                    }
-                                                }}
-                                                className="px-2 py-1 rounded-md bg-amber-100/80 hover:bg-amber-200 active:scale-95 text-amber-900 text-[10px] font-black border border-amber-300/60 shrink-0 transition-colors"
-                                            >
-                                                +{sz}
-                                            </button>
-                                        ))}
-                                    </div>
-
                                     {formBatches.length === 0 ? (
-                                        <p className="text-[11px] text-amber-900/80 bg-amber-100/60 p-2 rounded-xl">
-                                            Tap <strong>Add Lot</strong> to enter quantities with specific brands (e.g. Nido, Klim), formats (1kg, 400g, sachet, 5L), and expiry dates (e.g. 6/27).
+                                        <p className="text-xs text-amber-900/80 bg-amber-50 border border-amber-200/80 p-3 rounded-xl">
+                                            Tap <strong>Add Lot</strong> to add brand, package size (e.g. 1kg, 25 sachets), quantity, and expiry date.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                                        <div className="space-y-2.5">
                                             {formBatches.map((batch, idx) => (
                                                 <div
                                                     key={batch.id}
-                                                    className="bg-white p-2.5 rounded-xl border border-amber-200/90 shadow-2xs space-y-2"
+                                                    className="bg-slate-50/90 p-3 rounded-2xl border border-slate-200 space-y-2.5"
                                                 >
-                                                    {/* Row 1: Brand / Subtype + Format / Size + Delete */}
-                                                    <div className="flex items-center gap-1.5 min-w-0">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Brand (Nido, Carry)…"
-                                                            value={batch.brand || ''}
-                                                            onChange={(e) =>
-                                                                handleUpdateBatch(batch.id, 'brand', e.target.value)
-                                                            }
-                                                            className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-black rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
-                                                        />
-
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Size (1kg, sachet)…"
-                                                            value={batch.package_size || ''}
-                                                            onChange={(e) =>
-                                                                handleUpdateBatch(batch.id, 'package_size', e.target.value)
-                                                            }
-                                                            className="w-24 sm:w-32 min-w-0 px-2 py-1.5 text-xs font-bold text-center rounded-lg border border-slate-200 bg-amber-50/50 text-amber-900 focus:bg-white focus:border-teal-700 focus:outline-none shrink-0"
-                                                        />
-
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                                            Lot #{idx + 1}
+                                                        </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => handleRemoveBatch(batch.id)}
-                                                            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 active:bg-rose-50 shrink-0"
-                                                            title="Remove lot"
+                                                            className="min-h-[32px] px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 active:bg-rose-100 text-[11px] font-bold flex items-center gap-1"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
+                                                            <span>Remove</span>
                                                         </button>
                                                     </div>
 
-                                                    {/* Row 2: Quantity + Expiry Date Picker */}
-                                                    <div className="grid grid-cols-2 gap-2">
+                                                    <div className="grid grid-cols-2 gap-2.5">
                                                         <div className="min-w-0">
-                                                            <label className="block text-[9px] font-bold text-slate-400 uppercase">
-                                                                Qty (Packages) *
+                                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                                                Brand / Type
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="e.g. Lipton, Nido"
+                                                                value={batch.brand || ''}
+                                                                onChange={(e) =>
+                                                                    handleUpdateBatch(batch.id, 'brand', e.target.value)
+                                                                }
+                                                                className="w-full h-10 px-2.5 text-sm font-bold rounded-xl border border-slate-200 bg-white focus:border-teal-700 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div className="min-w-0">
+                                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                                                Size / Format
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="e.g. 1kg, 25 sachets"
+                                                                value={batch.package_size || ''}
+                                                                onChange={(e) =>
+                                                                    handleUpdateBatch(batch.id, 'package_size', e.target.value)
+                                                                }
+                                                                className="w-full h-10 px-2.5 text-sm font-bold rounded-xl border border-slate-200 bg-amber-50/40 text-amber-950 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        <div className="min-w-0">
+                                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                                                Qty ({formUnit}) *
                                                             </label>
                                                             <input
                                                                 type="number"
@@ -3314,12 +3308,12 @@ export default function PantryManagement({
                                                                         parseFloat(e.target.value) || 0
                                                                     )
                                                                 }
-                                                                className="w-full px-2 py-1 text-xs font-black rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+                                                                className="w-full h-10 px-2.5 text-sm font-black rounded-xl border border-slate-200 bg-white focus:border-teal-700 focus:outline-none"
                                                             />
                                                         </div>
 
-                                                        <div>
-                                                            <label className="block text-[9px] font-bold text-slate-400 uppercase">
+                                                        <div className="min-w-0">
+                                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
                                                                 Expiry Date
                                                             </label>
                                                             <input
@@ -3328,7 +3322,7 @@ export default function PantryManagement({
                                                                 onChange={(e) =>
                                                                     handleUpdateBatch(batch.id, 'expiry_date', e.target.value)
                                                                 }
-                                                                className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 focus:bg-white text-slate-800"
+                                                                className="w-full h-10 px-2 text-sm font-bold rounded-xl border border-slate-200 bg-white text-slate-800 focus:border-teal-700 focus:outline-none"
                                                             />
                                                         </div>
                                                     </div>
@@ -3338,21 +3332,22 @@ export default function PantryManagement({
                                     )}
                                 </div>
                                 )}
+                                </div>
 
-                                <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                                <div className="px-4 py-3 sm:px-5 border-t border-slate-100 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)] flex items-center gap-2 shrink-0">
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                                        className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-xl"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs flex items-center gap-1 disabled:opacity-50"
+                                        className="flex-[2] sm:flex-initial min-h-[44px] bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                                     >
-                                        <Check className="h-3.5 w-3.5" />
+                                        <Check className="h-4 w-4" />
                                         <span>{isSubmitting ? 'Saving…' : 'Save to Pantry'}</span>
                                     </button>
                                 </div>

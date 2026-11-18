@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { FEATURES } from '@/config/features'
 import {
   User,
   Shield,
@@ -478,58 +479,60 @@ export default function MemberDashboardView({ member: initialMember, events, lea
       {activeTab === 'profile' && (
         <div className="space-y-4">
           {/* Public Scout Passport Quick Action Card */}
-          <div className="bg-gradient-to-br from-teal-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 border border-teal-700/60 shadow-lg relative overflow-hidden">
-            <div className="absolute right-3 -bottom-4 text-7xl text-white/5 pointer-events-none select-none">
-              🌲
-            </div>
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-400/20 text-teal-300 border border-teal-400/30">
-                    Public Scout Passport
-                  </span>
-                  <span className="text-[11px] text-teal-200/80 font-arabic">كشاف الأرز</span>
+          {FEATURES.publicPassport && (
+            <div className="bg-gradient-to-br from-teal-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-4 sm:p-6 border border-teal-700/60 shadow-lg relative overflow-hidden">
+              <div className="absolute right-3 -bottom-4 text-7xl text-white/5 pointer-events-none select-none">
+                🌲
+              </div>
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-400/20 text-teal-300 border border-teal-400/30">
+                      Public Scout Passport
+                    </span>
+                    <span className="text-[11px] text-teal-200/80 font-arabic">كشاف الأرز</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                    <span>Your Official Digital ID & Credentials</span>
+                    <span className="text-sm">⚜️</span>
+                  </h3>
+                  <p className="text-xs text-teal-100/80 max-w-xl leading-relaxed">
+                    Your verified scout record is publicly shareable. Family, friends, and leaders can view your rank, unit, investiture status, and badges without requiring an account.
+                  </p>
                 </div>
-                <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
-                  <span>Your Official Digital ID & Credentials</span>
-                  <span className="text-sm">⚜️</span>
-                </h3>
-                <p className="text-xs text-teal-100/80 max-w-xl leading-relaxed">
-                  Your verified scout record is publicly shareable. Family, friends, and leaders can view your rank, unit, investiture status, and badges without requiring an account.
-                </p>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <a
-                  href={`/scout/${member.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0"
-                >
-                  <span>Open Passport</span>
-                  <ExternalLink className="h-3.5 w-3.5 text-slate-600" />
-                </a>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <a
+                    href={`/scout/${member.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0"
+                  >
+                    <span>Open Passport</span>
+                    <ExternalLink className="h-3.5 w-3.5 text-slate-600" />
+                  </a>
 
-                <button
-                  type="button"
-                  onClick={() => setShowShareModal(true)}
-                  className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer"
-                >
-                  <Share2 className="h-3.5 w-3.5" />
-                  <span>Share</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowShareModal(true)}
+                    className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    <span>Share</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => setShowQrModal(true)}
-                  className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-teal-200 border border-white/15 transition-all active:scale-95 shrink-0 cursor-pointer"
-                  title="Show QR Code"
-                >
-                  <QrCode className="h-4 w-4" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(true)}
+                    className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-teal-200 border border-white/15 transition-all active:scale-95 shrink-0 cursor-pointer"
+                    title="Show QR Code"
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">

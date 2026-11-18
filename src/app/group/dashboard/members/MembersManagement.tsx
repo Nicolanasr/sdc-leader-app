@@ -8,6 +8,7 @@ import { Menu, X, Plus, Search, Eye, Edit, Trash2, Calendar, Heart, ShieldAlert,
 import DashboardShell from '../DashboardShell'
 import DashboardSidebar from '../DashboardSidebar'
 import { formatDateDisplay } from '@/utils/dateTimeUtils'
+import { FEATURES } from '@/config/features'
 
 interface Member {
     id: string
@@ -1044,7 +1045,7 @@ export default function MembersManagement({
                         <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                             {isUnitSecretary
                                 ? 'Unit Secretary view • Scout contact profiles, patrols & emergency records'
-                                : 'Scout profiles, patrols, badges & records'}
+                                : 'Scout profiles, patrols & records'}
                         </p>
                     </div>
                 </div>
@@ -1411,78 +1412,86 @@ export default function MembersManagement({
                             >
                                 🔑 Portal Login
                             </button>
-                            <a
-                                href={`/scout/${selectedMember.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 flex items-center gap-1"
-                            >
-                                <span>🌐 Public Passport</span>
-                                <ExternalLink className="h-3 w-3" />
-                            </a>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
-                                    const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
-                                    router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
-                                }}
-                                className="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1"
-                            >
-                                <span>🎖️ Progression Passport</span>
-                                <ExternalLink className="h-3 w-3" />
-                            </button>
+                            {FEATURES.publicPassport && (
+                                <a
+                                    href={`/scout/${selectedMember.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 flex items-center gap-1"
+                                >
+                                    <span>🌐 Public Passport</span>
+                                    <ExternalLink className="h-3 w-3" />
+                                </a>
+                            )}
+                            {FEATURES.scoutProgression && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
+                                        const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
+                                        router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1"
+                                >
+                                    <span>🎖️ Progression Passport</span>
+                                    <ExternalLink className="h-3 w-3" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Tab 1: Scout Details */}
                         {profileTab === 'scout' && (
                             <div className="space-y-4">
                                 {/* Public Passport Quick Card */}
-                                <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-xl flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-900 flex items-center justify-center font-bold text-base">
-                                            ⚜️
+                                {FEATURES.publicPassport && (
+                                    <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-xl flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-900 flex items-center justify-center font-bold text-base">
+                                                ⚜️
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-xs text-slate-900">Public Scout Passport</h4>
+                                                <p className="text-[11px] text-slate-500">Shareable digital ID, achievements & QR code</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-xs text-slate-900">Public Scout Passport</h4>
-                                            <p className="text-[11px] text-slate-500">Shareable digital ID, achievements & QR code</p>
-                                        </div>
+                                        <a
+                                            href={`/scout/${selectedMember.id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-2.5 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                                        >
+                                            <span>View Passport</span>
+                                            <ExternalLink className="h-3 w-3" />
+                                        </a>
                                     </div>
-                                    <a
-                                        href={`/scout/${selectedMember.id}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-2.5 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
-                                    >
-                                        <span>View Passport</span>
-                                        <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                </div>
+                                )}
 
                                 {/* Progression Quick Card */}
-                                <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-base">
-                                            🎖️
+                                {FEATURES.scoutProgression && (
+                                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-base">
+                                                🎖️
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-xs text-slate-900">Progression & Badges</h4>
+                                                <p className="text-[11px] text-slate-500">Track and validate milestones & badges</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-xs text-slate-900">Progression & Badges</h4>
-                                            <p className="text-[11px] text-slate-500">Track and validate milestones & badges</p>
-                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
+                                                const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
+                                                router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
+                                            }}
+                                            className="px-2.5 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                                        >
+                                            <span>Open Passport</span>
+                                            <ExternalLink className="h-3 w-3" />
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const scoutName = `${selectedMember.first_name} ${selectedMember.last_name}`
-                                            const troopParam = selectedMember.troop_id ? `&troop=${selectedMember.troop_id}` : ''
-                                            router.push(`/group/dashboard/progression?search=${encodeURIComponent(scoutName)}${troopParam}`)
-                                        }}
-                                        className="px-2.5 py-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
-                                    >
-                                        <span>Open Passport</span>
-                                        <ExternalLink className="h-3 w-3" />
-                                    </button>
-                                </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
