@@ -103,12 +103,17 @@ button {
   }
 }
 
-/* Automatically hide mobile bottom navigation bar whenever any modal popup, drawer, or bottom sheet is active */
+/* Automatically hide mobile bottom navigation bar & AI floating button whenever any modal popup, drawer, or bottom sheet is active */
 body:has([data-modal="true"]) nav[aria-label="Mobile Bottom Navigation"],
 body:has(.fixed.inset-0.z-\[70\]) nav[aria-label="Mobile Bottom Navigation"],
 body:has(.fixed.inset-0.z-\[75\]) nav[aria-label="Mobile Bottom Navigation"],
 body:has(.fixed.inset-0.z-\[80\]) nav[aria-label="Mobile Bottom Navigation"],
-body:has(.fixed.inset-0.z-50) nav[aria-label="Mobile Bottom Navigation"] {
+body:has(.fixed.inset-0.z-50) nav[aria-label="Mobile Bottom Navigation"],
+body:has([data-modal="true"]) [data-ai-fab="true"],
+body:has(.fixed.inset-0.z-\[70\]) [data-ai-fab="true"],
+body:has(.fixed.inset-0.z-\[75\]) [data-ai-fab="true"],
+body:has(.fixed.inset-0.z-\[80\]) [data-ai-fab="true"],
+body:has(.fixed.inset-0.z-50) [data-ai-fab="true"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;

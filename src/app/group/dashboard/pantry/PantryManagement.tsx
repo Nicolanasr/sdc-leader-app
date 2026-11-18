@@ -1940,10 +1940,10 @@ export default function PantryManagement({
                         {isProvisionsLeader && (
                             <button
                                 onClick={handleOpenCreateModal}
-                                className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
+                                className="bg-teal-800 hover:bg-teal-700 active:scale-95 text-white font-bold px-3.5 py-2 min-h-[38px] rounded-xl text-xs shadow-2xs transition-all flex items-center gap-1 cursor-pointer shrink-0"
                             >
                                 <Plus className="h-3.5 w-3.5" />
-                                <span>+ Add Item</span>
+                                <span>Add Item</span>
                             </button>
                         )}
                     </div>
@@ -2177,7 +2177,7 @@ export default function PantryManagement({
                                 </div>
 
                                 {/* Sort Selector */}
-                                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs">
+                                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2.5 h-9 rounded-xl text-xs min-w-0">
                                     <ArrowUpDown className="h-3 w-3 text-slate-500 shrink-0" />
                                     <select
                                         value={sortBy}
@@ -2198,7 +2198,7 @@ export default function PantryManagement({
                                     <select
                                         value={selectedLocation}
                                         onChange={(e) => setSelectedLocation(e.target.value)}
-                                        className="bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[120px] truncate"
+                                        className="bg-slate-50 border border-slate-200 px-2.5 h-9 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
                                     >
                                         <option value="all">📍 All Shelves</option>
                                         {allLocations.map((loc) => (
@@ -3233,7 +3233,7 @@ export default function PantryManagement({
                                     </div>
 
                                     {/* Quick format suggestion chips */}
-                                    <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5 pt-0.5">
+                                    <div className="flex flex-wrap items-center gap-1.5 pb-0.5 pt-0.5">
                                         <span className="text-[9px] font-bold text-amber-800 uppercase shrink-0">Quick sizes:</span>
                                         {['1kg', '400g', '750g', '900g', '500g', '185g', '300g', '700g', 'sachet', '1L', '5L'].map((sz) => (
                                             <button
@@ -3245,7 +3245,7 @@ export default function PantryManagement({
                                                         handleUpdateBatch(formBatches[lastIdx].id, 'package_size', sz)
                                                     }
                                                 }}
-                                                className="px-1.5 py-0.2 rounded-md bg-amber-100/80 hover:bg-amber-200 text-amber-900 text-[10px] font-black border border-amber-300/60 shrink-0 transition-colors"
+                                                className="px-2 py-1 rounded-md bg-amber-100/80 hover:bg-amber-200 active:scale-95 text-amber-900 text-[10px] font-black border border-amber-300/60 shrink-0 transition-colors"
                                             >
                                                 +{sz}
                                             </button>
@@ -3264,31 +3264,31 @@ export default function PantryManagement({
                                                     className="bg-white p-2.5 rounded-xl border border-amber-200/90 shadow-2xs space-y-2"
                                                 >
                                                     {/* Row 1: Brand / Subtype + Format / Size + Delete */}
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
                                                         <input
                                                             type="text"
-                                                            placeholder="Brand / Type (Nido, Carry, Farfalle)…"
+                                                            placeholder="Brand (Nido, Carry)…"
                                                             value={batch.brand || ''}
                                                             onChange={(e) =>
                                                                 handleUpdateBatch(batch.id, 'brand', e.target.value)
                                                             }
-                                                            className="flex-1 px-2 py-1 text-xs font-black rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                                            className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-black rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-700 focus:outline-none"
                                                         />
 
                                                         <input
                                                             type="text"
-                                                            placeholder="Size (1kg, 400g, sachet, 5L)…"
+                                                            placeholder="Size (1kg, sachet)…"
                                                             value={batch.package_size || ''}
                                                             onChange={(e) =>
                                                                 handleUpdateBatch(batch.id, 'package_size', e.target.value)
                                                             }
-                                                            className="w-28 sm:w-32 px-2 py-1 text-xs font-bold text-center rounded-lg border border-slate-200 bg-amber-50/50 text-amber-900 focus:bg-white focus:border-teal-700 focus:outline-none"
+                                                            className="w-24 sm:w-32 min-w-0 px-2 py-1.5 text-xs font-bold text-center rounded-lg border border-slate-200 bg-amber-50/50 text-amber-900 focus:bg-white focus:border-teal-700 focus:outline-none shrink-0"
                                                         />
 
                                                         <button
                                                             type="button"
                                                             onClick={() => handleRemoveBatch(batch.id)}
-                                                            className="p-1 text-slate-400 hover:text-rose-600 shrink-0"
+                                                            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 active:bg-rose-50 shrink-0"
                                                             title="Remove lot"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
@@ -3297,7 +3297,7 @@ export default function PantryManagement({
 
                                                     {/* Row 2: Quantity + Expiry Date Picker */}
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        <div>
+                                                        <div className="min-w-0">
                                                             <label className="block text-[9px] font-bold text-slate-400 uppercase">
                                                                 Qty (Packages) *
                                                             </label>

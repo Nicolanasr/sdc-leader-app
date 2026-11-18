@@ -2584,21 +2584,21 @@ export default function EventWorkspace({
                             participantsGroupedByTroop.map((group) => (
                                 <div key={group.troopName} className="border border-slate-200 rounded-xl overflow-hidden">
                                     {/* Section Header Banner */}
-                                    <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center">
-                                        <span className="font-extrabold text-xs text-teal-900 uppercase tracking-wider flex items-center gap-2">
-                                            <Layers className="h-4 w-4 text-teal-700" />
-                                            Section Unit: {group.troopName} ({group.participants.length} Scouts)
+                                    <div className="bg-slate-100 px-3 sm:px-4 py-2.5 border-b border-slate-200 flex justify-between items-center gap-2">
+                                        <span className="font-extrabold text-xs text-teal-900 uppercase tracking-wider flex items-center gap-2 min-w-0">
+                                            <Layers className="h-4 w-4 text-teal-700 shrink-0" />
+                                            <span className="truncate">{group.troopName} ({group.participants.length})</span>
                                         </span>
-                                        <span className="text-xs text-slate-500 font-semibold">
+                                        <span className="text-xs text-slate-600 font-bold whitespace-nowrap shrink-0">
                                             Present: {group.participants.filter((p) => p.attendance_status === 'present').length}
                                         </span>
                                     </div>
 
                                     <div className="divide-y divide-slate-100">
                                         {group.participants.map((p) => (
-                                            <div key={p.id} className="p-3.5 bg-white flex items-center justify-between gap-3 text-xs">
-                                                <div>
-                                                    <p className="font-bold text-slate-900 text-sm">
+                                            <div key={p.id} className="p-3 sm:p-3.5 bg-white flex items-center justify-between gap-2.5 text-xs">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-bold text-slate-900 text-sm leading-snug">
                                                         {p.members?.first_name} {p.members?.last_name}
                                                     </p>
                                                     {p.members?.current_rank && p.members?.current_rank !== 'None' && (
@@ -2606,31 +2606,29 @@ export default function EventWorkspace({
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                                                     {/* Attendance Toggle Only */}
-                                                    <div>
-                                                        <button
-                                                            disabled={!isCampSecretary || updatingParticipantIds[p.id!]}
-                                                            onClick={() => updateParticipant(p.id!, { attendance_status: p.attendance_status === 'present' ? 'absent' : 'present' })}
-                                                            className={`px-4 py-1.5 rounded-lg font-bold border text-xs transition-colors inline-flex items-center gap-1.5 ${p.attendance_status === 'present' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                                                        >
-                                                            {updatingParticipantIds[p.id!] ? (
-                                                                <>
-                                                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                                                    <span>Updating…</span>
-                                                                </>
-                                                            ) : p.attendance_status === 'present' ? (
-                                                                '✓ Attended'
-                                                            ) : (
-                                                                '✗ Absent'
-                                                            )}
-                                                        </button>
-                                                    </div>
+                                                    <button
+                                                        disabled={!isCampSecretary || updatingParticipantIds[p.id!]}
+                                                        onClick={() => updateParticipant(p.id!, { attendance_status: p.attendance_status === 'present' ? 'absent' : 'present' })}
+                                                        className={`min-h-[38px] px-3 sm:px-4 py-1.5 rounded-xl font-bold border text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap active:scale-95 ${p.attendance_status === 'present' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        {updatingParticipantIds[p.id!] ? (
+                                                            <>
+                                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                                <span>Updating…</span>
+                                                            </>
+                                                        ) : p.attendance_status === 'present' ? (
+                                                            '✓ Attended'
+                                                        ) : (
+                                                            '✗ Absent'
+                                                        )}
+                                                    </button>
 
                                                     {isCampSecretary && (
                                                         <button
                                                             onClick={() => handleRemoveParticipant(p.id!)}
-                                                            className="text-slate-300 hover:text-rose-600 p-1 transition-colors self-end sm:self-center"
+                                                            className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 active:bg-rose-50 transition-colors shrink-0"
                                                             title="Remove Scout from Event Roster"
                                                         >
                                                             <Trash2 className="h-4 w-4" />

@@ -3,25 +3,7 @@ import { getEmailAliases, resolveDeliverableEmail } from '@/utils/emailDelivery'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import LoginForm from './LoginForm'
-import TestLoginModal, { TestUser } from './TestLoginModal'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { FEATURES } from '@/config/features'
-
-const ROLE_DISPLAY_NAMES: Record<string, string> = {
-  chef_groupe: 'Chef de Groupe (قائد الفوج)',
-  assistant_chef_groupe: 'Assistant Chef de Groupe (مساعد قائد الفوج)',
-  amin_serr_group: 'Secrétaire Général (أمين السر)',
-  amin_sandou2_group: 'Trésorier Général (أمين الصندوق)',
-  amin_tejhizet_group: 'Quartier-Maître (أمين التجهيزات)',
-  mas2oul_mounet: 'Responsable Mounet (مسؤول المؤونة)',
-  amin_mounet_group: 'Responsable Mounet (مسؤول المؤونة)',
-  mas2oul_toswir: 'Responsable Média (مسؤول الإعلام)',
-  ka2ed_idare: 'Chef Administratif (القائد الإداري)',
-  ka2ed_fer2a: 'Chef d’Unité (قائد الوحدة)',
-  mouse3ed_ka2ed_fer2a: 'Assistant Chef d’Unité (مساعد قائد الوحدة)',
-  scout_member: 'Scout Member (عضو كشفي)',
-  configurator: 'System Administrator (مدير النظام)',
-}
 
 export default async function LoginPage({
   searchParams,
@@ -39,66 +21,6 @@ export default async function LoginPage({
       redirect('/configurator')
     } else {
       redirect('/group/dashboard')
-    }
-  }
-
-  // Fetch list of users for Test Mode
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  let testUsers: TestUser[] = []
-
-  if (serviceRoleKey) {
-    try {
-      const adminSupabase = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        serviceRoleKey,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      )
-
-      const { data: profiles } = await adminSupabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          rank,
-          user_roles (
-            roles:role_id (name),
-            troops:troop_id (name)
-          )
-        `)
-        .eq('is_deleted', false)
-        .order('full_name')
-
-      interface ProfileRow {
-        id: string
-        full_name: string | null
-        email: string
-        rank: string | null
-        user_roles?: Array<{
-          roles?: { name?: string | null } | null
-          troops?: { name?: string | null } | null
-        }> | null
-      }
-
-      testUsers = ((profiles || []) as unknown as ProfileRow[]).map((p) => {
-        const ur = p.user_roles?.[0]
-        const rawRole = ur?.roles?.name || p.rank || 'scout_leader'
-        return {
-          id: p.id,
-          fullName: p.full_name || 'Leader',
-          email: p.email,
-          role: rawRole,
-          roleLabel: ROLE_DISPLAY_NAMES[rawRole] || rawRole.replace(/_/g, ' '),
-          troopName: ur?.troops?.name || null,
-          rank: p.rank || null,
-        }
-      })
-
-      if (!FEATURES.scoutMemberLogin) {
-        testUsers = testUsers.filter((u) => u.role !== 'scout_member')
-      }
-    } catch (fetchErr) {
-      console.warn('[LoginPage] Error fetching test users list:', fetchErr)
     }
   }
 
@@ -181,70 +103,13 @@ export default async function LoginPage({
       console.error('Magic link dispatch error:', error)
       if (error.message.toLowerCase().includes('rate limit')) {
         return {
-          error:
-            'Email rate limit reached for this hour. Please use password login or the Test Mode button below.',
+          error: 'Email rate limit reached for this hour. Please use password login.',
         }
       }
       return { error: error.message }
     }
 
     return { success: true }
-  }
-
-  // ── SERVER ACTION 3: 1-Click Test Login As user (Dev & Staging) ──
-  async function loginAsUser(targetEmail: string) {
-    'use server'
-
-    if (!serviceRoleKey) {
-      return { error: 'Server misconfiguration: SUPABASE_SERVICE_ROLE_KEY is missing.' }
-    }
-
-    try {
-      const adminSupabase = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        serviceRoleKey,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      )
-
-      // 1. Generate magic link token without sending an email
-      const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: targetEmail,
-      })
-
-      if (linkError || !linkData?.properties?.hashed_token) {
-        console.error('Failed to generate test magic link token:', linkError)
-        return { error: linkError?.message || 'Could not generate test session for this user.' }
-      }
-
-      // 2. Verify OTP token and establish real session cookies
-      const serverSupabase = await createClient()
-      const { data: verifyData, error: verifyError } = await serverSupabase.auth.verifyOtp({
-        token_hash: linkData.properties.hashed_token,
-        type: 'magiclink',
-      })
-
-      if (verifyError) {
-        console.error('Failed to verify OTP token for test login:', verifyError)
-        return { error: verifyError.message }
-      }
-
-      // 3. Redirect to dashboard
-      const role = verifyData.user?.app_metadata?.role
-      if (role === 'configurator') {
-        redirect('/configurator')
-      } else {
-        redirect('/group/dashboard')
-      }
-    } catch (err: unknown) {
-      // If Next.js redirect thrown, re-throw it so Next.js handles redirection
-      if (err instanceof Error && err.message === 'NEXT_REDIRECT') {
-        throw err
-      }
-      console.error('loginAsUser exception:', err)
-      const msg = err instanceof Error ? err.message : 'An unexpected error occurred.'
-      return { error: msg }
-    }
   }
 
   return (
@@ -269,13 +134,6 @@ export default async function LoginPage({
           onSignInPassword={signIn}
           onSendMagicLink={sendMagicLink}
         />
-
-        {/* ── TEST MODE / DEV USER SWITCHER ── */}
-        {testUsers.length > 0 && (
-          <div className="pt-2 border-t border-slate-100">
-            <TestLoginModal users={testUsers} onLoginAs={loginAsUser} />
-          </div>
-        )}
 
         <div className="text-center text-[11px] text-slate-400">
           Groupe Saint Jean Marc • Authorized Leader Access Only

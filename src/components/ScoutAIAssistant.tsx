@@ -196,6 +196,7 @@ export default function ScoutAIAssistant() {
       {isDocked ? (
         <button
           type="button"
+          data-ai-fab="true"
           onClick={() => {
             setIsDocked(false)
             setIsOpen(true)
@@ -207,7 +208,7 @@ export default function ScoutAIAssistant() {
           <span className="text-[10px] text-white font-extrabold pr-0.5">AI</span>
         </button>
       ) : (
-        <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1">
+        <div data-ai-fab="true" className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1">
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}

@@ -1368,11 +1368,11 @@ export default function MembersManagement({
                                     </span>
                                 )}
                             </h3>
-                            <p className="text-xs text-slate-400 mt-0.5">Scout Registration ID: {selectedMember.id}</p>
+                            <p className="text-[11px] font-mono text-slate-400 mt-0.5">ID #{selectedMember.id.slice(0, 8)}</p>
                         </div>
 
                         {/* Profile Tab Navigation */}
-                        <div className="flex border-b border-slate-200 gap-1.5 pb-2 overflow-x-auto">
+                        <div className="flex border-b border-slate-200 gap-1.5 pb-2.5 overflow-x-auto no-scrollbar">
                             <button
                                 type="button"
                                 onClick={() => setProfileTab('scout')}

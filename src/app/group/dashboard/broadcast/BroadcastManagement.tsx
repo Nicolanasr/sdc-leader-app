@@ -1056,10 +1056,10 @@ export default function BroadcastManagement({
                         setBuilderBody(`${SCOUT_HEADER_AR}\n\nالموضوع: \n\nتحية كشفية وبعد ...\n\n*ملاحظة:* `)
                         setShowTemplateBuilder(true)
                       }}
-                      className="px-3 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                      className="min-h-[38px] px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      <span>+ صانع النماذج (Builder)</span>
+                      <span>صانع النماذج (Builder)</span>
                     </button>
                     <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-xl border border-emerald-200 hidden sm:inline">
                       سان جان مارك
@@ -1068,7 +1068,7 @@ export default function BroadcastManagement({
                 </div>
 
                 {/* Category Pills: Smooth horizontal scroll on mobile */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pt-1">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-1">
                   {[
                     { id: 'all', label: 'الكل (All)' },
                     ...(customTemplates.length > 0
@@ -1087,7 +1087,7 @@ export default function BroadcastManagement({
                       key={cat.id}
                       type="button"
                       onClick={() => setTemplateCategory(cat.id)}
-                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                      className={`min-h-[34px] px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0 whitespace-nowrap ${
                         templateCategory === cat.id
                           ? 'bg-teal-900 text-white shadow-2xs'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
