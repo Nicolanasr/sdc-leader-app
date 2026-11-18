@@ -379,7 +379,7 @@ export default function ProgressionManagement({
 
     return (
         <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName}>
-            <div className="w-full pb-20 space-y-3">
+            <div className="w-full pb-4 sm:pb-8 space-y-2.5 sm:space-y-3">
                 {/* Toast Alert */}
                 {statusMessage && (
                     <div

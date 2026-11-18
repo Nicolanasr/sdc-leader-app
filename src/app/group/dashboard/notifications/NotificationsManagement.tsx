@@ -360,7 +360,7 @@ export default function NotificationsManagement({
       userName={currentUserName}
       patrolRole={patrolRole}
     >
-      <div className="max-w-7xl mx-auto space-y-3 pb-12">
+      <div className="max-w-7xl mx-auto space-y-2.5 sm:space-y-3 pb-4 sm:pb-8">
         {/* Status Toast */}
         {statusMessage && (
           <div

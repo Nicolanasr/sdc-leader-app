@@ -2164,7 +2164,7 @@ export default function EventWorkspace({
 
             {/* ── TAB 1: STAFF HIERARCHY ───────────────────────────────────────────── */}
             {activeTab === 'hierarchy' && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-6 shadow-sm space-y-3.5 sm:space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">
@@ -2217,7 +2217,7 @@ export default function EventWorkspace({
             {/* ── EDIT EVENT HIERARCHY MODAL ────────────────────────────────────── */}
             {isEditHierarchyModalOpen && (
                 <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[90vh] flex flex-col">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 space-y-4 shadow-xl max-h-[90vh] flex flex-col">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">
@@ -2295,7 +2295,7 @@ export default function EventWorkspace({
             {/* ── EDIT 1 SINGLE ROLE MODAL ────────────────────────────────────── */}
             {singleEditingRoleKey && (
                 <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-xl">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">
@@ -2370,7 +2370,7 @@ export default function EventWorkspace({
             {/* ── PROVISION MEMBER LOGIN MODAL ─────────────────────────────────── */}
             {isProvisionMemberModalOpen && (
                 <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-xl">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-800 border border-teal-200 flex items-center justify-center">
@@ -2531,7 +2531,7 @@ export default function EventWorkspace({
 
             {/* ── TAB 2: SCOUT ROSTER & CONSENT ───────────────────────────────────── */}
             {activeTab === 'roster' && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                     {/* Header & Section Filter Pills */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                         <div>
@@ -2648,7 +2648,7 @@ export default function EventWorkspace({
             {/* ── EDIT EVENT ROSTER MODAL ────────────────────────────────────── */}
             {isEditRosterModalOpen && (
                 <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[90vh] flex flex-col">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 space-y-4 shadow-xl max-h-[90vh] flex flex-col">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">Manage Event Roster</h3>
@@ -2727,7 +2727,7 @@ export default function EventWorkspace({
 
             {/* ── TAB 3: CAMP TREASURY & EXPENSES ─────────────────────────────────── */}
             {activeTab === 'treasury' && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                     <div className="border-b border-slate-100 pb-3">
                         <h3 className="text-lg font-bold text-slate-900">Camp Treasury & Categorized Expenses</h3>
                         <p className="text-xs text-slate-500">Managed by Camp Treasurer ({isCampTreasurer ? 'You have edit access' : 'Read-only'}).</p>
@@ -2884,7 +2884,7 @@ export default function EventWorkspace({
 
             {/* ── TAB 4: DOCUMENTS REPOSITORY ─────────────────────────────────────── */}
             {activeTab === 'documents' && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                     <div className="border-b border-slate-100 pb-3">
                         <h3 className="text-lg font-bold text-slate-900">Documents & Event Attachments</h3>
                         <p className="text-xs text-slate-500">Store and access location maps, permission slips, program schedules, and official files.</p>

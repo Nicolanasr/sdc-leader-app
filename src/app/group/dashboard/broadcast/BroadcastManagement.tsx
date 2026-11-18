@@ -681,7 +681,7 @@ export default function BroadcastManagement({
       roles={roles}
       userName={userName}
     >
-      <div className="max-w-7xl mx-auto space-y-3 pb-28 sm:pb-16 font-sans">
+      <div className="max-w-7xl mx-auto space-y-2.5 sm:space-y-3 pb-4 sm:pb-8 font-sans">
         {/* Status Toast */}
         {statusMessage && (
           <div
@@ -1427,7 +1427,7 @@ export default function BroadcastManagement({
               {/* LEFT / COMPOSER: 7 COLS */}
               <div className="lg:col-span-7 xl:col-span-8 space-y-4">
                 {/* 1. TARGET MODE */}
-                <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-sm space-y-3">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-3.5 sm:p-5 shadow-sm space-y-3">
                   <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                     <Radio className="h-4 w-4 text-teal-800" />
                     <span>Push Target Audience (الأجهزة المستهدفة)</span>
@@ -1621,7 +1621,7 @@ export default function BroadcastManagement({
                 </div>
 
                 {/* 2. PUSH TEMPLATES & COMPOSER */}
-                <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-sm space-y-3">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-3.5 sm:p-5 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                       <BellRing className="h-4 w-4 text-teal-800" />
@@ -1834,7 +1834,7 @@ export default function BroadcastManagement({
         {/* TAB 3: COMMUNICATION ARCHIVE & TRANSMISSION LOGS          */}
         {/* ═════════════════════════════════════════════════════════ */}
         {activeTab === 'history' && (
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-sm space-y-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-3.5 sm:p-5 shadow-sm space-y-4 animate-in fade-in duration-150">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-teal-800" />
@@ -1961,8 +1961,8 @@ export default function BroadcastManagement({
 
         {/* ── CONFIRMATION MODAL FOR WHATSAPP DISPATCH ── */}
         {showConfirmModal && (
-          <div data-modal="true" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+          <div data-modal="true" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 pb-[max(env(safe-area-inset-bottom),1.25rem)] space-y-4 shadow-2xl border border-slate-200">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-800 shrink-0">
                   <Megaphone className="h-5 w-5" />

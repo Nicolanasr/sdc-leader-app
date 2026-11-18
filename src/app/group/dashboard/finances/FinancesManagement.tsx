@@ -1572,7 +1572,7 @@ export default function FinancesManagement({
 
     return (
         <DashboardShell groupName={groupName} currentRole={currentRole} roles={roles} userName={userName} patrolRole={patrolRole}>
-            <div className="space-y-6 pb-12">
+            <div className="space-y-3 sm:space-y-5 pb-4 sm:pb-8">
                 {/* Status Toast */}
                 {statusMessage && (
                     <div

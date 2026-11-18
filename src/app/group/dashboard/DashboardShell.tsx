@@ -62,7 +62,7 @@ export default function DashboardShell({ groupName, currentRole, roles, userName
                     roles={roles}
                     onOpenMobileMenu={() => setIsMobileOpen(true)}
                 />
-                <div className="px-2.5 sm:px-6 py-2.5 sm:py-4 flex-1 flex flex-col space-y-3 sm:space-y-4 max-w-7xl w-full mx-auto">
+                <div className="px-2 sm:px-6 py-2 sm:py-4 flex-1 flex flex-col space-y-2.5 sm:space-y-4 max-w-7xl w-full mx-auto">
                     <PWAInstallPrompt />
                     {children}
                 </div>

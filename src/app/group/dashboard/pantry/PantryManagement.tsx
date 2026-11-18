@@ -1851,7 +1851,7 @@ export default function PantryManagement({
             roles={roles}
             userName={userName}
         >
-            <div className="w-full pb-24 space-y-2.5 sm:space-y-3">
+            <div className="w-full pb-4 sm:pb-8 space-y-2.5 sm:space-y-3">
                 {/* Status Toast */}
                 {statusMessage && (
                     <div

@@ -474,7 +474,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                                             <button
                                                 key={session.id}
                                                 onClick={() => openSheet(session, event)}
-                                                className="w-full text-left bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm hover:shadow-md hover:border-teal-200 transition-all group"
+                                                className="w-full text-left bg-white border border-slate-200 rounded-2xl px-3.5 sm:px-5 py-3.5 sm:py-4 shadow-sm hover:shadow-md hover:border-teal-200 active:scale-[0.99] transition-all group"
                                             >
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex gap-3 items-start min-w-0">
@@ -519,7 +519,7 @@ function ReasonSelector({ reason, onChange }: { reason: string; onChange: (r: st
                             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">New Attendance Session</h2>
                             <p className="text-sm text-slate-500 mb-6">Create a session for today or log a past date.</p>
 
-                            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm">
+                            <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 space-y-4 sm:space-y-5 shadow-sm">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">Session Type</label>
                                     <select
